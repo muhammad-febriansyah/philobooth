@@ -1,0 +1,344 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e10]: philobooth
+      - generic [ref=e12]:
+        - link "Dashboard" [ref=e13] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e14]
+          - generic [ref=e19]: Dashboard
+        - link "Booth (kiosk)" [ref=e20] [cursor=pointer]:
+          - /url: /kiosk/welcome
+          - img [ref=e21]
+          - generic [ref=e24]: Booth (kiosk)
+          - img [ref=e25]
+        - link "Cabang" [ref=e28] [cursor=pointer]:
+          - /url: /admin/cabang
+          - img [ref=e29]
+          - generic [ref=e33]: Cabang
+        - link "Printer" [ref=e34] [cursor=pointer]:
+          - /url: /admin/printer
+          - img [ref=e35]
+          - generic [ref=e39]: Printer
+        - link "Frame builder" [ref=e40] [cursor=pointer]:
+          - /url: /admin/frames
+          - img [ref=e41]
+          - generic [ref=e43]: Frame builder
+        - link "Voucher" [ref=e44] [cursor=pointer]:
+          - /url: /admin/voucher
+          - img [ref=e45]
+          - generic [ref=e47]: Voucher
+        - link "Transaksi" [ref=e48] [cursor=pointer]:
+          - /url: /admin/transaksi
+          - img [ref=e49]
+          - generic [ref=e51]: Transaksi
+        - link "User & role" [ref=e52] [cursor=pointer]:
+          - /url: /admin/users
+          - img [ref=e53]
+          - generic [ref=e58]: User & role
+        - link "Pengaturan" [ref=e59] [cursor=pointer]:
+          - /url: /admin/settings
+          - img [ref=e60]
+          - generic [ref=e63]: Pengaturan
+      - generic [ref=e64]:
+        - link "Settings" [ref=e66] [cursor=pointer]:
+          - /url: /settings/profile
+          - img [ref=e67]
+          - generic [ref=e70]: Settings
+        - button "Keluar" [ref=e71] [cursor=pointer]:
+          - img [ref=e72]
+          - generic [ref=e75]: Keluar
+        - generic [ref=e76]:
+          - generic [ref=e77]: SA
+          - generic [ref=e78]:
+            - generic [ref=e79]: Super Admin
+            - generic [ref=e80]: Super admin
+    - generic [ref=e81]:
+      - banner [ref=e82]:
+        - button "Toggle sidebar" [ref=e83] [cursor=pointer]:
+          - img [ref=e84]
+        - generic [ref=e85]:
+          - img [ref=e86]
+          - textbox "Cari transaksi, cabang, voucher…" [ref=e89]
+        - button [ref=e90] [cursor=pointer]:
+          - img [ref=e91]
+        - button "Transaksi baru" [ref=e95] [cursor=pointer]:
+          - img [ref=e96]
+          - text: Transaksi baru
+        - generic [ref=e97]: RA
+      - generic [ref=e98]:
+        - heading "Manajemen voucher" [level=1] [ref=e100]
+        - button "Tambah voucher" [ref=e102] [cursor=pointer]:
+          - img [ref=e103]
+          - text: Tambah voucher
+      - generic [ref=e104]:
+        - generic [ref=e105]:
+          - img [ref=e107]
+          - generic [ref=e109]: Total voucher
+          - generic [ref=e110]: "56"
+        - generic [ref=e111]:
+          - img [ref=e113]
+          - generic [ref=e115]: Aktif
+          - generic [ref=e116]: "56"
+        - generic [ref=e117]:
+          - img [ref=e119]
+          - generic [ref=e123]: Tersedia
+          - generic [ref=e124]: "55"
+        - generic [ref=e125]:
+          - img [ref=e127]
+          - generic [ref=e129]: Sudah dipakai
+          - generic [ref=e130]: "1"
+      - generic [ref=e131]:
+        - generic [ref=e132]:
+          - generic [ref=e133]:
+            - img [ref=e134]
+            - textbox "Cari nama atau kode voucher…" [ref=e137]
+          - combobox [ref=e138]:
+            - option "Semua cabang" [selected]
+            - option "BSD City Mall"
+            - option "Grand Indonesia"
+            - option "Kota Kasablanka"
+            - option "Pondok Indah Mall"
+            - option "Senayan City"
+          - combobox [ref=e139]:
+            - option "Semua status" [selected]
+            - option "Aktif"
+            - option "Nonaktif"
+        - table [ref=e141]:
+          - rowgroup [ref=e142]:
+            - row "Nama Kode Cabang Pakai Berlaku Status Aksi" [ref=e143]:
+              - columnheader "Nama" [ref=e144]
+              - columnheader "Kode" [ref=e145]
+              - columnheader "Cabang" [ref=e146]
+              - columnheader "Pakai" [ref=e147]
+              - columnheader "Berlaku" [ref=e148]
+              - columnheader "Status" [ref=e149]
+              - columnheader "Aksi" [ref=e150]
+          - rowgroup [ref=e151]:
+            - row "DEMO2026 Semua cabang 1 / 1 Tanpa batas waktu Habis Edit" [ref=e152]:
+              - cell [ref=e153]
+              - cell "DEMO2026" [ref=e154]:
+                - code [ref=e155]: DEMO2026
+              - cell "Semua cabang" [ref=e156]
+              - cell "1 / 1" [ref=e157]:
+                - generic [ref=e158]: 1 / 1
+              - cell "Tanpa batas waktu" [ref=e159]:
+                - generic [ref=e160]: Tanpa batas waktu
+              - cell "Habis" [ref=e161]:
+                - generic [ref=e162]: Habis
+              - cell "Edit" [ref=e163]:
+                - generic [ref=e164]:
+                  - button "Edit" [ref=e165] [cursor=pointer]:
+                    - img [ref=e166]
+                    - text: Edit
+                  - button [ref=e169] [cursor=pointer]:
+                    - img [ref=e170]
+            - row "BDAY26-VEVDGUZ8 Semua cabang 0 / 1 Tanpa batas waktu Aktif Edit" [ref=e172]:
+              - cell [ref=e173]
+              - cell "BDAY26-VEVDGUZ8" [ref=e174]:
+                - code [ref=e175]: BDAY26-VEVDGUZ8
+              - cell "Semua cabang" [ref=e176]
+              - cell "0 / 1" [ref=e177]:
+                - generic [ref=e178]: 0 / 1
+              - cell "Tanpa batas waktu" [ref=e179]:
+                - generic [ref=e180]: Tanpa batas waktu
+              - cell "Aktif" [ref=e181]:
+                - generic [ref=e182]: Aktif
+              - cell "Edit" [ref=e183]:
+                - generic [ref=e184]:
+                  - button "Edit" [ref=e185] [cursor=pointer]:
+                    - img [ref=e186]
+                    - text: Edit
+                  - button [ref=e189] [cursor=pointer]:
+                    - img [ref=e190]
+            - row "BDAY26-SCNAND7N Semua cabang 0 / 1 Tanpa batas waktu Aktif Edit" [ref=e192]:
+              - cell [ref=e193]
+              - cell "BDAY26-SCNAND7N" [ref=e194]:
+                - code [ref=e195]: BDAY26-SCNAND7N
+              - cell "Semua cabang" [ref=e196]
+              - cell "0 / 1" [ref=e197]:
+                - generic [ref=e198]: 0 / 1
+              - cell "Tanpa batas waktu" [ref=e199]:
+                - generic [ref=e200]: Tanpa batas waktu
+              - cell "Aktif" [ref=e201]:
+                - generic [ref=e202]: Aktif
+              - cell "Edit" [ref=e203]:
+                - generic [ref=e204]:
+                  - button "Edit" [ref=e205] [cursor=pointer]:
+                    - img [ref=e206]
+                    - text: Edit
+                  - button [ref=e209] [cursor=pointer]:
+                    - img [ref=e210]
+            - row "BDAY26-J9XYJDG5 Semua cabang 0 / 1 Tanpa batas waktu Aktif Edit" [ref=e212]:
+              - cell [ref=e213]
+              - cell "BDAY26-J9XYJDG5" [ref=e214]:
+                - code [ref=e215]: BDAY26-J9XYJDG5
+              - cell "Semua cabang" [ref=e216]
+              - cell "0 / 1" [ref=e217]:
+                - generic [ref=e218]: 0 / 1
+              - cell "Tanpa batas waktu" [ref=e219]:
+                - generic [ref=e220]: Tanpa batas waktu
+              - cell "Aktif" [ref=e221]:
+                - generic [ref=e222]: Aktif
+              - cell "Edit" [ref=e223]:
+                - generic [ref=e224]:
+                  - button "Edit" [ref=e225] [cursor=pointer]:
+                    - img [ref=e226]
+                    - text: Edit
+                  - button [ref=e229] [cursor=pointer]:
+                    - img [ref=e230]
+            - row "BDAY26-LEMZ2KOI Semua cabang 0 / 1 Tanpa batas waktu Aktif Edit" [ref=e232]:
+              - cell [ref=e233]
+              - cell "BDAY26-LEMZ2KOI" [ref=e234]:
+                - code [ref=e235]: BDAY26-LEMZ2KOI
+              - cell "Semua cabang" [ref=e236]
+              - cell "0 / 1" [ref=e237]:
+                - generic [ref=e238]: 0 / 1
+              - cell "Tanpa batas waktu" [ref=e239]:
+                - generic [ref=e240]: Tanpa batas waktu
+              - cell "Aktif" [ref=e241]:
+                - generic [ref=e242]: Aktif
+              - cell "Edit" [ref=e243]:
+                - generic [ref=e244]:
+                  - button "Edit" [ref=e245] [cursor=pointer]:
+                    - img [ref=e246]
+                    - text: Edit
+                  - button [ref=e249] [cursor=pointer]:
+                    - img [ref=e250]
+            - row "BDAY26-RKYQSLJY Semua cabang 0 / 1 Tanpa batas waktu Aktif Edit" [ref=e252]:
+              - cell [ref=e253]
+              - cell "BDAY26-RKYQSLJY" [ref=e254]:
+                - code [ref=e255]: BDAY26-RKYQSLJY
+              - cell "Semua cabang" [ref=e256]
+              - cell "0 / 1" [ref=e257]:
+                - generic [ref=e258]: 0 / 1
+              - cell "Tanpa batas waktu" [ref=e259]:
+                - generic [ref=e260]: Tanpa batas waktu
+              - cell "Aktif" [ref=e261]:
+                - generic [ref=e262]: Aktif
+              - cell "Edit" [ref=e263]:
+                - generic [ref=e264]:
+                  - button "Edit" [ref=e265] [cursor=pointer]:
+                    - img [ref=e266]
+                    - text: Edit
+                  - button [ref=e269] [cursor=pointer]:
+                    - img [ref=e270]
+            - row "BDAY26-AMISEF1Q Semua cabang 0 / 1 Tanpa batas waktu Aktif Edit" [ref=e272]:
+              - cell [ref=e273]
+              - cell "BDAY26-AMISEF1Q" [ref=e274]:
+                - code [ref=e275]: BDAY26-AMISEF1Q
+              - cell "Semua cabang" [ref=e276]
+              - cell "0 / 1" [ref=e277]:
+                - generic [ref=e278]: 0 / 1
+              - cell "Tanpa batas waktu" [ref=e279]:
+                - generic [ref=e280]: Tanpa batas waktu
+              - cell "Aktif" [ref=e281]:
+                - generic [ref=e282]: Aktif
+              - cell "Edit" [ref=e283]:
+                - generic [ref=e284]:
+                  - button "Edit" [ref=e285] [cursor=pointer]:
+                    - img [ref=e286]
+                    - text: Edit
+                  - button [ref=e289] [cursor=pointer]:
+                    - img [ref=e290]
+            - row "BDAY26-JLBXMRYM Semua cabang 0 / 1 Tanpa batas waktu Aktif Edit" [ref=e292]:
+              - cell [ref=e293]
+              - cell "BDAY26-JLBXMRYM" [ref=e294]:
+                - code [ref=e295]: BDAY26-JLBXMRYM
+              - cell "Semua cabang" [ref=e296]
+              - cell "0 / 1" [ref=e297]:
+                - generic [ref=e298]: 0 / 1
+              - cell "Tanpa batas waktu" [ref=e299]:
+                - generic [ref=e300]: Tanpa batas waktu
+              - cell "Aktif" [ref=e301]:
+                - generic [ref=e302]: Aktif
+              - cell "Edit" [ref=e303]:
+                - generic [ref=e304]:
+                  - button "Edit" [ref=e305] [cursor=pointer]:
+                    - img [ref=e306]
+                    - text: Edit
+                  - button [ref=e309] [cursor=pointer]:
+                    - img [ref=e310]
+            - row "BDAY26-JVGZXEU6 Semua cabang 0 / 1 Tanpa batas waktu Aktif Edit" [ref=e312]:
+              - cell [ref=e313]
+              - cell "BDAY26-JVGZXEU6" [ref=e314]:
+                - code [ref=e315]: BDAY26-JVGZXEU6
+              - cell "Semua cabang" [ref=e316]
+              - cell "0 / 1" [ref=e317]:
+                - generic [ref=e318]: 0 / 1
+              - cell "Tanpa batas waktu" [ref=e319]:
+                - generic [ref=e320]: Tanpa batas waktu
+              - cell "Aktif" [ref=e321]:
+                - generic [ref=e322]: Aktif
+              - cell "Edit" [ref=e323]:
+                - generic [ref=e324]:
+                  - button "Edit" [ref=e325] [cursor=pointer]:
+                    - img [ref=e326]
+                    - text: Edit
+                  - button [ref=e329] [cursor=pointer]:
+                    - img [ref=e330]
+            - row "BDAY26-OKSXPWNU Semua cabang 0 / 1 Tanpa batas waktu Aktif Edit" [ref=e332]:
+              - cell [ref=e333]
+              - cell "BDAY26-OKSXPWNU" [ref=e334]:
+                - code [ref=e335]: BDAY26-OKSXPWNU
+              - cell "Semua cabang" [ref=e336]
+              - cell "0 / 1" [ref=e337]:
+                - generic [ref=e338]: 0 / 1
+              - cell "Tanpa batas waktu" [ref=e339]:
+                - generic [ref=e340]: Tanpa batas waktu
+              - cell "Aktif" [ref=e341]:
+                - generic [ref=e342]: Aktif
+              - cell "Edit" [ref=e343]:
+                - generic [ref=e344]:
+                  - button "Edit" [ref=e345] [cursor=pointer]:
+                    - img [ref=e346]
+                    - text: Edit
+                  - button [ref=e349] [cursor=pointer]:
+                    - img [ref=e350]
+            - row "BDAY26-ZL52UD9N Semua cabang 0 / 1 Tanpa batas waktu Aktif Edit" [ref=e352]:
+              - cell [ref=e353]
+              - cell "BDAY26-ZL52UD9N" [ref=e354]:
+                - code [ref=e355]: BDAY26-ZL52UD9N
+              - cell "Semua cabang" [ref=e356]
+              - cell "0 / 1" [ref=e357]:
+                - generic [ref=e358]: 0 / 1
+              - cell "Tanpa batas waktu" [ref=e359]:
+                - generic [ref=e360]: Tanpa batas waktu
+              - cell "Aktif" [ref=e361]:
+                - generic [ref=e362]: Aktif
+              - cell "Edit" [ref=e363]:
+                - generic [ref=e364]:
+                  - button "Edit" [ref=e365] [cursor=pointer]:
+                    - img [ref=e366]
+                    - text: Edit
+                  - button [ref=e369] [cursor=pointer]:
+                    - img [ref=e370]
+            - row "BDAY26-XGYXK0UY Semua cabang 0 / 1 Tanpa batas waktu Aktif Edit" [ref=e372]:
+              - cell [ref=e373]
+              - cell "BDAY26-XGYXK0UY" [ref=e374]:
+                - code [ref=e375]: BDAY26-XGYXK0UY
+              - cell "Semua cabang" [ref=e376]
+              - cell "0 / 1" [ref=e377]:
+                - generic [ref=e378]: 0 / 1
+              - cell "Tanpa batas waktu" [ref=e379]:
+                - generic [ref=e380]: Tanpa batas waktu
+              - cell "Aktif" [ref=e381]:
+                - generic [ref=e382]: Aktif
+              - cell "Edit" [ref=e383]:
+                - generic [ref=e384]:
+                  - button "Edit" [ref=e385] [cursor=pointer]:
+                    - img [ref=e386]
+                    - text: Edit
+                  - button [ref=e389] [cursor=pointer]:
+                    - img [ref=e390]
+        - generic [ref=e392]:
+          - generic [ref=e393]: Menampilkan 1–12 dari 56 voucher
+          - generic [ref=e394]:
+            - button "←" [disabled] [ref=e395]
+            - button "1" [ref=e396] [cursor=pointer]
+            - button "2" [ref=e397] [cursor=pointer]
+            - button "3" [ref=e398] [cursor=pointer]
+            - button "4" [ref=e399] [cursor=pointer]
+            - button "5" [ref=e400] [cursor=pointer]
+            - button "→" [ref=e401] [cursor=pointer]
+  - region "Notifications alt+T"

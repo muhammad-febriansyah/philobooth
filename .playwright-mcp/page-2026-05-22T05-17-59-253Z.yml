@@ -1,0 +1,66 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic:
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+    - generic [ref=e4]:
+      - banner [ref=e5]:
+        - generic [ref=e10]: philobooth
+        - generic [ref=e11]:
+          - generic [ref=e21]: Langkah 8 / 8
+          - generic [ref=e22]:
+            - img [ref=e23]
+            - text: Senayan City
+            - generic [ref=e27]: ·
+            - text: 14:32
+      - main [ref=e28]:
+        - img "Final" [ref=e31]
+        - generic [ref=e32]:
+          - generic [ref=e33]: Langkah 8 · Jumlah cetak
+          - heading "Berapa lembar?" [level=1] [ref=e35]
+          - paragraph [ref=e36]: 1 lembar pertama sudah termasuk harga. Tambahan Rp 17.500 per lembar.
+          - generic [ref=e37]:
+            - generic [ref=e39]: Jumlah lembar
+            - generic [ref=e40]:
+              - button "−" [disabled] [ref=e41]
+              - generic [ref=e42]: "1"
+              - button "+" [ref=e43] [cursor=pointer]
+            - generic [ref=e44]: Maksimal 10 lembar per sesi
+          - generic [ref=e45]:
+            - generic [ref=e46]: Rincian pembayaran
+            - generic [ref=e47]:
+              - generic [ref=e48]: Harga dasar (1 lembar)
+              - generic [ref=e49]: Rp 35.000
+            - generic [ref=e50]:
+              - generic [ref=e51]: Tambahan lembar (0×)
+              - generic [ref=e52]: Gratis
+            - generic [ref=e54]:
+              - generic [ref=e55]: Total bayar
+              - generic [ref=e56]: Rp 35.000
+          - button "Cetak foto" [ref=e57] [cursor=pointer]:
+            - img [ref=e58]
+            - text: Cetak foto
+            - img [ref=e63]
+  - region "Notifications alt+T"

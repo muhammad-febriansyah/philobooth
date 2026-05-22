@@ -1,0 +1,55 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e9]: philobooth
+      - generic [ref=e10]:
+        - generic [ref=e20]: Langkah 7 / 8
+        - generic [ref=e21]:
+          - img [ref=e22]
+          - text: Senayan City
+          - generic [ref=e26]: ·
+          - text: 14:32
+    - main [ref=e27]:
+      - generic [ref=e29]:
+        - img "Preview" [ref=e30]
+        - generic [ref=e31]: Filter · Original
+      - generic [ref=e32]:
+        - generic [ref=e33]: Langkah 7 · Filter
+        - heading "Pilih filter" [level=1] [ref=e35]
+        - paragraph [ref=e36]: Filter berlaku untuk semua 8 foto.
+        - generic [ref=e37]:
+          - button "Original Original" [ref=e38] [cursor=pointer]:
+            - img "Original" [ref=e40]
+            - generic [ref=e41]: Original
+          - button "Vivid Vivid" [ref=e42] [cursor=pointer]:
+            - img "Vivid" [ref=e44]
+            - generic [ref=e45]: Vivid
+          - button "Warm Warm" [ref=e46] [cursor=pointer]:
+            - img "Warm" [ref=e48]
+            - generic [ref=e49]: Warm
+          - button "Cool Cool" [ref=e50] [cursor=pointer]:
+            - img "Cool" [ref=e52]
+            - generic [ref=e53]: Cool
+          - button "Film Film" [ref=e54] [cursor=pointer]:
+            - img "Film" [ref=e56]
+            - generic [ref=e57]: Film
+          - button "B&W B&W" [ref=e58] [cursor=pointer]:
+            - img "B&W" [ref=e60]
+            - generic [ref=e61]: B&W
+          - button "Fade Fade" [ref=e62] [cursor=pointer]:
+            - img "Fade" [ref=e64]
+            - generic [ref=e65]: Fade
+          - button "Mono Mono" [ref=e66] [cursor=pointer]:
+            - img "Mono" [ref=e68]
+            - generic [ref=e69]: Mono
+        - button "Lanjut, atur jumlah cetak" [ref=e70] [cursor=pointer]:
+          - text: Lanjut, atur jumlah cetak
+          - img [ref=e72]
+    - contentinfo [ref=e74]:
+      - button "← Kembali" [ref=e75] [cursor=pointer]:
+        - img [ref=e76]
+        - text: ← Kembali
+      - button "Lanjut →" [ref=e78] [cursor=pointer]:
+        - text: Lanjut →
+        - img [ref=e79]
+  - region "Notifications alt+T"

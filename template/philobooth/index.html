@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>philobooth — Design system</title>
+  <link rel="stylesheet" href="styles.css"/>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <style>
+    html, body, #app {
+      margin: 0; padding: 0;
+      height: 100%; width: 100%;
+      font-family: "Poppins", system-ui, sans-serif;
+      background: #f0eee9;
+      overscroll-behavior: none;
+    }
+    /* Brand cover card */
+    .pb-cover {
+      width: 100%; height: 100%;
+      background: linear-gradient(135deg, #F5FA0C 0%, #FFEA00 100%);
+      position: relative;
+      overflow: hidden;
+      padding: 64px;
+      box-sizing: border-box;
+      display: flex; flex-direction: column;
+      color: #0A0A0A;
+      font-family: "Poppins", sans-serif;
+    }
+    .pb-cover-bg {
+      position: absolute; right: -120px; top: -120px;
+      width: 520px; height: 520px; border-radius: 50%;
+      background: #0A0A0A; opacity: 0.92;
+    }
+    .pb-cover-bg2 {
+      position: absolute; left: 80px; bottom: 80px;
+      width: 220px; height: 220px; border-radius: 50%;
+      background: #fff; opacity: 0.4;
+    }
+    /* Tokens card */
+    .pb-token-card {
+      background: #fff; padding: 24px; border-radius: 16px;
+      border: 1px solid #E5E5E5; height: 100%; box-sizing: border-box;
+      display: flex; flex-direction: column; gap: 16px;
+      font-family: "Poppins", sans-serif;
+      color: #0A0A0A;
+    }
+    .pb-swatch { width: 100%; height: 64px; border-radius: 8px; border: 1px solid #E5E5E5; }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="ui.jsx"></script>
+<script type="text/babel" src="admin.jsx"></script>
+<script type="text/babel" src="kiosk-1.jsx"></script>
+<script type="text/babel" src="kiosk-2.jsx"></script>
+<script type="text/babel" src="kiosk-3.jsx"></script>
+
+<script type="text/babel">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "primary": "#F5FA0C",
+  "radius": "rounded",
+  "density": "comfortable",
+  "heroVariant": "A",
+  "lang": "ID"
+}/*EDITMODE-END*/;
+
+// ─────────────────────────────────────────────────────────────
+// Brand cover artboard
+// ─────────────────────────────────────────────────────────────
+const BrandCover = () => (
+  <div className="pb-cover">
+    <div className="pb-cover-bg"/>
+    <div className="pb-cover-bg2"/>
+    <div style={{ position: "relative", zIndex: 1 }}>
+      <Logo size={36}/>
+    </div>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", zIndex: 1, maxWidth: 540 }}>
+      <div style={{
+        display: "inline-flex", alignSelf: "flex-start",
+        padding: "8px 14px", borderRadius: 999, background: "#0A0A0A", color: "#F5FA0C",
+        fontSize: 13, fontWeight: 600, letterSpacing: 0.5, marginBottom: 20
+      }}>
+        DESIGN SYSTEM · v2.1 · 22 MEI 2026
+      </div>
+      <h1 style={{ fontSize: 96, fontWeight: 900, letterSpacing: -3, lineHeight: 0.95, margin: 0 }}>
+        philobooth<br/>
+        <em style={{ fontStyle: "italic", fontWeight: 700 }}>design kit.</em>
+      </h1>
+      <p style={{ fontSize: 19, marginTop: 24, lineHeight: 1.5, color: "rgba(10,10,10,0.7)" }}>
+        Admin dashboard + customer kiosk flow untuk app photobooth multi-cabang.
+        Stack: Laravel 13 · Inertia · React · TS · Tailwind v4 · shadcn/ui.
+      </p>
+    </div>
+    <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "flex-end", color: "rgba(10,10,10,0.6)", fontSize: 13, fontWeight: 600 }}>
+      <span>Poppins · #F5FA0C · light mode only</span>
+      <span>↓ pan / scroll untuk eksplorasi ↓</span>
+    </div>
+  </div>
+);
+
+// ─────────────────────────────────────────────────────────────
+// Tokens reference artboard
+// ─────────────────────────────────────────────────────────────
+const TokensReference = () => {
+  const Swatch = ({ name, hex, dark, contrastText = "#0A0A0A" }) => (
+    <div>
+      <div className="pb-swatch" style={{ background: hex, color: contrastText, padding: 10, fontSize: 11, fontWeight: 700, height: 80, display: "flex", alignItems: "flex-end" }}>{hex}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, marginTop: 6 }}>{name}</div>
+    </div>
+  );
+  return (
+    <div style={{
+      width: "100%", height: "100%", background: "#FAFAFA",
+      padding: 36, fontFamily: "Poppins, sans-serif", color: "#0A0A0A",
+      display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20, boxSizing: "border-box",
+      overflow: "auto",
+    }}>
+      <div className="pb-token-card">
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#737373", letterSpacing: 0.6, textTransform: "uppercase" }}>Palette</div>
+          <div style={{ fontSize: 20, fontWeight: 700, marginTop: 4 }}>Color tokens</div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <Swatch name="Primary" hex="#F5FA0C"/>
+          <Swatch name="Primary hover" hex="#E0E50A"/>
+          <Swatch name="Ink" hex="#0A0A0A" contrastText="#F5FA0C"/>
+          <Swatch name="Ink 2" hex="#171717" contrastText="#fff"/>
+          <Swatch name="Text muted" hex="#525252" contrastText="#fff"/>
+          <Swatch name="Border" hex="#E5E5E5"/>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+          <Swatch name="Success" hex="#16A34A" contrastText="#fff"/>
+          <Swatch name="Warning" hex="#F59E0B"/>
+          <Swatch name="Danger" hex="#DC2626" contrastText="#fff"/>
+          <Swatch name="Info" hex="#2563EB" contrastText="#fff"/>
+        </div>
+      </div>
+
+      <div className="pb-token-card">
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#737373", letterSpacing: 0.6, textTransform: "uppercase" }}>Typography</div>
+          <div style={{ fontSize: 20, fontWeight: 700, marginTop: 4 }}>Poppins · type scale</div>
+        </div>
+        <div style={{ fontSize: 48, fontWeight: 700, letterSpacing: -1.2, lineHeight: 1 }}>Display 48 / 700</div>
+        <div style={{ fontSize: 36, fontWeight: 700, letterSpacing: -0.6, lineHeight: 1 }}>Heading 1 · 36</div>
+        <div style={{ fontSize: 28, fontWeight: 600 }}>Heading 2 · 28</div>
+        <div style={{ fontSize: 22, fontWeight: 600 }}>Heading 3 · 22</div>
+        <div style={{ fontSize: 18, fontWeight: 600 }}>Heading 4 · 18</div>
+        <div style={{ fontSize: 16, fontWeight: 400 }}>Body 16 / 400 — buat kalimat panjang yang netral.</div>
+        <div style={{ fontSize: 14, fontWeight: 400, color: "#525252" }}>Body small 14 — caption tabel, helper text, dst.</div>
+        <div style={{ fontSize: 12, fontWeight: 500, color: "#737373", letterSpacing: 0.4, textTransform: "uppercase" }}>Caption 12 · uppercase</div>
+      </div>
+
+      <div className="pb-token-card">
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#737373", letterSpacing: 0.6, textTransform: "uppercase" }}>Components</div>
+          <div style={{ fontSize: 20, fontWeight: 700, marginTop: 4 }}>Sample primitives</div>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <Btn variant="primary">Primary</Btn>
+          <Btn variant="secondary">Secondary</Btn>
+          <Btn variant="ghost">Ghost</Btn>
+          <Btn variant="dark">Dark</Btn>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <Badge tone="active">Aktif</Badge>
+          <Badge tone="success" dot>Online</Badge>
+          <Badge tone="warning" dot>Tipis</Badge>
+          <Badge tone="danger" dot>Offline</Badge>
+          <Badge tone="info">QRIS</Badge>
+        </div>
+        <div>
+          <div style={{ fontSize: 11, color: "#737373", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Input</div>
+          <input className="pb-input" placeholder="Cari sesuatu…"/>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          {[6, 8, 12, 16, 20].map(r => (
+            <div key={r} style={{ flex: 1, height: 56, border: "1px solid #E5E5E5", borderRadius: r, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, background: "#fff" }}>{r}px</div>
+          ))}
+        </div>
+        <div style={{ fontSize: 11, color: "#737373", textTransform: "uppercase", letterSpacing: 0.5 }}>Border radius scale</div>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────
+// App
+// ─────────────────────────────────────────────────────────────
+const App = () => {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+  // Apply tweaks to CSS variables
+  React.useEffect(() => {
+    const r = document.documentElement;
+    r.style.setProperty("--pb-primary", t.primary);
+    // derive hover deeper by mixing with black
+    r.style.setProperty("--pb-primary-hover", t.primary);
+    const radiusMap = { sharp: { sm: 2, base: 4, lg: 6, xl: 8 }, rounded: { sm: 6, base: 8, lg: 12, xl: 16 }, pill: { sm: 999, base: 999, lg: 999, xl: 999 } };
+    const rd = radiusMap[t.radius] || radiusMap.rounded;
+    r.style.setProperty("--pb-radius-sm", rd.sm + "px");
+    r.style.setProperty("--pb-radius",    rd.base + "px");
+    r.style.setProperty("--pb-radius-lg", rd.lg + "px");
+    r.style.setProperty("--pb-radius-xl", rd.xl + "px");
+  }, [t.primary, t.radius]);
+
+  return (
+    <>
+      <DesignCanvas>
+        <DCSection id="brand" title="Brand & system" subtitle="Cover · tokens · komponen dasar">
+          <DCArtboard id="cover"  label="Cover"  width={1280} height={720}><BrandCover/></DCArtboard>
+          <DCArtboard id="tokens" label="Design tokens" width={1280} height={720}><TokensReference/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="auth" title="Auth" subtitle="Login admin · desktop + mobile">
+          <DCArtboard id="login-d" label="Login · desktop" width={1440} height={900}><LoginScreen/></DCArtboard>
+          <DCArtboard id="login-m" label="Login · mobile"  width={390}  height={844}><LoginScreen mobile/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="admin" title="Admin dashboard" subtitle="Desktop manager + mobile companion">
+          <DCArtboard id="dash-d" label="Dashboard · desktop" width={1440} height={900}><DashboardScreen/></DCArtboard>
+          <DCArtboard id="dash-m" label="Dashboard · mobile"  width={390}  height={844}><DashboardMobile/></DCArtboard>
+          <DCArtboard id="cabang" label="Manajemen cabang"    width={1440} height={900}><CabangScreen/></DCArtboard>
+          <DCArtboard id="printer" label="Manajemen printer"  width={1440} height={900}><PrinterScreen/></DCArtboard>
+          <DCArtboard id="frame"  label="Frame builder"       width={1440} height={900}><FrameBuilderScreen/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="welcome" title="Kiosk · 1 Start screen" subtitle="2 variasi · pilih satu via Tweaks panel">
+          <DCArtboard id="welcome-a" label="Welcome · A (light)" width={1920} height={1080}>
+            {t.heroVariant === "A" ? <KioskWelcomeA/> : <KioskWelcomeB/>}
+          </DCArtboard>
+          <DCArtboard id="welcome-b" label="Welcome · B (dark)" width={1920} height={1080}>
+            {t.heroVariant === "A" ? <KioskWelcomeB/> : <KioskWelcomeA/>}
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="kiosk" title="Kiosk customer flow" subtitle="1920 × 1080 · landscape · 13 layar berurutan">
+          <DCArtboard id="payment"   label="2 · Pilih bayar"        width={1920} height={1080}><KioskPayment/></DCArtboard>
+          <DCArtboard id="qris"      label="3a · QRIS"              width={1920} height={1080}><KioskQRIS/></DCArtboard>
+          <DCArtboard id="voucher"   label="3b · Voucher"           width={1920} height={1080}><KioskVoucher/></DCArtboard>
+          <DCArtboard id="validate"  label="4 · Validasi sukses"    width={1920} height={1080}><KioskValidating/></DCArtboard>
+          <DCArtboard id="frame-s"   label="5 · Pilih frame"        width={1920} height={1080}><KioskFrameSelect/></DCArtboard>
+          <DCArtboard id="capture"   label="6 · Ambil foto"         width={1920} height={1080}><KioskCapture/></DCArtboard>
+          <DCArtboard id="preview"   label="7 · Preview + retake"   width={1920} height={1080}><KioskPreview/></DCArtboard>
+          <DCArtboard id="filter"    label="8 · Pilih filter"       width={1920} height={1080}><KioskFilter/></DCArtboard>
+          <DCArtboard id="qty"       label="9 · Jumlah print"       width={1920} height={1080}><KioskPrintQty/></DCArtboard>
+          <DCArtboard id="confirm"   label="10 · Generate final"    width={1920} height={1080}><KioskConfirm/></DCArtboard>
+          <DCArtboard id="printing"  label="11 · Print otomatis"    width={1920} height={1080}><KioskPrinting/></DCArtboard>
+          <DCArtboard id="download"  label="12 · Download QR"       width={1920} height={1080}><KioskDownload/></DCArtboard>
+          <DCArtboard id="thanks"    label="13 · Selesai"           width={1920} height={1080}><KioskThanks/></DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+
+      <TweaksPanel title="Tweaks">
+        <TweakSection label="Brand">
+          <TweakColor
+            label="Primary color"
+            value={t.primary}
+            onChange={(v) => setTweak('primary', v)}
+            options={["#F5FA0C", "#FF5C1F", "#1FB8C9", "#A855F7", "#0A0A0A"]}
+          />
+          <TweakRadio
+            label="Hero kiosk variant"
+            value={t.heroVariant}
+            onChange={(v) => setTweak('heroVariant', v)}
+            options={[
+              { value: "A", label: "Light" },
+              { value: "B", label: "Dark" },
+            ]}
+          />
+        </TweakSection>
+
+        <TweakSection label="Shape & density">
+          <TweakRadio
+            label="Border radius"
+            value={t.radius}
+            onChange={(v) => setTweak('radius', v)}
+            options={[
+              { value: "sharp",   label: "Sharp" },
+              { value: "rounded", label: "Rounded" },
+              { value: "pill",    label: "Pill" },
+            ]}
+          />
+          <TweakRadio
+            label="Density"
+            value={t.density}
+            onChange={(v) => setTweak('density', v)}
+            options={[
+              { value: "compact",     label: "Compact" },
+              { value: "comfortable", label: "Comfy" },
+            ]}
+          />
+        </TweakSection>
+      </TweaksPanel>
+    </>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById("app")).render(<App/>);
+</script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e9]: philobooth
+      - generic [ref=e10]:
+        - generic [ref=e20]: Langkah 5 / 8
+        - generic [ref=e21]:
+          - img [ref=e22]
+          - text: Senayan City
+          - generic [ref=e26]: ·
+          - text: 14:32
+    - main [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e31]:
+          - img [ref=e32]
+          - generic [ref=e35]: Meminta izin kamera…
+        - generic [ref=e36]:
+          - button "Ambil foto slot 1" [disabled] [ref=e37]:
+            - img [ref=e38]
+            - text: Ambil foto slot 1
+          - generic "Lanjut otomatis ke slot berikutnya setelah foto diambil" [ref=e41] [cursor=pointer]:
+            - checkbox "Auto-lanjut" [checked] [ref=e42]
+            - text: Auto-lanjut
+      - generic [ref=e43]:
+        - generic [ref=e44]:
+          - generic [ref=e45]: Preview frame · Confetti Pop
+          - generic [ref=e46]: 0/4 foto siap
+        - generic [ref=e49]:
+          - text: Klik slot terisi untuk
+          - strong [ref=e50]: retake
+          - text: · 4 foto lagi
+    - contentinfo [ref=e51]:
+      - button "← Pilih frame lain" [ref=e52] [cursor=pointer]:
+        - img [ref=e53]
+        - text: ← Pilih frame lain
+      - button [ref=e55] [cursor=pointer]:
+        - img [ref=e56]
+  - region "Notifications alt+T"

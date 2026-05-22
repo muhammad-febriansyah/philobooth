@@ -1,0 +1,128 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic:
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+    - generic [ref=e4]:
+      - banner [ref=e5]:
+        - generic [ref=e10]: philobooth
+        - generic [ref=e11]:
+          - generic [ref=e21]: Langkah 7 / 8
+          - generic [ref=e22]:
+            - img [ref=e23]
+            - text: Senayan City
+            - generic [ref=e27]: ·
+            - text: 14:32
+      - main [ref=e28]:
+        - generic [ref=e30]:
+          - img "Foto 1" [ref=e32]
+          - img "Foto 2" [ref=e34]
+          - img "Foto 3" [ref=e36]
+          - img "Foto 4" [ref=e38]
+          - img "Foto 5" [ref=e40]
+          - img "Foto 6" [ref=e42]
+          - img "Foto 7" [ref=e44]
+          - img "Foto 8" [ref=e46]
+          - img "Polaroid Frame"
+          - generic [ref=e47]: Filter · Original
+        - generic [ref=e48]:
+          - generic [ref=e49]: Langkah 7 · Filter
+          - heading "Pilih filter" [level=1] [ref=e51]
+          - paragraph [ref=e52]: 20 filter siap pakai · berlaku untuk semua 8 foto.
+          - generic [ref=e53]:
+            - button "Original Original" [ref=e54] [cursor=pointer]:
+              - img "Original" [ref=e56]
+              - generic [ref=e57]: Original
+            - button "Vivid Vivid" [ref=e58] [cursor=pointer]:
+              - img "Vivid" [ref=e60]
+              - generic [ref=e61]: Vivid
+            - button "Warm Warm" [ref=e62] [cursor=pointer]:
+              - img "Warm" [ref=e64]
+              - generic [ref=e65]: Warm
+            - button "Cool Cool" [ref=e66] [cursor=pointer]:
+              - img "Cool" [ref=e68]
+              - generic [ref=e69]: Cool
+            - button "Film Film" [ref=e70] [cursor=pointer]:
+              - img "Film" [ref=e72]
+              - generic [ref=e73]: Film
+            - button "B&W B&W" [ref=e74] [cursor=pointer]:
+              - img "B&W" [ref=e76]
+              - generic [ref=e77]: B&W
+            - button "Fade Fade" [ref=e78] [cursor=pointer]:
+              - img "Fade" [ref=e80]
+              - generic [ref=e81]: Fade
+            - button "Mono Mono" [ref=e82] [cursor=pointer]:
+              - img "Mono" [ref=e84]
+              - generic [ref=e85]: Mono
+            - button "Pastel Pastel" [ref=e86] [cursor=pointer]:
+              - img "Pastel" [ref=e88]
+              - generic [ref=e89]: Pastel
+            - button "Sunset Sunset" [ref=e90] [cursor=pointer]:
+              - img "Sunset" [ref=e92]
+              - generic [ref=e93]: Sunset
+            - button "Vintage Vintage" [ref=e94] [cursor=pointer]:
+              - img "Vintage" [ref=e96]
+              - generic [ref=e97]: Vintage
+            - button "Retro Retro" [ref=e98] [cursor=pointer]:
+              - img "Retro" [ref=e100]
+              - generic [ref=e101]: Retro
+            - button "Polaroid Polaroid" [ref=e102] [cursor=pointer]:
+              - img "Polaroid" [ref=e104]
+              - generic [ref=e105]: Polaroid
+            - button "Drama Drama" [ref=e106] [cursor=pointer]:
+              - img "Drama" [ref=e108]
+              - generic [ref=e109]: Drama
+            - button "Soft Soft" [ref=e110] [cursor=pointer]:
+              - img "Soft" [ref=e112]
+              - generic [ref=e113]: Soft
+            - button "Noir Noir" [ref=e114] [cursor=pointer]:
+              - img "Noir" [ref=e116]
+              - generic [ref=e117]: Noir
+            - button "Vibrant Vibrant" [ref=e118] [cursor=pointer]:
+              - img "Vibrant" [ref=e120]
+              - generic [ref=e121]: Vibrant
+            - button "Cyber Cyber" [ref=e122] [cursor=pointer]:
+              - img "Cyber" [ref=e124]
+              - generic [ref=e125]: Cyber
+            - button "Y2K Y2K" [ref=e126] [cursor=pointer]:
+              - img "Y2K" [ref=e128]
+              - generic [ref=e129]: Y2K
+            - button "Lomo Lomo" [ref=e130] [cursor=pointer]:
+              - img "Lomo" [ref=e132]
+              - generic [ref=e133]: Lomo
+          - generic [ref=e134]:
+            - generic [ref=e135]: Tambah teks (opsional)
+            - 'textbox "contoh: anniversary 2026" [ref=e136]'
+            - generic [ref=e137]:
+              - generic [ref=e138]: Max 30 karakter · tampil di footer cetakan
+              - generic [ref=e139]: 0/30
+            - generic [ref=e140] [cursor=pointer]:
+              - checkbox "Tambahkan tanggal hari ini 22 MEI 2026" [checked] [ref=e141]
+              - generic [ref=e142]: Tambahkan tanggal hari ini
+              - generic [ref=e143]: 22 MEI 2026
+          - button "Lanjut, atur jumlah cetak" [ref=e144] [cursor=pointer]:
+            - text: Lanjut, atur jumlah cetak
+            - img [ref=e146]
+  - region "Notifications alt+T"

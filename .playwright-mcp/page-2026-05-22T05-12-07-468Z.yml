@@ -1,0 +1,65 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic:
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+    - generic [ref=e4]:
+      - img
+      - banner [ref=e5]:
+        - generic [ref=e10]: philobooth
+        - generic [ref=e11]:
+          - generic [ref=e21]: Langkah 3 / 8
+          - generic [ref=e22]:
+            - img [ref=e23]
+            - text: Senayan City
+            - generic [ref=e27]: ·
+            - text: 14:32
+      - main [ref=e28]:
+        - img [ref=e30]
+        - generic [ref=e32]: Langkah 3 · Pembayaran berhasil
+        - heading "Pembayaran lunas." [level=1] [ref=e35]
+        - paragraph [ref=e36]: Voucher diterima. Yuk pilih frame favoritmu.
+        - generic [ref=e37]:
+          - generic [ref=e38]:
+            - generic [ref=e39]: Order ID
+            - code [ref=e40]: PB-20260522-XGSPKN
+          - generic [ref=e41]:
+            - generic [ref=e42]: Metode
+            - text: Voucher
+          - generic [ref=e43]:
+            - generic [ref=e44]: Total dibayar
+            - generic [ref=e45]:
+              - text: Rp 0
+              - generic [ref=e46]: Hemat Rp 35.000
+        - generic [ref=e47]:
+          - generic [ref=e48]:
+            - text: Lanjut otomatis dalam
+            - strong [ref=e49]: "5"
+            - text: detik
+          - button "Pilih frame sekarang" [ref=e50] [cursor=pointer]:
+            - text: Pilih frame sekarang
+            - img [ref=e52]
+          - button "Batalkan sesi" [ref=e54] [cursor=pointer]
+  - region "Notifications alt+T"

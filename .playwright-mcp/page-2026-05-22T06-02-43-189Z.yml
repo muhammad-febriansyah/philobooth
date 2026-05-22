@@ -1,0 +1,75 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic:
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+    - generic [ref=e4]:
+      - banner [ref=e5]:
+        - generic [ref=e10]: philobooth
+        - generic [ref=e11]:
+          - generic [ref=e21]: Langkah 2 / 8
+          - generic [ref=e22]:
+            - img [ref=e23]
+            - text: Senayan City
+            - generic [ref=e27]: ·
+            - text: 14:32
+      - main [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e30]: Langkah 2 · QRIS
+          - heading "Scan untuk bayar" [level=2] [ref=e31]
+          - paragraph [ref=e32]: Buka aplikasi e-wallet atau m-banking, lalu scan kode di sebelah kanan.
+          - generic [ref=e33]:
+            - generic [ref=e34]:
+              - generic [ref=e35]: Total dibayar
+              - generic [ref=e36]: Rp 35.000
+            - generic [ref=e37]:
+              - generic [ref=e38]: Order ID
+              - generic [ref=e39]: PB-20260522-9LJZUI
+          - generic [ref=e40]:
+            - img [ref=e41]
+            - generic [ref=e43]: Layar lanjut otomatis setelah pembayaran terdeteksi.
+            - generic [ref=e44]: menunggu
+          - generic [ref=e46]:
+            - generic [ref=e47]: GoPay
+            - generic [ref=e48]: DANA
+            - generic [ref=e49]: OVO
+            - generic [ref=e50]: ShopeePay
+            - generic [ref=e51]: BCA
+        - generic [ref=e53]:
+          - generic [ref=e54]:
+            - generic [ref=e55]: QRIS
+            - generic [ref=e60]: philobooth
+          - img [ref=e62]
+          - generic [ref=e401]:
+            - text: Berlaku 5 menit · sisa
+            - strong [ref=e402]: 04:43
+      - contentinfo [ref=e403]:
+        - button "Kembali" [ref=e404] [cursor=pointer]:
+          - img [ref=e405]
+          - text: Kembali
+        - button "Saya sudah bayar" [ref=e407] [cursor=pointer]:
+          - text: Saya sudah bayar
+          - img [ref=e408]
+  - region "Notifications alt+T"

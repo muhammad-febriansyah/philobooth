@@ -1,0 +1,244 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e10]: philobooth
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - link "Dashboard" [ref=e13] [cursor=pointer]:
+            - /url: /dashboard
+            - img [ref=e14]
+            - generic [ref=e19]: Dashboard
+          - link "Booth (kiosk)" [ref=e20] [cursor=pointer]:
+            - /url: /kiosk/welcome
+            - img [ref=e21]
+            - generic [ref=e24]: Booth (kiosk)
+            - img [ref=e25]
+        - generic [ref=e28]:
+          - generic [ref=e29]: Operasional
+          - link "Cabang" [ref=e30] [cursor=pointer]:
+            - /url: /admin/cabang
+            - img [ref=e31]
+            - generic [ref=e35]: Cabang
+          - link "Printer" [ref=e36] [cursor=pointer]:
+            - /url: /admin/printer
+            - img [ref=e37]
+            - generic [ref=e41]: Printer
+          - link "Frame builder" [ref=e42] [cursor=pointer]:
+            - /url: /admin/frames
+            - img [ref=e43]
+            - generic [ref=e45]: Frame builder
+          - link "Voucher" [ref=e46] [cursor=pointer]:
+            - /url: /admin/voucher
+            - img [ref=e47]
+            - generic [ref=e49]: Voucher
+          - link "Transaksi" [ref=e50] [cursor=pointer]:
+            - /url: /admin/transaksi
+            - img [ref=e51]
+            - generic [ref=e53]: Transaksi
+        - generic [ref=e54]:
+          - generic [ref=e55]: Pengelolaan
+          - link "User & role" [ref=e56] [cursor=pointer]:
+            - /url: /admin/users
+            - img [ref=e57]
+            - generic [ref=e62]: User & role
+          - link "Pengaturan" [ref=e63] [cursor=pointer]:
+            - /url: /admin/settings
+            - img [ref=e64]
+            - generic [ref=e67]: Pengaturan
+      - generic [ref=e69]:
+        - generic [ref=e70]: SA
+        - generic [ref=e71]:
+          - generic [ref=e72]: Super Admin
+          - generic [ref=e73]: Super admin
+        - generic [ref=e74]:
+          - link "Profil & akun" [ref=e75] [cursor=pointer]:
+            - /url: /settings/profile
+            - img [ref=e76]
+          - button "Keluar" [ref=e79] [cursor=pointer]:
+            - img [ref=e80]
+    - generic [ref=e83]:
+      - banner [ref=e84]:
+        - button "Toggle sidebar" [ref=e85] [cursor=pointer]:
+          - img [ref=e86]
+        - generic [ref=e87]:
+          - img
+          - textbox "Cari" [ref=e88]:
+            - /placeholder: Cari transaksi, cabang, voucher…
+          - generic: ⌘K
+        - button "Menu akun" [ref=e89] [cursor=pointer]:
+          - generic [ref=e90]: SA
+          - generic [ref=e91]:
+            - generic [ref=e92]: Super Admin
+            - generic [ref=e93]: Super admin
+          - img [ref=e94]
+      - main [ref=e96]:
+        - main [ref=e97]:
+          - generic [ref=e98]:
+            - generic [ref=e99]:
+              - heading "Dashboard overview" [level=1] [ref=e100]
+              - paragraph [ref=e101]: Jumat, 22 Mei 2026
+            - generic [ref=e102]:
+              - button "14 hari terakhir" [ref=e103] [cursor=pointer]:
+                - img [ref=e104]
+                - text: 14 hari terakhir
+              - button "Ekspor" [ref=e106] [cursor=pointer]:
+                - img [ref=e107]
+                - text: Ekspor
+          - generic [ref=e110]:
+            - generic [ref=e111]:
+              - img [ref=e113]
+              - generic [ref=e117]: Revenue hari ini
+              - generic [ref=e118]: Rp 0
+              - generic [ref=e119]:
+                - img [ref=e120]
+                - text: "-100%"
+                - generic [ref=e123]: vs kemarin
+            - generic [ref=e124]:
+              - img [ref=e126]
+              - generic [ref=e130]: Cetakan
+              - generic [ref=e131]: "1"
+              - generic [ref=e132]:
+                - img [ref=e133]
+                - text: "-97.5%"
+                - generic [ref=e136]: vs kemarin
+            - generic [ref=e137]:
+              - img [ref=e139]
+              - generic [ref=e141]: Transaksi
+              - generic [ref=e142]: "1"
+              - generic [ref=e143]:
+                - img [ref=e144]
+                - text: "-96%"
+                - generic [ref=e147]: vs kemarin
+            - generic [ref=e148]:
+              - img [ref=e150]
+              - generic [ref=e153]: Avg basket
+              - generic [ref=e154]: Rp 0
+              - generic [ref=e155]:
+                - img [ref=e156]
+                - text: "-100%"
+                - generic [ref=e159]: vs kemarin
+          - generic [ref=e160]:
+            - generic [ref=e161]:
+              - generic [ref=e163]:
+                - heading "Revenue 14 hari terakhir" [level=3] [ref=e164]
+                - paragraph [ref=e165]: Total Rp 1.25 jt
+              - generic [ref=e167]:
+                - generic [ref=e170]: 9/5
+                - generic [ref=e173]: 10/5
+                - generic [ref=e176]: 11/5
+                - generic [ref=e179]: 12/5
+                - generic [ref=e182]: 13/5
+                - generic [ref=e185]: 14/5
+                - generic [ref=e188]: 15/5
+                - generic [ref=e191]: 16/5
+                - generic [ref=e194]: 17/5
+                - generic [ref=e197]: 18/5
+                - generic [ref=e200]: 19/5
+                - generic [ref=e203]: 20/5
+                - generic [ref=e206]: 21/5
+                - generic [ref=e209]: 22/5
+            - generic [ref=e210]:
+              - heading "Top cabang" [level=3] [ref=e211]
+              - paragraph [ref=e212]: Berdasarkan revenue hari ini
+              - generic [ref=e213]:
+                - generic [ref=e214]:
+                  - generic [ref=e215]: BSD City Mall
+                  - generic [ref=e216]: Rp 0
+                - generic [ref=e218]: 1 transaksi
+          - generic [ref=e219]:
+            - generic [ref=e220]:
+              - generic [ref=e221]:
+                - heading "Status printer" [level=3] [ref=e222]
+                - paragraph [ref=e223]: Top 5 berdasarkan job hari ini
+              - generic [ref=e224]:
+                - generic [ref=e225]:
+                  - img [ref=e227]
+                  - generic [ref=e231]:
+                    - generic [ref=e232]: Printer 1 Epson L8050
+                    - generic [ref=e233]: Senayan City
+                  - generic [ref=e235]: Kertas 75%
+                  - generic [ref=e238]: 0 job
+                  - generic [ref=e239]: Online
+                - generic [ref=e241]:
+                  - img [ref=e243]
+                  - generic [ref=e247]:
+                    - generic [ref=e248]: Printer 1 Epson L3210
+                    - generic [ref=e249]: Grand Indonesia
+                  - generic [ref=e251]: Kertas 75%
+                  - generic [ref=e254]: 0 job
+                  - generic [ref=e255]: Online
+                - generic [ref=e257]:
+                  - img [ref=e259]
+                  - generic [ref=e263]:
+                    - generic [ref=e264]: Printer 1 Epson L3210
+                    - generic [ref=e265]: Pondok Indah Mall
+                  - generic [ref=e267]: Kertas 75%
+                  - generic [ref=e270]: 0 job
+                  - generic [ref=e271]: Online
+                - generic [ref=e273]:
+                  - img [ref=e275]
+                  - generic [ref=e279]:
+                    - generic [ref=e280]: Printer 2 Epson L8050
+                    - generic [ref=e281]: Pondok Indah Mall
+                  - generic [ref=e283]: Kertas 75%
+                  - generic [ref=e286]: 0 job
+                  - generic [ref=e287]: Online
+                - generic [ref=e289]:
+                  - img [ref=e291]
+                  - generic [ref=e295]:
+                    - generic [ref=e296]: Printer 1 Epson L3210
+                    - generic [ref=e297]: Kota Kasablanka
+                  - generic [ref=e299]: Kertas 75%
+                  - generic [ref=e302]: 0 job
+                  - generic [ref=e303]: Online
+            - generic [ref=e305]:
+              - generic [ref=e306]:
+                - heading "Transaksi terakhir" [level=3] [ref=e307]
+                - paragraph [ref=e308]: 5 transaksi terbaru
+              - generic [ref=e309]:
+                - generic [ref=e310]:
+                  - generic [ref=e311]:
+                    - generic [ref=e312]:
+                      - text: PB-20260522-RZN4GW
+                      - generic [ref=e313]: Lunas
+                    - generic [ref=e314]: BSD City Mall · STRIP · 1 lembar · Voucher
+                  - generic [ref=e315]:
+                    - generic [ref=e316]: Rp 0
+                    - generic [ref=e317]: 3 jam yang lalu
+                - generic [ref=e318]:
+                  - generic [ref=e319]:
+                    - generic [ref=e320]:
+                      - text: PB-20260522-HDOA2Q
+                      - generic [ref=e321]: Lunas
+                    - generic [ref=e322]: Senayan City · STRIP · 1 lembar · Voucher
+                  - generic [ref=e323]:
+                    - generic [ref=e324]: Rp 0
+                    - generic [ref=e325]: 3 jam yang lalu
+                - generic [ref=e326]:
+                  - generic [ref=e327]:
+                    - generic [ref=e328]:
+                      - text: PB-20260522-OYU1OR
+                      - generic [ref=e329]: Pending
+                    - generic [ref=e330]: Senayan City · STRIP · 1 lembar · —
+                  - generic [ref=e331]:
+                    - generic [ref=e332]: Rp 0
+                    - generic [ref=e333]: 4 jam yang lalu
+                - generic [ref=e334]:
+                  - generic [ref=e335]:
+                    - generic [ref=e336]:
+                      - text: PB-20260521-BLSYLW
+                      - generic [ref=e337]: Lunas
+                    - generic [ref=e338]: Kota Kasablanka · STRIP · 1 lembar · QRIS (DOKU)
+                  - generic [ref=e339]:
+                    - generic [ref=e340]: Rp 50.000
+                    - generic [ref=e341]: 15 jam yang lalu
+                - generic [ref=e342]:
+                  - generic [ref=e343]:
+                    - generic [ref=e344]:
+                      - text: PB-20260521-15A7IE
+                      - generic [ref=e345]: Lunas
+                    - generic [ref=e346]: Kota Kasablanka · STRIP · 1 lembar · Voucher
+                  - generic [ref=e347]:
+                    - generic [ref=e348]: Rp 50.000
+                    - generic [ref=e349]: 15 jam yang lalu
+  - region "Notifications alt+T"

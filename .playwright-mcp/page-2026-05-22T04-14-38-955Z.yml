@@ -1,0 +1,93 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e9]: philobooth
+      - generic [ref=e10]:
+        - generic [ref=e20]: Langkah 4 / 8
+        - generic [ref=e21]:
+          - img [ref=e22]
+          - text: Senayan City
+          - generic [ref=e26]: ·
+          - text: 14:32
+    - main [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e30]:
+            - generic [ref=e31]: Langkah 4 · Pilih frame
+            - heading "Pilih frame favoritmu" [level=1] [ref=e33]
+            - paragraph [ref=e34]: 8 desain tersedia · klik untuk preview
+          - generic [ref=e35]:
+            - img [ref=e36]
+            - searchbox "Cari frame…" [ref=e39]
+        - generic [ref=e40]:
+          - button "Semua" [ref=e41] [cursor=pointer]
+          - button "Minimalist" [ref=e42] [cursor=pointer]
+          - button "Birthday" [ref=e43] [cursor=pointer]
+          - button "K-pop" [ref=e44] [cursor=pointer]
+          - button "Anniversary" [ref=e45] [cursor=pointer]
+          - button "Cute" [ref=e46] [cursor=pointer]
+          - button "Wedding" [ref=e47] [cursor=pointer]
+        - generic [ref=e49]:
+          - button "4 slot Bold Yellow Minimalist" [ref=e50] [cursor=pointer]:
+            - generic [ref=e51]:
+              - img [ref=e52]
+              - generic [ref=e56]: 4 slot
+            - generic [ref=e57]:
+              - generic "Bold Yellow" [ref=e58]
+              - generic [ref=e59]: Minimalist
+          - button "Cake & Candles 8 slot Cake & Candles Birthday" [ref=e60] [cursor=pointer]:
+            - generic [ref=e61]:
+              - img "Cake & Candles" [ref=e62]
+              - generic [ref=e63]: 8 slot
+            - generic [ref=e64]:
+              - generic "Cake & Candles" [ref=e65]
+              - generic [ref=e66]: Birthday
+          - button "4 slot Confetti Pop Birthday" [ref=e67] [cursor=pointer]:
+            - generic [ref=e68]:
+              - img [ref=e69]
+              - generic [ref=e73]: 4 slot
+            - generic [ref=e74]:
+              - generic "Confetti Pop" [ref=e75]
+              - generic [ref=e76]: Birthday
+          - button "4 slot K-pop Stars K-pop" [ref=e77] [cursor=pointer]:
+            - generic [ref=e78]:
+              - img [ref=e79]
+              - generic [ref=e83]: 4 slot
+            - generic [ref=e84]:
+              - generic "K-pop Stars" [ref=e85]
+              - generic [ref=e86]: K-pop
+          - button "4 slot Pastel Heart Anniversary" [ref=e87] [cursor=pointer]:
+            - generic [ref=e88]:
+              - img [ref=e89]
+              - generic [ref=e93]: 4 slot
+            - generic [ref=e94]:
+              - generic "Pastel Heart" [ref=e95]
+              - generic [ref=e96]: Anniversary
+          - button "Polaroid Frame 8 slot Polaroid Frame Minimalist" [ref=e97] [cursor=pointer]:
+            - generic [ref=e98]:
+              - img "Polaroid Frame" [ref=e99]
+              - generic [ref=e100]: 8 slot
+            - generic [ref=e101]:
+              - generic "Polaroid Frame" [ref=e102]
+              - generic [ref=e103]: Minimalist
+          - button "4 slot Sunny Strip Cute" [ref=e104] [cursor=pointer]:
+            - generic [ref=e105]:
+              - img [ref=e106]
+              - generic [ref=e110]: 4 slot
+            - generic [ref=e111]:
+              - generic "Sunny Strip" [ref=e112]
+              - generic [ref=e113]: Cute
+          - button "4 slot Wedding Lace Wedding" [ref=e114] [cursor=pointer]:
+            - generic [ref=e115]:
+              - img [ref=e116]
+              - generic [ref=e120]: 4 slot
+            - generic [ref=e121]:
+              - generic "Wedding Lace" [ref=e122]
+              - generic [ref=e123]: Wedding
+      - generic [ref=e124]:
+        - generic [ref=e125]: Preview frame
+        - generic [ref=e126]:
+          - img [ref=e128]
+          - generic [ref=e130]: Pilih dulu frame
+          - generic [ref=e131]: Klik salah satu frame di kiri buat lihat preview & detail.
+  - region "Notifications alt+T"

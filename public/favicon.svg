@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>Philobooth</title>
+  <rect x="4" y="4" width="56" height="56" rx="12" ry="12" fill="#F5FA0C" stroke="#0A0A0A" stroke-width="4"/>
+  <circle cx="32" cy="34" r="13" fill="none" stroke="#0A0A0A" stroke-width="5"/>
+  <circle cx="32" cy="34" r="5" fill="#0A0A0A"/>
+  <circle cx="48" cy="18" r="4" fill="#0A0A0A"/>
+</svg>

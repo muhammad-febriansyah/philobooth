@@ -1,0 +1,60 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e9]: philobooth
+      - generic [ref=e11]:
+        - img [ref=e12]
+        - text: Senayan City
+        - generic [ref=e16]: ·
+        - text: 14:32
+    - main [ref=e20]:
+      - generic [ref=e21]:
+        - generic [ref=e22]: Booth siap pakai
+        - heading "Cetak momen, bukan cuma foto." [level=1] [ref=e24]:
+          - text: Cetak momen, bukan cuma
+          - emphasis [ref=e25]: foto.
+        - paragraph [ref=e26]: Pilih frame, ambil foto, bayar pakai QRIS — 3 menit dari sini ke selesai.
+        - button "Mulai sesi" [ref=e27] [cursor=pointer]:
+          - img [ref=e28]
+          - text: Mulai sesi
+          - img [ref=e31]
+      - generic [ref=e33]:
+        - generic [ref=e34]:
+          - generic [ref=e35]:
+            - generic [ref=e36]:
+              - img [ref=e39]
+              - img [ref=e45]
+              - img [ref=e51]
+            - generic [ref=e55]: PHILOBOOTH ✨ 22·05·26
+          - generic [ref=e56]:
+            - generic [ref=e57]:
+              - img [ref=e60]
+              - img [ref=e66]
+              - img [ref=e72]
+            - generic [ref=e76]: PHILOBOOTH ✨ 22·05·26
+          - generic [ref=e77]:
+            - generic [ref=e78]:
+              - img [ref=e81]
+              - img [ref=e87]
+              - img [ref=e93]
+            - generic [ref=e97]: PHILOBOOTH ✨ 22·05·26
+        - generic [ref=e99]:
+          - generic [ref=e100]:
+            - generic [ref=e101]: ✨ 100% original you
+            - generic [ref=e102]: ·
+            - generic [ref=e103]: 30+ FRAMES SIAP PAKAI
+            - generic [ref=e104]: ·
+            - generic [ref=e105]: QRIS & VOUCHER
+            - generic [ref=e106]: ·
+            - generic [ref=e107]: CETAK 4R · STRIP 2×6
+            - generic [ref=e108]: ·
+          - generic [ref=e109]:
+            - generic [ref=e110]: ✨ 100% original you
+            - generic [ref=e111]: ·
+            - generic [ref=e112]: 30+ FRAMES SIAP PAKAI
+            - generic [ref=e113]: ·
+            - generic [ref=e114]: QRIS & VOUCHER
+            - generic [ref=e115]: ·
+            - generic [ref=e116]: CETAK 4R · STRIP 2×6
+            - generic [ref=e117]: ·
+  - region "Notifications alt+T"

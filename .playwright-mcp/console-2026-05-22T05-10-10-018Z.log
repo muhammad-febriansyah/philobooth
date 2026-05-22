@@ -1,0 +1,7 @@
+[      63ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://127.0.0.1:8000/_boost/browser-logs @ http://127.0.0.1:8000/kiosk/validate:172
+[      77ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://[::1]:5182/resources/js/pages/kiosk/validate.tsx:0
+[      88ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:8000/kiosk/validate:231
+[     101ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://[::1]:5182/resources/js/pages/kiosk/validate.tsx?t=1779426505889:0
+[     106ms] Failed to fetch dynamically imported module: http://[::1]:5182/resources/js/pages/kiosk/validate.tsx?t=1779426505889
+[  109580ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://127.0.0.1:8000/_boost/browser-logs @ http://127.0.0.1:8000/kiosk/validate:172
+[  109758ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:8000/kiosk/validate:231

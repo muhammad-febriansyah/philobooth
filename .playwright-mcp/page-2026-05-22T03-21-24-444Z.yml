@@ -1,0 +1,353 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e10]: philobooth
+      - generic [ref=e12]:
+        - link "Dashboard" [ref=e13] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e14]
+          - generic [ref=e19]: Dashboard
+        - link "Booth (kiosk)" [ref=e20] [cursor=pointer]:
+          - /url: /kiosk/welcome
+          - img [ref=e21]
+          - generic [ref=e24]: Booth (kiosk)
+          - img [ref=e25]
+        - link "Cabang" [ref=e28] [cursor=pointer]:
+          - /url: /admin/cabang
+          - img [ref=e29]
+          - generic [ref=e33]: Cabang
+        - link "Printer" [ref=e34] [cursor=pointer]:
+          - /url: /admin/printer
+          - img [ref=e35]
+          - generic [ref=e39]: Printer
+        - link "Frame builder" [ref=e40] [cursor=pointer]:
+          - /url: /admin/frames
+          - img [ref=e41]
+          - generic [ref=e43]: Frame builder
+        - link "Voucher" [ref=e44] [cursor=pointer]:
+          - /url: /admin/voucher
+          - img [ref=e45]
+          - generic [ref=e47]: Voucher
+        - link "Transaksi" [ref=e48] [cursor=pointer]:
+          - /url: /admin/transaksi
+          - img [ref=e49]
+          - generic [ref=e51]: Transaksi
+        - link "User & role" [ref=e52] [cursor=pointer]:
+          - /url: /admin/users
+          - img [ref=e53]
+          - generic [ref=e58]: User & role
+        - link "Pengaturan" [ref=e59] [cursor=pointer]:
+          - /url: /admin/settings
+          - img [ref=e60]
+          - generic [ref=e63]: Pengaturan
+      - generic [ref=e64]:
+        - link "Settings" [ref=e66] [cursor=pointer]:
+          - /url: /settings/profile
+          - img [ref=e67]
+          - generic [ref=e70]: Settings
+        - button "Keluar" [ref=e71] [cursor=pointer]:
+          - img [ref=e72]
+          - generic [ref=e75]: Keluar
+        - generic [ref=e76]:
+          - generic [ref=e77]: SA
+          - generic [ref=e78]:
+            - generic [ref=e79]: Super Admin
+            - generic [ref=e80]: Super admin
+    - generic [ref=e81]:
+      - banner [ref=e82]:
+        - button "Toggle sidebar" [ref=e83] [cursor=pointer]:
+          - img [ref=e84]
+        - generic [ref=e85]:
+          - img [ref=e86]
+          - textbox "Cari transaksi, cabang, voucher…" [ref=e89]
+        - button [ref=e90] [cursor=pointer]:
+          - img [ref=e91]
+        - button "Transaksi baru" [ref=e95] [cursor=pointer]:
+          - img [ref=e96]
+          - text: Transaksi baru
+        - generic [ref=e97]: RA
+      - generic [ref=e98]:
+        - heading "Manajemen voucher" [level=1] [ref=e100]
+        - button "Tambah voucher" [ref=e102] [cursor=pointer]:
+          - img [ref=e103]
+          - text: Tambah voucher
+      - generic [ref=e104]:
+        - generic [ref=e105]:
+          - img [ref=e107]
+          - generic [ref=e109]: Total voucher
+          - generic [ref=e110]: "18"
+        - generic [ref=e111]:
+          - img [ref=e113]
+          - generic [ref=e115]: Aktif
+          - generic [ref=e116]: "18"
+        - generic [ref=e117]:
+          - img [ref=e119]
+          - generic [ref=e123]: Tersedia
+          - generic [ref=e124]: "18"
+        - generic [ref=e125]:
+          - img [ref=e127]
+          - generic [ref=e129]: Sudah dipakai
+          - generic [ref=e130]: "0"
+      - generic [ref=e131]:
+        - generic [ref=e132]:
+          - generic [ref=e133]:
+            - img [ref=e134]
+            - textbox "Cari nama atau kode voucher…" [ref=e137]
+          - combobox [ref=e138]:
+            - option "Semua cabang" [selected]
+            - option "BSD City Mall"
+            - option "Grand Indonesia"
+            - option "Kota Kasablanka"
+            - option "Pondok Indah Mall"
+            - option "Senayan City"
+          - combobox [ref=e139]:
+            - option "Semua status" [selected]
+            - option "Aktif"
+            - option "Nonaktif"
+        - table [ref=e141]:
+          - rowgroup [ref=e150]:
+            - row "Nama Kode Cabang Pakai Berlaku Status Aksi" [ref=e151]:
+              - columnheader "Nama" [ref=e152]
+              - columnheader "Kode" [ref=e153]
+              - columnheader "Cabang" [ref=e154]
+              - columnheader "Pakai" [ref=e155]
+              - columnheader "Berlaku" [ref=e156]
+              - columnheader "Status" [ref=e157]
+              - columnheader "Aksi" [ref=e158]
+          - rowgroup [ref=e159]:
+            - 'row "Kupon Random #8 GIFT158XPG Semua cabang 0 / 17 16 Mei 2026 – 13 Sep 2026 Aktif Edit" [ref=e160]':
+              - 'cell "Kupon Random #8" [ref=e161]':
+                - 'generic "Kupon Random #8" [ref=e162]'
+              - cell "GIFT158XPG" [ref=e163]:
+                - code [ref=e164]: GIFT158XPG
+              - cell "Semua cabang" [ref=e165]
+              - cell "0 / 17" [ref=e166]:
+                - generic [ref=e167]: 0 / 17
+              - cell "16 Mei 2026 – 13 Sep 2026" [ref=e168]:
+                - generic "16 Mei 2026 – 13 Sep 2026" [ref=e169]
+              - cell "Aktif" [ref=e170]:
+                - generic [ref=e171]: Aktif
+              - cell "Edit" [ref=e172]:
+                - generic [ref=e173]:
+                  - button "Edit" [ref=e174] [cursor=pointer]:
+                    - img [ref=e175]
+                    - text: Edit
+                  - button [ref=e178] [cursor=pointer]:
+                    - img [ref=e179]
+            - 'row "Kupon Random #7 GIFT582JVC Semua cabang 0 / 14 19 Mei 2026 – 20 Agu 2026 Aktif Edit" [ref=e181]':
+              - 'cell "Kupon Random #7" [ref=e182]':
+                - 'generic "Kupon Random #7" [ref=e183]'
+              - cell "GIFT582JVC" [ref=e184]:
+                - code [ref=e185]: GIFT582JVC
+              - cell "Semua cabang" [ref=e186]
+              - cell "0 / 14" [ref=e187]:
+                - generic [ref=e188]: 0 / 14
+              - cell "19 Mei 2026 – 20 Agu 2026" [ref=e189]:
+                - generic "19 Mei 2026 – 20 Agu 2026" [ref=e190]
+              - cell "Aktif" [ref=e191]:
+                - generic [ref=e192]: Aktif
+              - cell "Edit" [ref=e193]:
+                - generic [ref=e194]:
+                  - button "Edit" [ref=e195] [cursor=pointer]:
+                    - img [ref=e196]
+                    - text: Edit
+                  - button [ref=e199] [cursor=pointer]:
+                    - img [ref=e200]
+            - 'row "Kupon Random #6 GIFT8770NP Semua cabang 0 / 9 24 Apr 2026 – 29 Jul 2026 Aktif Edit" [ref=e202]':
+              - 'cell "Kupon Random #6" [ref=e203]':
+                - 'generic "Kupon Random #6" [ref=e204]'
+              - cell "GIFT8770NP" [ref=e205]:
+                - code [ref=e206]: GIFT8770NP
+              - cell "Semua cabang" [ref=e207]
+              - cell "0 / 9" [ref=e208]:
+                - generic [ref=e209]: 0 / 9
+              - cell "24 Apr 2026 – 29 Jul 2026" [ref=e210]:
+                - generic "24 Apr 2026 – 29 Jul 2026" [ref=e211]
+              - cell "Aktif" [ref=e212]:
+                - generic [ref=e213]: Aktif
+              - cell "Edit" [ref=e214]:
+                - generic [ref=e215]:
+                  - button "Edit" [ref=e216] [cursor=pointer]:
+                    - img [ref=e217]
+                    - text: Edit
+                  - button [ref=e220] [cursor=pointer]:
+                    - img [ref=e221]
+            - 'row "Kupon Random #5 GIFT535AO9 Semua cabang 0 / 14 27 Apr 2026 – 06 Okt 2026 Aktif Edit" [ref=e223]':
+              - 'cell "Kupon Random #5" [ref=e224]':
+                - 'generic "Kupon Random #5" [ref=e225]'
+              - cell "GIFT535AO9" [ref=e226]:
+                - code [ref=e227]: GIFT535AO9
+              - cell "Semua cabang" [ref=e228]
+              - cell "0 / 14" [ref=e229]:
+                - generic [ref=e230]: 0 / 14
+              - cell "27 Apr 2026 – 06 Okt 2026" [ref=e231]:
+                - generic "27 Apr 2026 – 06 Okt 2026" [ref=e232]
+              - cell "Aktif" [ref=e233]:
+                - generic [ref=e234]: Aktif
+              - cell "Edit" [ref=e235]:
+                - generic [ref=e236]:
+                  - button "Edit" [ref=e237] [cursor=pointer]:
+                    - img [ref=e238]
+                    - text: Edit
+                  - button [ref=e241] [cursor=pointer]:
+                    - img [ref=e242]
+            - 'row "Kupon Random #4 GIFT939YZP Semua cabang 0 / 15 28 Apr 2026 – 17 Agu 2026 Aktif Edit" [ref=e244]':
+              - 'cell "Kupon Random #4" [ref=e245]':
+                - 'generic "Kupon Random #4" [ref=e246]'
+              - cell "GIFT939YZP" [ref=e247]:
+                - code [ref=e248]: GIFT939YZP
+              - cell "Semua cabang" [ref=e249]
+              - cell "0 / 15" [ref=e250]:
+                - generic [ref=e251]: 0 / 15
+              - cell "28 Apr 2026 – 17 Agu 2026" [ref=e252]:
+                - generic "28 Apr 2026 – 17 Agu 2026" [ref=e253]
+              - cell "Aktif" [ref=e254]:
+                - generic [ref=e255]: Aktif
+              - cell "Edit" [ref=e256]:
+                - generic [ref=e257]:
+                  - button "Edit" [ref=e258] [cursor=pointer]:
+                    - img [ref=e259]
+                    - text: Edit
+                  - button [ref=e262] [cursor=pointer]:
+                    - img [ref=e263]
+            - 'row "Kupon Random #3 GIFT798PBA Semua cabang 0 / 14 16 Mei 2026 – 17 Okt 2026 Aktif Edit" [ref=e265]':
+              - 'cell "Kupon Random #3" [ref=e266]':
+                - 'generic "Kupon Random #3" [ref=e267]'
+              - cell "GIFT798PBA" [ref=e268]:
+                - code [ref=e269]: GIFT798PBA
+              - cell "Semua cabang" [ref=e270]
+              - cell "0 / 14" [ref=e271]:
+                - generic [ref=e272]: 0 / 14
+              - cell "16 Mei 2026 – 17 Okt 2026" [ref=e273]:
+                - generic "16 Mei 2026 – 17 Okt 2026" [ref=e274]
+              - cell "Aktif" [ref=e275]:
+                - generic [ref=e276]: Aktif
+              - cell "Edit" [ref=e277]:
+                - generic [ref=e278]:
+                  - button "Edit" [ref=e279] [cursor=pointer]:
+                    - img [ref=e280]
+                    - text: Edit
+                  - button [ref=e283] [cursor=pointer]:
+                    - img [ref=e284]
+            - 'row "Kupon Random #2 GIFT907DNS Semua cabang 0 / 9 03 Mei 2026 – 04 Okt 2026 Aktif Edit" [ref=e286]':
+              - 'cell "Kupon Random #2" [ref=e287]':
+                - 'generic "Kupon Random #2" [ref=e288]'
+              - cell "GIFT907DNS" [ref=e289]:
+                - code [ref=e290]: GIFT907DNS
+              - cell "Semua cabang" [ref=e291]
+              - cell "0 / 9" [ref=e292]:
+                - generic [ref=e293]: 0 / 9
+              - cell "03 Mei 2026 – 04 Okt 2026" [ref=e294]:
+                - generic "03 Mei 2026 – 04 Okt 2026" [ref=e295]
+              - cell "Aktif" [ref=e296]:
+                - generic [ref=e297]: Aktif
+              - cell "Edit" [ref=e298]:
+                - generic [ref=e299]:
+                  - button "Edit" [ref=e300] [cursor=pointer]:
+                    - img [ref=e301]
+                    - text: Edit
+                  - button [ref=e304] [cursor=pointer]:
+                    - img [ref=e305]
+            - 'row "Kupon Random #1 GIFT305JLH Semua cabang 0 / 11 20 Mei 2026 – 30 Jun 2026 Aktif Edit" [ref=e307]':
+              - 'cell "Kupon Random #1" [ref=e308]':
+                - 'generic "Kupon Random #1" [ref=e309]'
+              - cell "GIFT305JLH" [ref=e310]:
+                - code [ref=e311]: GIFT305JLH
+              - cell "Semua cabang" [ref=e312]
+              - cell "0 / 11" [ref=e313]:
+                - generic [ref=e314]: 0 / 11
+              - cell "20 Mei 2026 – 30 Jun 2026" [ref=e315]:
+                - generic "20 Mei 2026 – 30 Jun 2026" [ref=e316]
+              - cell "Aktif" [ref=e317]:
+                - generic [ref=e318]: Aktif
+              - cell "Edit" [ref=e319]:
+                - generic [ref=e320]:
+                  - button "Edit" [ref=e321] [cursor=pointer]:
+                    - img [ref=e322]
+                    - text: Edit
+                  - button [ref=e325] [cursor=pointer]:
+                    - img [ref=e326]
+            - row "Sample Demo Kode DEMO2026 Semua cabang 0 / 100 Tanpa batas Aktif Edit" [ref=e328]:
+              - cell "Sample Demo Kode" [ref=e329]:
+                - generic "Sample Demo Kode" [ref=e330]
+              - cell "DEMO2026" [ref=e331]:
+                - code [ref=e332]: DEMO2026
+              - cell "Semua cabang" [ref=e333]
+              - cell "0 / 100" [ref=e334]:
+                - generic [ref=e335]: 0 / 100
+              - cell "Tanpa batas" [ref=e336]:
+                - generic [ref=e337]: Tanpa batas
+              - cell "Aktif" [ref=e338]:
+                - generic [ref=e339]: Aktif
+              - cell "Edit" [ref=e340]:
+                - generic [ref=e341]:
+                  - button "Edit" [ref=e342] [cursor=pointer]:
+                    - img [ref=e343]
+                    - text: Edit
+                  - button [ref=e346] [cursor=pointer]:
+                    - img [ref=e347]
+            - row "Kupon Tester (Expired) TESTEXP Semua cabang 0 / 5 01 Jan 2025 – 31 Des 2025 Aktif Edit" [ref=e349]:
+              - cell "Kupon Tester (Expired)" [ref=e350]:
+                - generic "Kupon Tester (Expired)" [ref=e351]
+              - cell "TESTEXP" [ref=e352]:
+                - code [ref=e353]: TESTEXP
+              - cell "Semua cabang" [ref=e354]
+              - cell "0 / 5" [ref=e355]:
+                - generic [ref=e356]: 0 / 5
+              - cell "01 Jan 2025 – 31 Des 2025" [ref=e357]:
+                - generic "01 Jan 2025 – 31 Des 2025" [ref=e358]
+              - cell "Aktif" [ref=e359]:
+                - generic [ref=e360]: Aktif
+              - cell "Edit" [ref=e361]:
+                - generic [ref=e362]:
+                  - button "Edit" [ref=e363] [cursor=pointer]:
+                    - img [ref=e364]
+                    - text: Edit
+                  - button [ref=e367] [cursor=pointer]:
+                    - img [ref=e368]
+            - row "Weekend Giveaway WEEKEND Semua cabang 0 / 40 Tanpa batas Aktif Edit" [ref=e370]:
+              - cell "Weekend Giveaway" [ref=e371]:
+                - generic "Weekend Giveaway" [ref=e372]
+              - cell "WEEKEND" [ref=e373]:
+                - code [ref=e374]: WEEKEND
+              - cell "Semua cabang" [ref=e375]
+              - cell "0 / 40" [ref=e376]:
+                - generic [ref=e377]: 0 / 40
+              - cell "Tanpa batas" [ref=e378]:
+                - generic [ref=e379]: Tanpa batas
+              - cell "Aktif" [ref=e380]:
+                - generic [ref=e381]: Aktif
+              - cell "Edit" [ref=e382]:
+                - generic [ref=e383]:
+                  - button "Edit" [ref=e384] [cursor=pointer]:
+                    - img [ref=e385]
+                    - text: Edit
+                  - button [ref=e388] [cursor=pointer]:
+                    - img [ref=e389]
+            - row "Corporate Event Pack CORPSCP10 Senayan City 0 / 10 22 Mei 2026 – 22 Jul 2026 Aktif Edit" [ref=e391]:
+              - cell "Corporate Event Pack" [ref=e392]:
+                - generic "Corporate Event Pack" [ref=e393]
+              - cell "CORPSCP10" [ref=e394]:
+                - code [ref=e395]: CORPSCP10
+              - cell "Senayan City" [ref=e396]
+              - cell "0 / 10" [ref=e397]:
+                - generic [ref=e398]: 0 / 10
+              - cell "22 Mei 2026 – 22 Jul 2026" [ref=e399]:
+                - generic "22 Mei 2026 – 22 Jul 2026" [ref=e400]
+              - cell "Aktif" [ref=e401]:
+                - generic [ref=e402]: Aktif
+              - cell "Edit" [ref=e403]:
+                - generic [ref=e404]:
+                  - button "Edit" [ref=e405] [cursor=pointer]:
+                    - img [ref=e406]
+                    - text: Edit
+                  - button [ref=e409] [cursor=pointer]:
+                    - img [ref=e410]
+        - generic [ref=e412]:
+          - generic [ref=e413]: Menampilkan 1–12 dari 18 voucher
+          - generic [ref=e414]:
+            - button "←" [disabled] [ref=e415]
+            - button "1" [ref=e416] [cursor=pointer]
+            - button "2" [ref=e417] [cursor=pointer]
+            - button "→" [ref=e418] [cursor=pointer]
+  - region "Notifications alt+T"

@@ -1,0 +1,18 @@
+[     153ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://127.0.0.1:8000/_boost/browser-logs @ http://127.0.0.1:8000/admin/voucher:172
+[     203ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:8000/admin/voucher:231
+[   33043ms] ReferenceError: IconBtn is not defined
+    at http://[::1]:5182/Applications/laravel/philobooth/resources/js/pages/admin/voucher.tsx?t=1779420290039:937:43
+    at Array.map (<anonymous>)
+    at Voucher (http://[::1]:5182/Applications/laravel/philobooth/resources/js/pages/admin/voucher.tsx?t=1779420290039:793:28)
+    at Object.react_stack_bottom_frame (http://[::1]:5182/node_modules/.vite/deps/@inertiajs_react.js?v=337571cf:18525:12)
+    at renderWithHooks (http://[::1]:5182/node_modules/.vite/deps/@inertiajs_react.js?v=337571cf:9870:19)
+    at updateFunctionComponent (http://[::1]:5182/node_modules/.vite/deps/@inertiajs_react.js?v=337571cf:11226:16)
+    at beginWork (http://[::1]:5182/node_modules/.vite/deps/@inertiajs_react.js?v=337571cf:11797:20)
+    at runWithFiberInDEV (http://[::1]:5182/node_modules/.vite/deps/@inertiajs_react.js?v=337571cf:6508:66)
+    at performUnitOfWork (http://[::1]:5182/node_modules/.vite/deps/@inertiajs_react.js?v=337571cf:14086:92)
+    at workLoopSync (http://[::1]:5182/node_modules/.vite/deps/@inertiajs_react.js?v=337571cf:13982:37)
+[   33042ms] [WARNING] %s
+
+%s
+ An error occurred in the <Voucher> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://127.0.0.1:8000/admin/voucher:231

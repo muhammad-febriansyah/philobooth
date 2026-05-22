@@ -1,0 +1,80 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic:
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+    - generic [ref=e4]:
+      - banner [ref=e5]:
+        - generic [ref=e10]: philobooth
+        - generic [ref=e11]:
+          - generic [ref=e21]: Langkah 8 / 8
+          - generic [ref=e22]:
+            - img [ref=e23]
+            - text: Senayan City
+            - generic [ref=e27]: ·
+            - text: 14:32
+      - main [ref=e28]:
+        - img "Polaroid Frame" [ref=e31]
+        - generic [ref=e32]:
+          - generic [ref=e33]: Langkah 8 · Konfirmasi
+          - heading "Siap dicetak?" [level=1] [ref=e35]:
+            - text: Siap
+            - emphasis [ref=e36]:
+              - text: dicetak?
+              - img [ref=e37]
+          - paragraph [ref=e39]: Cek detail di bawah. Setelah cetak, foto tidak bisa diubah lagi.
+          - generic [ref=e40]:
+            - generic [ref=e41]:
+              - generic [ref=e42]: Order ID
+              - generic "PB-20260522-XGSPKN" [ref=e43]
+            - generic [ref=e44]:
+              - generic [ref=e45]: Frame
+              - generic "Polaroid Frame · Minimalist" [ref=e46]
+            - generic [ref=e47]:
+              - generic [ref=e48]: Paper size
+              - generic "STRIP · Photo Strip 2x6" [ref=e49]
+            - generic [ref=e50]:
+              - generic [ref=e51]: Filter
+              - generic "Tidak ada" [ref=e52]
+            - generic [ref=e53]:
+              - generic [ref=e54]: Foto
+              - generic "8 pose" [ref=e55]
+            - generic [ref=e56]:
+              - generic [ref=e57]: Jumlah cetak
+              - generic "1 lembar" [ref=e58]
+            - generic [ref=e59]:
+              - generic [ref=e60]: Metode bayar
+              - generic "Voucher" [ref=e61]
+          - generic [ref=e62]:
+            - generic [ref=e63]:
+              - generic [ref=e64]: Total bayar
+              - generic [ref=e65]: Rp 0
+            - generic [ref=e66]: HEMAT Rp 35.000
+          - button "Cetak sekarang" [ref=e67] [cursor=pointer]:
+            - img [ref=e68]
+            - text: Cetak sekarang
+            - img [ref=e73]
+          - button "← Kembali ubah detail" [ref=e75] [cursor=pointer]
+  - region "Notifications alt+T"

@@ -1,0 +1,65 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e9]: philobooth
+      - generic [ref=e10]:
+        - generic [ref=e20]: Langkah 8 / 8
+        - generic [ref=e21]:
+          - img [ref=e22]
+          - text: Senayan City
+          - generic [ref=e26]: ·
+          - text: 14:32
+    - main [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]: Selesai · Hasilmu siap
+        - heading "Foto kamu jadi !" [level=1] [ref=e31]:
+          - text: Foto kamu
+          - emphasis [ref=e32]:
+            - text: jadi
+            - img [ref=e33]
+          - text: "!"
+        - paragraph [ref=e35]: Cetakan keluar di slot bawah booth. Scan QR di kanan buat simpan versi digital ke HP kamu.
+        - img "Hasil cetak" [ref=e37]
+        - generic [ref=e38]:
+          - link "Download foto (PNG)" [ref=e39] [cursor=pointer]:
+            - /url: http://127.0.0.1:8000/d/gyJNLGNGGy1t1o1Otxgt4OBgMrlk57fsN1zDliJE/file
+            - img [ref=e40]
+            - text: Download foto (PNG)
+          - button "Salin link" [ref=e43] [cursor=pointer]:
+            - img [ref=e44]
+            - text: Salin link
+      - generic [ref=e47]:
+        - generic [ref=e48]:
+          - generic [ref=e49]: Simpan versi digital
+          - generic [ref=e50]: Scan QR pakai HP kamu
+          - generic [ref=e51]:
+            - img "QR Code" [ref=e53]
+            - generic [ref=e54]:
+              - generic [ref=e55]:
+                - img [ref=e56]
+                - generic [ref=e60]: Aktif 7 hari
+              - text: Berisi versi resolusi tinggi tanpa watermark. Bisa repost di Instagram & story.
+              - generic [ref=e61]: 127.0.0.1:8000/d/gyJNLGNGGy1t1o1Otxgt4OBgMrlk57fsN1zDliJE
+        - generic [ref=e62]:
+          - generic [ref=e63]: Struk pesanan
+          - generic [ref=e64]:
+            - generic [ref=e65]: Order ID
+            - generic "PB-20260522-X44AHY" [ref=e66]
+          - generic [ref=e67]:
+            - generic [ref=e68]: Jumlah cetak
+            - generic "2 lembar" [ref=e69]
+          - generic [ref=e70]:
+            - generic [ref=e71]: Metode
+            - generic "Voucher" [ref=e72]
+          - generic [ref=e74]:
+            - generic [ref=e75]: Total bayar
+            - generic [ref=e76]: Rp 17.500
+        - button "Selesai (auto 60s)" [ref=e77] [cursor=pointer]:
+          - img [ref=e78]
+          - text: Selesai
+          - generic [ref=e80]: (auto 60s)
+        - generic [ref=e81]:
+          - text: Tag
+          - strong [ref=e82]: "@philobooth.id"
+          - text: kalau repost ✨
+  - region "Notifications alt+T"

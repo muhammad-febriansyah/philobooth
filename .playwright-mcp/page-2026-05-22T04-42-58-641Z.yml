@@ -1,0 +1,119 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic:
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+    - generic [ref=e4]:
+      - banner [ref=e5]:
+        - generic [ref=e10]: philobooth
+        - generic [ref=e11]:
+          - generic [ref=e21]: Langkah 4 / 8
+          - generic [ref=e22]:
+            - img [ref=e23]
+            - text: Senayan City
+            - generic [ref=e27]: ·
+            - text: 14:32
+      - main [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e30]:
+            - generic [ref=e31]:
+              - generic [ref=e32]: Langkah 4 · Pilih frame
+              - heading "Pilih frame favoritmu" [level=1] [ref=e34]
+              - paragraph [ref=e35]: 8 desain tersedia · klik untuk preview
+            - generic [ref=e36]:
+              - img [ref=e37]
+              - searchbox "Cari frame…" [ref=e40]
+          - generic [ref=e41]:
+            - button "Semua" [ref=e42] [cursor=pointer]
+            - button "Minimalist" [ref=e43] [cursor=pointer]
+            - button "Birthday" [ref=e44] [cursor=pointer]
+            - button "K-pop" [ref=e45] [cursor=pointer]
+            - button "Anniversary" [ref=e46] [cursor=pointer]
+            - button "Cute" [ref=e47] [cursor=pointer]
+            - button "Wedding" [ref=e48] [cursor=pointer]
+          - generic [ref=e50]:
+            - button "4 slot Bold Yellow Minimalist" [ref=e51] [cursor=pointer]:
+              - generic [ref=e52]:
+                - img [ref=e53]
+                - generic [ref=e57]: 4 slot
+              - generic [ref=e58]:
+                - generic "Bold Yellow" [ref=e59]
+                - generic [ref=e60]: Minimalist
+            - button "Cake & Candles 8 slot Cake & Candles Birthday" [ref=e61] [cursor=pointer]:
+              - generic [ref=e62]:
+                - img "Cake & Candles" [ref=e63]
+                - generic [ref=e64]: 8 slot
+              - generic [ref=e65]:
+                - generic "Cake & Candles" [ref=e66]
+                - generic [ref=e67]: Birthday
+            - button "4 slot Confetti Pop Birthday" [ref=e68] [cursor=pointer]:
+              - generic [ref=e69]:
+                - img [ref=e70]
+                - generic [ref=e74]: 4 slot
+              - generic [ref=e75]:
+                - generic "Confetti Pop" [ref=e76]
+                - generic [ref=e77]: Birthday
+            - button "4 slot K-pop Stars K-pop" [ref=e78] [cursor=pointer]:
+              - generic [ref=e79]:
+                - img [ref=e80]
+                - generic [ref=e84]: 4 slot
+              - generic [ref=e85]:
+                - generic "K-pop Stars" [ref=e86]
+                - generic [ref=e87]: K-pop
+            - button "4 slot Pastel Heart Anniversary" [ref=e88] [cursor=pointer]:
+              - generic [ref=e89]:
+                - img [ref=e90]
+                - generic [ref=e94]: 4 slot
+              - generic [ref=e95]:
+                - generic "Pastel Heart" [ref=e96]
+                - generic [ref=e97]: Anniversary
+            - button "Polaroid Frame 8 slot Polaroid Frame Minimalist" [ref=e98] [cursor=pointer]:
+              - generic [ref=e99]:
+                - img "Polaroid Frame" [ref=e100]
+                - generic [ref=e101]: 8 slot
+              - generic [ref=e102]:
+                - generic "Polaroid Frame" [ref=e103]
+                - generic [ref=e104]: Minimalist
+            - button "4 slot Sunny Strip Cute" [ref=e105] [cursor=pointer]:
+              - generic [ref=e106]:
+                - img [ref=e107]
+                - generic [ref=e111]: 4 slot
+              - generic [ref=e112]:
+                - generic "Sunny Strip" [ref=e113]
+                - generic [ref=e114]: Cute
+            - button "4 slot Wedding Lace Wedding" [ref=e115] [cursor=pointer]:
+              - generic [ref=e116]:
+                - img [ref=e117]
+                - generic [ref=e121]: 4 slot
+              - generic [ref=e122]:
+                - generic "Wedding Lace" [ref=e123]
+                - generic [ref=e124]: Wedding
+        - generic [ref=e125]:
+          - generic [ref=e126]: Preview frame
+          - generic [ref=e127]:
+            - img [ref=e129]
+            - generic [ref=e131]: Pilih dulu frame
+            - generic [ref=e132]: Klik salah satu frame di kiri buat lihat preview & detail.
+  - region "Notifications alt+T"

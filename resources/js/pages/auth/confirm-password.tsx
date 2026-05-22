@@ -1,0 +1,64 @@
+import { Form, Head } from '@inertiajs/react';
+import {
+    index as confirmOptions,
+    store as confirmStore,
+} from '@/actions/Laravel/Passkeys/Http/Controllers/PasskeyConfirmationController';
+import InputError from '@/components/input-error';
+import PasskeyVerify from '@/components/passkey-verify';
+import PasswordInput from '@/components/password-input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
+import AuthLayout from '@/layouts/auth-layout';
+import { store } from '@/routes/password/confirm';
+
+export default function ConfirmPassword() {
+    return (
+        <AuthLayout
+            title="Konfirmasi password"
+            description="Area aman. Masukkan password kamu untuk lanjut."
+        >
+            <Head title="Confirm password" />
+
+            <PasskeyVerify
+                routes={{
+                    options: confirmOptions(),
+                    submit: confirmStore(),
+                }}
+                label="Konfirmasi dengan passkey"
+                loadingLabel="Memverifikasi..."
+                separator="Atau pakai password"
+            />
+
+            <Form {...store.form()} resetOnSuccess={['password']}>
+                {({ processing, errors }) => (
+                    <div className="space-y-6">
+                        <div className="grid gap-2">
+                            <Label htmlFor="password">Password</Label>
+                            <PasswordInput
+                                id="password"
+                                name="password"
+                                placeholder="Password kamu"
+                                autoComplete="current-password"
+                                autoFocus
+                            />
+
+                            <InputError message={errors.password} />
+                        </div>
+
+                        <div className="flex items-center">
+                            <Button
+                                className="w-full"
+                                disabled={processing}
+                                data-test="confirm-password-button"
+                            >
+                                {processing && <Spinner />}
+                                Konfirmasi password
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </Form>
+        </AuthLayout>
+    );
+}

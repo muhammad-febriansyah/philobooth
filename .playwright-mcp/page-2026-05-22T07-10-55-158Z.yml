@@ -1,0 +1,83 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic:
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+    - generic [ref=e4]:
+      - banner [ref=e5]:
+        - generic [ref=e10]: philobooth
+        - generic [ref=e11]:
+          - generic [ref=e21]: Langkah 8 / 8
+          - generic [ref=e22]:
+            - img [ref=e23]
+            - text: Senayan City
+            - generic [ref=e27]: ·
+            - text: 14:32
+      - main [ref=e28]:
+        - generic [ref=e30]:
+          - img "Hasil" [ref=e31]
+          - generic [ref=e32]: ×3 LEMBAR
+        - generic [ref=e33]:
+          - generic [ref=e34]: Lembar tambahan · Voucher cover 1 lembar
+          - heading "Bayar tambahan" [level=1] [ref=e36]
+          - paragraph [ref=e37]:
+            - text: Voucher kamu sudah cover 1 lembar pertama. 2 lembar tambahan =
+            - strong [ref=e38]: Rp 35.000
+            - text: .
+          - generic [ref=e39]:
+            - generic [ref=e40]: Yang perlu dibayar
+            - generic [ref=e41]: Rp 35.000
+            - generic [ref=e42]: 2 lembar × Rp 17.500
+          - generic [ref=e43]:
+            - button "QRIS ~30 detik Scan QR pakai e-wallet atau m-banking GoPay OVO Dana BCA" [ref=e44] [cursor=pointer]:
+              - img [ref=e46]
+              - generic [ref=e51]:
+                - generic [ref=e52]:
+                  - generic [ref=e53]: QRIS
+                  - generic [ref=e54]:
+                    - img [ref=e55]
+                    - text: ~30 detik
+                - generic [ref=e59]: Scan QR pakai e-wallet atau m-banking
+                - generic [ref=e60]:
+                  - generic [ref=e61]: GoPay
+                  - generic [ref=e62]: OVO
+                  - generic [ref=e63]: Dana
+                  - generic [ref=e64]: BCA
+              - img [ref=e66]
+            - button "Tunai Manual Bayar ke operator di kasir cabang" [ref=e68] [cursor=pointer]:
+              - img [ref=e70]
+              - generic [ref=e74]:
+                - generic [ref=e75]:
+                  - generic [ref=e76]: Tunai
+                  - generic [ref=e77]:
+                    - img [ref=e78]
+                    - text: Manual
+                - generic [ref=e82]: Bayar ke operator di kasir cabang
+          - button "Bayar Rp 35.000" [ref=e84] [cursor=pointer]:
+            - img [ref=e85]
+            - text: Bayar Rp 35.000
+            - img [ref=e91]
+          - button "← Kurangi lembar (gratis kalau cuma 1)" [ref=e93] [cursor=pointer]
+  - region "Notifications alt+T"

@@ -1,0 +1,106 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e9]: philobooth
+      - generic [ref=e10]:
+        - generic [ref=e20]: Langkah 1 / 8
+        - generic [ref=e21]:
+          - img [ref=e22]
+          - text: Senayan City
+          - generic [ref=e26]: ·
+          - text: 14:32
+    - main [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]: Langkah 1 · Pembayaran
+        - heading "Cara bayar kesayanganmu ?" [level=1] [ref=e31]:
+          - text: Cara bayar
+          - emphasis [ref=e32]:
+            - text: kesayanganmu
+            - img [ref=e33]
+          - text: "?"
+        - paragraph [ref=e35]: Cepet, aman, terenkripsi. Pilih yang paling nyaman buat kamu.
+        - generic [ref=e36]:
+          - button "QRIS Recommended ~30 detik Scan QR pakai e-wallet, m-banking, atau kartu GoPay OVO Dana ShopeePay BCA BRI" [ref=e37] [cursor=pointer]:
+            - img [ref=e39]
+            - generic [ref=e44]:
+              - generic [ref=e45]:
+                - generic [ref=e46]: QRIS
+                - generic [ref=e47]: Recommended
+                - generic [ref=e48]:
+                  - img [ref=e49]
+                  - text: ~30 detik
+              - generic [ref=e53]: Scan QR pakai e-wallet, m-banking, atau kartu
+              - generic [ref=e54]:
+                - generic [ref=e55]: GoPay
+                - generic [ref=e56]: OVO
+                - generic [ref=e57]: Dana
+                - generic [ref=e58]: ShopeePay
+                - generic [ref=e59]: BCA
+                - generic [ref=e60]: BRI
+            - img [ref=e62]
+          - button "Voucher Instan Punya kode dari event atau partner? Pakai di sini 8 karakter Gratis sesi" [ref=e64] [cursor=pointer]:
+            - img [ref=e66]
+            - generic [ref=e68]:
+              - generic [ref=e69]:
+                - generic [ref=e70]: Voucher
+                - generic [ref=e71]:
+                  - img [ref=e72]
+                  - text: Instan
+              - generic [ref=e76]: Punya kode dari event atau partner? Pakai di sini
+              - generic [ref=e77]:
+                - generic [ref=e78]: 8 karakter
+                - generic [ref=e79]: Gratis sesi
+          - button "Bayar di kasir Soon Manual Tunjukkan total ke operator cabang" [disabled] [ref=e81]:
+            - img [ref=e83]
+            - generic [ref=e87]:
+              - generic [ref=e88]:
+                - generic [ref=e89]: Bayar di kasir
+                - generic [ref=e90]: Soon
+                - generic [ref=e91]:
+                  - img [ref=e92]
+                  - text: Manual
+              - generic [ref=e96]: Tunjukkan total ke operator cabang
+        - generic [ref=e98]:
+          - generic [ref=e99]:
+            - img [ref=e101]
+            - generic [ref=e104]:
+              - generic [ref=e105]: Refund auto
+              - generic [ref=e106]: Printer error = balik 100%
+          - generic [ref=e107]:
+            - img [ref=e109]
+            - generic [ref=e112]:
+              - generic [ref=e113]: Terenkripsi
+              - generic [ref=e114]: Transaksi via DOKU
+          - generic [ref=e115]:
+            - img [ref=e117]
+            - generic [ref=e121]:
+              - generic [ref=e122]: Instan
+              - generic [ref=e123]: ≤ 30 detik proses
+      - generic [ref=e124]:
+        - generic [ref=e125]: Ringkasan order
+        - generic [ref=e126]: Sesi photobooth
+        - generic [ref=e127]: "#PB-20260522-LMRSFS"
+        - generic [ref=e128]:
+          - generic [ref=e129]: Tarif sesi
+          - generic [ref=e130]: Rp 35.000
+        - generic [ref=e131]:
+          - generic [ref=e132]: Frame + filter
+          - generic [ref=e133]: Termasuk
+        - generic [ref=e134]:
+          - generic [ref=e135]: 1 lembar cetak
+          - generic [ref=e136]: Termasuk
+        - generic [ref=e137]:
+          - generic [ref=e138]: Digital download
+          - generic [ref=e139]: Termasuk
+        - generic [ref=e141]:
+          - generic [ref=e142]: Total
+          - generic [ref=e143]: Rp 35.000
+        - generic [ref=e144]: Bisa tambah lembar cetak di langkah akhir
+        - button "Bayar pakai QRIS" [ref=e145] [cursor=pointer]:
+          - img [ref=e146]
+          - text: Bayar pakai QRIS
+          - img [ref=e152]
+        - generic [ref=e154]:
+          - img [ref=e155]
+          - generic [ref=e158]: Refund otomatis kalau printer gagal
+  - region "Notifications alt+T"

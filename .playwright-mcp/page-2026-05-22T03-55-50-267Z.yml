@@ -1,0 +1,46 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e9]: philobooth
+      - generic [ref=e10]:
+        - generic [ref=e20]: Langkah 6 / 8
+        - generic [ref=e21]:
+          - img [ref=e22]
+          - text: Senayan City
+          - generic [ref=e26]: ·
+          - text: 14:32
+    - main [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]: Langkah 6 · Preview
+        - heading "Hasilmu kece." [level=1] [ref=e31]:
+          - text: Hasilmu
+          - emphasis [ref=e32]:
+            - text: kece.
+            - img [ref=e33]
+        - paragraph [ref=e35]: Cek dulu hasilnya. Kalau mau ada yang ditukar, kamu bisa ambil ulang semua foto.
+        - generic [ref=e36]:
+          - generic [ref=e37]:
+            - generic [ref=e38]: Frame
+            - generic "Cake & Candles" [ref=e39]
+          - generic [ref=e40]:
+            - generic [ref=e41]: Foto
+            - generic "8 / 8" [ref=e42]
+          - generic [ref=e43]:
+            - generic [ref=e44]: Order ID
+            - generic "PB-20260522-X2R1XY" [ref=e45]
+        - generic [ref=e46]:
+          - button "Lanjut, kasih filter" [ref=e47] [cursor=pointer]:
+            - text: Lanjut, kasih filter
+            - img [ref=e49]
+          - button "Ambil ulang" [ref=e51] [cursor=pointer]:
+            - img [ref=e52]
+            - text: Ambil ulang
+      - img "Cake & Candles" [ref=e57]
+    - contentinfo [ref=e58]:
+      - button "← Ambil ulang" [ref=e59] [cursor=pointer]:
+        - img [ref=e60]
+        - text: ← Ambil ulang
+      - button "Lanjut, kasih filter →" [ref=e62] [cursor=pointer]:
+        - text: Lanjut, kasih filter →
+        - img [ref=e63]
+  - region "Notifications alt+T"

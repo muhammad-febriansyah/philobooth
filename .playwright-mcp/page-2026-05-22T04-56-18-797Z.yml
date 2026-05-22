@@ -1,0 +1,133 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic:
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+    - generic [ref=e4]:
+      - banner [ref=e5]:
+        - generic [ref=e10]: philobooth
+        - generic [ref=e11]:
+          - generic [ref=e21]: Langkah 1 / 8
+          - generic [ref=e22]:
+            - img [ref=e23]
+            - text: Senayan City
+            - generic [ref=e27]: ·
+            - text: 14:32
+      - main [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e30]: Langkah 1 · Pembayaran
+          - heading "Cara bayar kesayanganmu ?" [level=1] [ref=e32]:
+            - text: Cara bayar
+            - emphasis [ref=e33]:
+              - text: kesayanganmu
+              - img [ref=e34]
+            - text: "?"
+          - paragraph [ref=e36]: Cepet, aman, terenkripsi. Pilih yang paling nyaman buat kamu.
+          - generic [ref=e37]:
+            - button "QRIS Recommended ~30 detik Scan QR pakai e-wallet, m-banking, atau kartu GoPay OVO Dana ShopeePay BCA BRI" [ref=e38] [cursor=pointer]:
+              - img [ref=e40]
+              - generic [ref=e45]:
+                - generic [ref=e46]:
+                  - generic [ref=e47]: QRIS
+                  - generic [ref=e48]: Recommended
+                  - generic [ref=e49]:
+                    - img [ref=e50]
+                    - text: ~30 detik
+                - generic [ref=e54]: Scan QR pakai e-wallet, m-banking, atau kartu
+                - generic [ref=e55]:
+                  - generic [ref=e56]: GoPay
+                  - generic [ref=e57]: OVO
+                  - generic [ref=e58]: Dana
+                  - generic [ref=e59]: ShopeePay
+                  - generic [ref=e60]: BCA
+                  - generic [ref=e61]: BRI
+            - button "Voucher Instan Punya kode dari event atau partner? Pakai di sini 8 karakter Gratis sesi" [ref=e63] [cursor=pointer]:
+              - img [ref=e65]
+              - generic [ref=e67]:
+                - generic [ref=e68]:
+                  - generic [ref=e69]: Voucher
+                  - generic [ref=e70]:
+                    - img [ref=e71]
+                    - text: Instan
+                - generic [ref=e75]: Punya kode dari event atau partner? Pakai di sini
+                - generic [ref=e76]:
+                  - generic [ref=e77]: 8 karakter
+                  - generic [ref=e78]: Gratis sesi
+              - img [ref=e80]
+            - button "Bayar di kasir Soon Manual Tunjukkan total ke operator cabang" [disabled] [ref=e82]:
+              - img [ref=e84]
+              - generic [ref=e88]:
+                - generic [ref=e89]:
+                  - generic [ref=e90]: Bayar di kasir
+                  - generic [ref=e91]: Soon
+                  - generic [ref=e92]:
+                    - img [ref=e93]
+                    - text: Manual
+                - generic [ref=e97]: Tunjukkan total ke operator cabang
+          - generic [ref=e99]:
+            - generic [ref=e100]:
+              - img [ref=e102]
+              - generic [ref=e105]:
+                - generic [ref=e106]: Refund auto
+                - generic [ref=e107]: Printer error = balik 100%
+            - generic [ref=e108]:
+              - img [ref=e110]
+              - generic [ref=e113]:
+                - generic [ref=e114]: Terenkripsi
+                - generic [ref=e115]: Transaksi via DOKU
+            - generic [ref=e116]:
+              - img [ref=e118]
+              - generic [ref=e122]:
+                - generic [ref=e123]: Instan
+                - generic [ref=e124]: ≤ 30 detik proses
+        - generic [ref=e125]:
+          - generic [ref=e126]: Ringkasan order
+          - generic [ref=e127]: Sesi photobooth
+          - generic [ref=e128]: "#PB-20260522-0BAXAA"
+          - generic [ref=e129]:
+            - generic [ref=e130]: Tarif sesi
+            - generic [ref=e131]: Rp 35.000
+          - generic [ref=e132]:
+            - generic [ref=e133]: Frame + filter
+            - generic [ref=e134]: Termasuk
+          - generic [ref=e135]:
+            - generic [ref=e136]: 1 lembar cetak
+            - generic [ref=e137]: Termasuk
+          - generic [ref=e138]:
+            - generic [ref=e139]: Digital download
+            - generic [ref=e140]: Termasuk
+          - generic [ref=e142]:
+            - generic [ref=e143]: Total
+            - generic [ref=e144]: Rp 0
+          - generic [ref=e145]: Bisa tambah lembar cetak di langkah akhir
+          - button "Bayar pakai Voucher" [ref=e147] [cursor=pointer]:
+            - generic [ref=e151]:
+              - img [ref=e152]
+              - text: Bayar pakai Voucher
+              - img [ref=e155]
+          - generic [ref=e157]:
+            - img [ref=e158]
+            - generic [ref=e161]: Refund otomatis kalau printer gagal
+  - region "Notifications alt+T"

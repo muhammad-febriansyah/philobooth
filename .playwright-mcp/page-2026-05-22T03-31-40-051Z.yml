@@ -1,0 +1,39 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - img
+    - banner [ref=e4]:
+      - generic [ref=e9]: philobooth
+      - generic [ref=e10]:
+        - generic [ref=e20]: Langkah 3 / 8
+        - generic [ref=e21]:
+          - img [ref=e22]
+          - text: Senayan City
+          - generic [ref=e26]: ·
+          - text: 14:32
+    - main [ref=e27]:
+      - img [ref=e29]
+      - generic [ref=e31]: Langkah 3 · Pembayaran berhasil
+      - heading "Pembayaran lunas." [level=1] [ref=e34]
+      - paragraph [ref=e35]: Voucher diterima. Yuk pilih frame favoritmu.
+      - generic [ref=e36]:
+        - generic [ref=e37]:
+          - generic [ref=e38]: Order ID
+          - code [ref=e39]: PB-20260522-HDOA2Q
+        - generic [ref=e40]:
+          - generic [ref=e41]: Metode
+          - text: Voucher
+        - generic [ref=e42]:
+          - generic [ref=e43]: Total dibayar
+          - generic [ref=e44]:
+            - text: Rp 0
+            - generic [ref=e45]: Hemat Rp 35.000
+      - generic [ref=e46]:
+        - generic [ref=e47]:
+          - text: Lanjut otomatis dalam
+          - strong [ref=e48]: "5"
+          - text: detik
+        - button "Pilih frame sekarang" [ref=e49] [cursor=pointer]:
+          - text: Pilih frame sekarang
+          - img [ref=e51]
+        - button "Batalkan sesi" [ref=e53] [cursor=pointer]
+  - region "Notifications alt+T"

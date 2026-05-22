@@ -1,0 +1,75 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e9]: philobooth
+      - generic [ref=e10]:
+        - generic [ref=e20]: Langkah 2 / 8
+        - generic [ref=e21]:
+          - img [ref=e22]
+          - text: Senayan City
+          - generic [ref=e26]: ·
+          - text: 14:32
+    - main [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]: Langkah 2 · Voucher
+        - heading "Masukkan kode voucher" [level=2] [ref=e31]
+        - paragraph [ref=e32]: Kode 8 karakter ada di balik kartu hadiah atau di email konfirmasi event.
+        - generic [ref=e33]:
+          - img [ref=e36]
+          - generic [ref=e38]:
+            - generic [ref=e39]: Cara pakai
+            - generic [ref=e40]: Ketik kode → tap Validasi
+            - generic [ref=e41]: Huruf besar/kecil tidak masalah · 8 karakter
+        - generic [ref=e42]:
+          - img [ref=e43]
+          - generic [ref=e45]: Sisa nominal voucher otomatis tercatat sebagai saldo philobooth.
+      - generic [ref=e46]:
+        - generic [ref=e57]:
+          - button "Q" [ref=e58] [cursor=pointer]
+          - button "W" [ref=e59] [cursor=pointer]
+          - button "E" [ref=e60] [cursor=pointer]
+          - button "R" [ref=e61] [cursor=pointer]
+          - button "T" [ref=e62] [cursor=pointer]
+          - button "Y" [ref=e63] [cursor=pointer]
+          - button "U" [ref=e64] [cursor=pointer]
+          - button "I" [ref=e65] [cursor=pointer]
+          - button "O" [ref=e66] [cursor=pointer]
+          - button "P" [ref=e67] [cursor=pointer]
+          - button "A" [ref=e68] [cursor=pointer]
+          - button "S" [ref=e69] [cursor=pointer]
+          - button "D" [ref=e70] [cursor=pointer]
+          - button "F" [ref=e71] [cursor=pointer]
+          - button "G" [ref=e72] [cursor=pointer]
+          - button "H" [ref=e73] [cursor=pointer]
+          - button "J" [ref=e74] [cursor=pointer]
+          - button "K" [ref=e75] [cursor=pointer]
+          - button "L" [ref=e76] [cursor=pointer]
+          - button "Z" [ref=e77] [cursor=pointer]
+          - button "X" [ref=e78] [cursor=pointer]
+          - button "C" [ref=e79] [cursor=pointer]
+          - button "V" [ref=e80] [cursor=pointer]
+          - button "B" [ref=e81] [cursor=pointer]
+          - button "N" [ref=e82] [cursor=pointer]
+          - button "M" [ref=e83] [cursor=pointer]
+          - button "1" [ref=e84] [cursor=pointer]
+          - button "2" [ref=e85] [cursor=pointer]
+          - button "3" [ref=e86] [cursor=pointer]
+          - button "4" [ref=e87] [cursor=pointer]
+          - button "5" [ref=e88] [cursor=pointer]
+          - button "6" [ref=e89] [cursor=pointer]
+          - button "7" [ref=e90] [cursor=pointer]
+          - button "8" [ref=e91] [cursor=pointer]
+          - button "9" [ref=e92] [cursor=pointer]
+          - button "0" [ref=e93] [cursor=pointer]
+          - button "Hapus" [disabled] [ref=e94]:
+            - img [ref=e95]
+            - text: Hapus
+          - button "Validasi voucher" [disabled] [ref=e97]
+        - generic [ref=e98]: "Tips: bisa juga ketik pakai keyboard fisik"
+    - contentinfo [ref=e99]:
+      - button "← Ganti metode bayar" [ref=e100] [cursor=pointer]:
+        - img [ref=e101]
+        - text: ← Ganti metode bayar
+      - button [ref=e103] [cursor=pointer]:
+        - img [ref=e104]
+  - region "Notifications alt+T"

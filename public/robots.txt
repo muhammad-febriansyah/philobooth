@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+# Protect admin/auth/internal routes from indexing
+Disallow: /admin/
+Disallow: /dashboard
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /settings/
+Disallow: /storage/
+Disallow: /two-factor/
+
+Sitemap: /sitemap.xml
