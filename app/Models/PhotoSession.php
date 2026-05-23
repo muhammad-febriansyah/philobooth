@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\PaymentMethod;
 use App\Enums\SessionStatus;
 use App\Enums\SessionStep;
+use App\Enums\SessionType;
 use App\Models\Concerns\BelongsToBranch;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -21,6 +22,7 @@ class PhotoSession extends Model
     protected $casts = [
         'status' => SessionStatus::class,
         'current_step' => SessionStep::class,
+        'session_type' => SessionType::class,
         'payment_method' => PaymentMethod::class,
         'total_amount' => 'decimal:2',
         'discount_amount' => 'decimal:2',

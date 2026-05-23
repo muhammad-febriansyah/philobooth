@@ -103,7 +103,7 @@ export default function KioskVoucher() {
 
     return (
         <>
-            <Head title="Voucher — Kiosk" />
+            <Head title="Voucher — Philobooth" />
             <KioskScene>
                 <Spotlight
                     position="top-right"

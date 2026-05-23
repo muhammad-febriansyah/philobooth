@@ -79,7 +79,7 @@ export default function KioskPreview({
 
     return (
         <>
-            <Head title="Preview foto — Kiosk" />
+            <Head title="Preview foto — Philobooth" />
             <div
                 className="pb-root"
                 style={{

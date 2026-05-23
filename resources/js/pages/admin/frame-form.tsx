@@ -146,7 +146,7 @@ toast.error(flash.error);
                         <div
                             style={{
                                 display: 'grid',
-                                gridTemplateColumns: '1fr 1fr',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                                 gap: 24,
                                 alignItems: 'flex-start',
                             }}
@@ -435,7 +435,7 @@ toast.error(flash.error);
                                     <div
                                         style={{
                                             display: 'grid',
-                                            gridTemplateColumns: '1fr 1fr',
+                                            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                                             gap: 12,
                                             marginTop: 14,
                                         }}

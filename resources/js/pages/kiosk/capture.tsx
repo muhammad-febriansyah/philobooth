@@ -8,6 +8,7 @@ import {
     KioskHeader,
 } from '@/components/philobooth/kiosk-chrome';
 import { KioskScene } from '@/components/philobooth/kiosk-scene';
+import { playBeep, playShutter, unlockAudio } from '@/lib/sfx';
 
 type FrameSlot = {
     slot_number: number;
@@ -54,6 +55,25 @@ export default function KioskCapture({ frame }: Props) {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const fallbackInputRef = useRef<HTMLInputElement | null>(null);
+    const cameraBoxRef = useRef<HTMLDivElement | null>(null);
+    const [cameraFs, setCameraFs] = useState(false);
+
+    useEffect(() => {
+        const sync = () => {
+            setCameraFs(document.fullscreenElement === cameraBoxRef.current);
+        };
+        document.addEventListener('fullscreenchange', sync);
+
+        return () => document.removeEventListener('fullscreenchange', sync);
+    }, []);
+
+    function toggleCameraFs() {
+        if (document.fullscreenElement === cameraBoxRef.current) {
+            document.exitFullscreen().catch(() => {});
+        } else {
+            cameraBoxRef.current?.requestFullscreen().catch(() => {});
+        }
+    }
 
     const { setData, post, processing } = useForm<{ photos: File[] }>({
         photos: [],
@@ -120,6 +140,7 @@ return;
 return;
 }
 
+        unlockAudio();
         setCountdown(COUNTDOWN_FROM);
     }
 
@@ -133,6 +154,9 @@ return;
 
             return;
         }
+
+        // Countdown tick beep — higher pitch on the final "1".
+        playBeep(countdown === 1 ? 1100 : 740, 0.1, 0.16);
 
         const t = setTimeout(() => {
             setCountdown((c) => (c === null ? null : c - 1));
@@ -196,7 +220,8 @@ return;
                 setSlots(next);
                 syncForm(next);
 
-                // Flash effect
+                // Shutter + flash
+                playShutter();
                 setFlash(true);
                 setTimeout(() => setFlash(false), 200);
 
@@ -263,6 +288,21 @@ return;
     const filledCount = slots.filter(Boolean).length;
     const allFilled = filledCount === totalSlots && totalSlots > 0;
 
+    // Warn before refresh/close when there are unsaved photos in memory.
+    useEffect(() => {
+        if (filledCount === 0 || processing) {
+            return;
+        }
+
+        const handler = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+            e.returnValue = '';
+        };
+        window.addEventListener('beforeunload', handler);
+
+        return () => window.removeEventListener('beforeunload', handler);
+    }, [filledCount, processing]);
+
     if (!frame) {
         return (
             <div
@@ -284,7 +324,7 @@ return;
 
     return (
         <>
-            <Head title="Ambil foto — Kiosk" />
+            <Head title="Ambil foto — Philobooth" />
             <KioskScene>
                 <Spotlight
                     position="top-right"
@@ -326,12 +366,15 @@ return;
                         }}
                     >
                         <div
+                            ref={cameraBoxRef}
                             style={{
                                 position: 'relative',
                                 background: '#0A0A0A',
-                                borderRadius: 20,
+                                borderRadius: cameraFs ? 0 : 20,
                                 overflow: 'hidden',
-                                aspectRatio: '16 / 9',
+                                aspectRatio: cameraFs ? 'auto' : '16 / 9',
+                                width: cameraFs ? '100%' : undefined,
+                                height: cameraFs ? '100%' : undefined,
                                 boxShadow:
                                     '0 12px 32px rgba(10,10,10,0.18), 0 2px 6px rgba(10,10,10,0.06)',
                             }}
@@ -508,6 +551,219 @@ return;
                                     LIVE · Slot {activeSlot + 1} / {totalSlots}
                                 </div>
                             )}
+
+                            {/* Fullscreen toggle */}
+                            <button
+                                type="button"
+                                onClick={toggleCameraFs}
+                                title={
+                                    cameraFs
+                                        ? 'Keluar fullscreen kamera'
+                                        : 'Fullscreen kamera'
+                                }
+                                aria-label={
+                                    cameraFs
+                                        ? 'Keluar fullscreen kamera'
+                                        : 'Fullscreen kamera'
+                                }
+                                style={{
+                                    position: 'absolute',
+                                    top: 16,
+                                    right: 16,
+                                    width: 40,
+                                    height: 40,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: 0,
+                                    border: 'none',
+                                    borderRadius: 999,
+                                    background: 'rgba(10,10,10,0.65)',
+                                    backdropFilter: 'blur(8px)',
+                                    color: '#fff',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                <Icon
+                                    name={
+                                        cameraFs
+                                            ? 'fullscreen-exit'
+                                            : 'fullscreen'
+                                    }
+                                    size={18}
+                                />
+                            </button>
+
+                            {/* Floating frame preview (fullscreen mode) */}
+                            {cameraFs && (
+                                <div
+                                    style={{
+                                        position: 'absolute',
+                                        top: '50%',
+                                        right: 24,
+                                        transform: 'translateY(-50%)',
+                                        width: 'clamp(180px, 18vw, 280px)',
+                                        padding: 10,
+                                        background: 'rgba(10,10,10,0.65)',
+                                        backdropFilter: 'blur(10px)',
+                                        borderRadius: 16,
+                                        boxShadow:
+                                            '0 16px 40px rgba(0,0,0,0.45)',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 8,
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            fontSize: 11,
+                                            fontWeight: 700,
+                                            color: 'rgba(255,255,255,0.7)',
+                                            letterSpacing: '0.12em',
+                                            textTransform: 'uppercase',
+                                        }}
+                                    >
+                                        Preview · {frame.name}
+                                    </div>
+                                    <FramePreview
+                                        frame={frame}
+                                        slots={slots}
+                                        activeSlot={activeSlot}
+                                        onSlotClick={(idx) => {
+                                            if (slots[idx]) {
+                                                retakeSlot(idx);
+                                            } else {
+                                                setActiveSlot(idx);
+                                            }
+                                        }}
+                                    />
+                                    <div
+                                        style={{
+                                            fontSize: 11,
+                                            color: 'rgba(255,255,255,0.7)',
+                                            textAlign: 'center',
+                                        }}
+                                    >
+                                        {filledCount}/{totalSlots} foto siap
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* In-fullscreen controls: shoot button + slot dots */}
+                            {cameraFs && (
+                                <div
+                                    style={{
+                                        position: 'absolute',
+                                        bottom: 32,
+                                        left: 0,
+                                        right: 0,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        gap: 14,
+                                        pointerEvents: 'none',
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            gap: 6,
+                                            pointerEvents: 'auto',
+                                        }}
+                                    >
+                                        {Array.from({
+                                            length: totalSlots,
+                                        }).map((_, i) => (
+                                            <span
+                                                key={i}
+                                                style={{
+                                                    width: slots[i]
+                                                        ? 10
+                                                        : i === activeSlot
+                                                            ? 24
+                                                            : 10,
+                                                    height: 6,
+                                                    borderRadius: 3,
+                                                    background: slots[i]
+                                                        ? '#22C55E'
+                                                        : i === activeSlot
+                                                            ? 'var(--pb-primary)'
+                                                            : 'rgba(255,255,255,0.35)',
+                                                    transition:
+                                                        'all 200ms ease',
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={
+                                            allFilled
+                                                ? submit
+                                                : startCountdown
+                                        }
+                                        disabled={
+                                            processing ||
+                                            (allFilled
+                                                ? false
+                                                : cameraState !== 'ready' ||
+                                                  countdown !== null)
+                                        }
+                                        style={{
+                                            pointerEvents: 'auto',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: 10,
+                                            padding: '18px 40px',
+                                            borderRadius: 999,
+                                            border: 'none',
+                                            background: allFilled
+                                                ? '#22C55E'
+                                                : 'var(--pb-primary)',
+                                            color: allFilled
+                                                ? '#fff'
+                                                : '#0A0A0A',
+                                            fontSize: 18,
+                                            fontWeight: 800,
+                                            cursor: processing
+                                                ? 'wait'
+                                                : allFilled
+                                                    ? 'pointer'
+                                                    : cameraState === 'ready' &&
+                                                      countdown === null
+                                                        ? 'pointer'
+                                                        : 'not-allowed',
+                                            opacity:
+                                                processing
+                                                    ? 0.7
+                                                    : allFilled ||
+                                                      (cameraState === 'ready' &&
+                                                          countdown === null)
+                                                        ? 1
+                                                        : 0.55,
+                                            boxShadow:
+                                                '0 12px 32px rgba(0,0,0,0.45)',
+                                        }}
+                                    >
+                                        <Icon
+                                            name={
+                                                allFilled
+                                                    ? 'arrow-right'
+                                                    : 'camera'
+                                            }
+                                            size={22}
+                                        />
+                                        {allFilled
+                                            ? processing
+                                                ? 'Mengupload…'
+                                                : 'Lanjut ke preview'
+                                            : countdown !== null
+                                                ? `Bersiap… ${countdown}`
+                                                : `Ambil foto slot ${activeSlot + 1}/${totalSlots}`}
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         {/* Big shoot button + auto toggle */}
@@ -667,6 +923,37 @@ return;
                                 {filledCount}/{totalSlots} foto siap
                             </div>
                         </div>
+
+                        {/* Refresh-warning banner */}
+                        {filledCount > 0 && !processing && (
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'flex-start',
+                                    gap: 10,
+                                    padding: '10px 14px',
+                                    background: 'rgba(245,158,11,0.10)',
+                                    border: '1px solid rgba(245,158,11,0.35)',
+                                    borderRadius: 12,
+                                    color: '#92400E',
+                                    fontSize: 12.5,
+                                    lineHeight: 1.45,
+                                }}
+                                role="alert"
+                            >
+                                <Icon
+                                    name="alert"
+                                    size={16}
+                                    color="#D97706"
+                                />
+                                <div>
+                                    <strong>Jangan refresh halaman.</strong>{' '}
+                                    Foto yang sudah diambil tersimpan sementara
+                                    di browser dan akan hilang kalau halaman
+                                    di-reload sebelum lanjut ke preview.
+                                </div>
+                            </div>
+                        )}
 
                         {/* Progress bar */}
                         <div

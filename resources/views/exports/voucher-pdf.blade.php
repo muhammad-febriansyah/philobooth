@@ -76,33 +76,13 @@
             position: relative;
         }
 
-        .brand-table { width: 100%; margin-bottom: 3mm; }
+        .brand {
+            margin-bottom: 4mm;
+        }
         .brand-logo {
-            display: inline-block;
-            width: 7mm;
-            height: 7mm;
-            background: #F5FA0C;
-            border: 1.5px solid #0A0A0A;
-            border-radius: 50%;
-            text-align: center;
-            line-height: 6mm;
-            font-weight: 900;
-            font-size: 11px;
-            vertical-align: middle;
-            margin-right: 2mm;
-        }
-        .brand-text { display: inline-block; vertical-align: middle; }
-        .brand-name {
-            font-size: 11px;
-            font-weight: 800;
-            letter-spacing: -0.2px;
-            color: #0A0A0A;
-        }
-        .brand-tagline {
-            font-size: 8px;
-            color: #737373;
-            font-weight: 500;
-            margin-top: 0.5mm;
+            height: 20mm;
+            width: 20mm;
+            display: block;
         }
 
         .eyebrow {
@@ -111,7 +91,7 @@
             letter-spacing: 2px;
             text-transform: uppercase;
             color: #737373;
-            margin-top: 3mm;
+            margin-top: 1mm;
             margin-bottom: 2mm;
         }
 
@@ -261,13 +241,11 @@
     <div class="accent"></div>
 
     <div class="content">
-        <div class="brand-logo">P</div>
-        <div class="brand-text">
-            <div class="brand-name">{{ $appName }}</div>
-            @if($tagline)
-                <div class="brand-tagline">{{ $tagline }}</div>
-            @endif
-        </div>
+        @if($logoDataUri)
+            <div class="brand">
+                <img class="brand-logo" src="{{ $logoDataUri }}" alt="Logo">
+            </div>
+        @endif
 
         <div class="eyebrow">Voucher photobooth</div>
 

@@ -1,50 +1,102 @@
 import { Head } from '@inertiajs/react';
-import { Card } from '@/components/philobooth/card';
+import { useEffect, useMemo, useState } from 'react';
 import { Icon } from '@/components/philobooth/icon';
 import { Logo } from '@/components/philobooth/logo';
+
+type ItemKind = 'composite' | 'gif' | 'video' | 'photo';
+
+type GalleryItem = {
+    kind: ItemKind;
+    label: string;
+    url: string;
+    download: string;
+    slot_number?: number;
+};
 
 type Props = {
     session: {
         session_code: string;
         branch: string | null;
-        final_url: string | null;
-        photos: Array<{ slot_number: number; url: string | null }>;
         completed_at: string | null;
         download_expires_at: string | null;
         download_count: number;
     };
+    items: GalleryItem[];
     download_url: string;
+    zip_url: string;
 };
 
-export default function DownloadShow({ session, download_url }: Props) {
-    const completedDate = session.completed_at
-        ? new Date(session.completed_at).toLocaleString('id-ID', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-          })
-        : '—';
+function formatRemaining(ms: number): string {
+    if (ms <= 0) return '0 Hari, 00:00:00';
 
-    const expiresDate = session.download_expires_at
-        ? new Date(session.download_expires_at).toLocaleDateString('id-ID', {
-              day: 'numeric',
-              month: 'short',
-              year: 'numeric',
-          })
-        : '—';
+    const totalSec = Math.floor(ms / 1000);
+    const days = Math.floor(totalSec / 86400);
+    const h = Math.floor((totalSec % 86400) / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const pad = (n: number) => String(n).padStart(2, '0');
+
+    return `${days} Hari, ${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+
+export default function DownloadShow({ session, items, zip_url }: Props) {
+    const [active, setActive] = useState(0);
+    const [now, setNow] = useState(() => Date.now());
+
+    const expiresAt = useMemo(
+        () =>
+            session.download_expires_at
+                ? new Date(session.download_expires_at).getTime()
+                : null,
+        [session.download_expires_at],
+    );
+
+    useEffect(() => {
+        const t = setInterval(() => setNow(Date.now()), 1000);
+
+        return () => clearInterval(t);
+    }, []);
+
+    if (items.length === 0) {
+        return (
+            <>
+                <Head title={`Hasil · ${session.session_code}`} />
+                <div
+                    style={{
+                        minHeight: '100vh',
+                        background: '#0A0A0A',
+                        color: '#fafafa',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: 24,
+                    }}
+                >
+                    <p>Hasil belum tersedia. Coba refresh sebentar lagi.</p>
+                </div>
+            </>
+        );
+    }
+
+    const total = items.length;
+    const current = items[active];
+    const code = '#'.concat(
+        session.session_code.replace(/^PB-\d+-/, '').toUpperCase(),
+    );
+
+    function go(delta: number) {
+        setActive((prev) => (prev + delta + total) % total);
+    }
 
     return (
         <>
-            <Head title={`Download foto · ${session.session_code}`} />
+            <Head title={`Download · ${session.session_code}`} />
             <div
-                className="pb-root"
                 style={{
                     minHeight: '100vh',
-                    background:
-                        'linear-gradient(180deg, #FFFEF0 0%, #FAFAFA 30%)',
-                    padding: '32px 16px 64px',
+                    background: '#0A0A0A',
+                    color: '#fafafa',
+                    padding: '24px 16px 56px',
                 }}
             >
                 <div
@@ -53,236 +105,341 @@ export default function DownloadShow({ session, download_url }: Props) {
                         margin: '0 auto',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: 20,
+                        gap: 24,
                     }}
                 >
-                    <header
+                    {/* Top brand row */}
+                    <div
                         style={{
                             display: 'flex',
-                            alignItems: 'center',
                             justifyContent: 'space-between',
-                            padding: '8px 4px',
+                            alignItems: 'center',
                         }}
                     >
-                        <Logo size={28} />
+                        <Logo size={28} dark />
                         <span
                             style={{
-                                fontSize: 12,
-                                color: 'var(--pb-text-faint)',
+                                fontSize: 11,
+                                color: '#9a9a9a',
                                 fontFamily: 'monospace',
                             }}
                         >
-                            {session.session_code}
+                            {session.branch ?? 'philobooth'}
                         </span>
-                    </header>
+                    </div>
 
+                    {/* Title block */}
+                    <div style={{ textAlign: 'center' }}>
+                        <h1
+                            style={{
+                                fontSize: 'clamp(28px, 5vw, 38px)',
+                                fontWeight: 800,
+                                letterSpacing: '-0.025em',
+                                margin: 0,
+                            }}
+                        >
+                            Download Your Photos
+                        </h1>
+                        <p
+                            style={{
+                                margin: '6px 0 0',
+                                fontSize: 14,
+                                color: '#9a9a9a',
+                                fontFamily: 'monospace',
+                            }}
+                        >
+                            {code}
+                        </p>
+                        {expiresAt && (
+                            <div
+                                style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    marginTop: 14,
+                                    padding: '7px 14px',
+                                    borderRadius: 999,
+                                    background: 'rgba(255,255,255,0.06)',
+                                    border: '1px solid rgba(255,255,255,0.08)',
+                                    fontSize: 13,
+                                    color: '#cfcfcf',
+                                }}
+                            >
+                                <Icon name="clock" size={14} />
+                                <span>Link kadaluarsa dalam</span>
+                                <strong
+                                    style={{
+                                        fontFamily: 'monospace',
+                                        color: '#fff',
+                                    }}
+                                >
+                                    {formatRemaining(expiresAt - now)}
+                                </strong>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Hero carousel */}
                     <div
                         style={{
-                            textAlign: 'center',
-                            padding: '24px 16px 8px',
+                            position: 'relative',
+                            borderRadius: 20,
+                            background: '#0F0F0F',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            overflow: 'hidden',
                         }}
                     >
                         <div
                             style={{
-                                display: 'inline-flex',
-                                width: 56,
-                                height: 56,
-                                borderRadius: 28,
-                                background: 'var(--pb-primary)',
+                                aspectRatio:
+                                    current.kind === 'gif' || current.kind === 'video'
+                                        ? '9/16'
+                                        : '3/4',
+                                display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                marginBottom: 16,
+                                background: '#000',
                             }}
                         >
-                            <Icon
-                                name="check"
-                                size={28}
-                                color="#0A0A0A"
-                                strokeWidth={3}
-                            />
-                        </div>
-                        <h1
-                            style={{
-                                fontSize: 32,
-                                fontWeight: 700,
-                                letterSpacing: -0.8,
-                                margin: 0,
-                            }}
-                        >
-                            Foto kamu siap diunduh
-                        </h1>
-                        <p
-                            style={{
-                                fontSize: 15,
-                                color: 'var(--pb-text-muted)',
-                                margin: '8px 0 0',
-                                lineHeight: 1.5,
-                            }}
-                        >
-                            Hasil sesi di {session.branch ?? 'philobooth'}{' '}
-                            tanggal {completedDate}. <br />
-                            Link aktif sampai {expiresDate}.
-                        </p>
-                    </div>
-
-                    {session.final_url ? (
-                        <Card padding={16}>
-                            <div
-                                style={{
-                                    background: '#FAFAFA',
-                                    borderRadius: 12,
-                                    overflow: 'hidden',
-                                    aspectRatio: '3/4',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}
-                            >
-                                <img
-                                    src={session.final_url}
-                                    alt="Hasil foto"
+                            {current.kind === 'video' ? (
+                                <video
+                                    src={current.url}
+                                    autoPlay
+                                    loop
+                                    muted
+                                    playsInline
+                                    controls
                                     style={{
-                                        width: '100%',
-                                        height: '100%',
+                                        maxWidth: '100%',
+                                        maxHeight: '100%',
                                         objectFit: 'contain',
+                                        display: 'block',
                                     }}
                                 />
-                            </div>
-                        </Card>
-                    ) : (
-                        <Card padding={32}>
-                            <div
-                                style={{
-                                    textAlign: 'center',
-                                    color: 'var(--pb-text-faint)',
-                                }}
-                            >
-                                <Icon name="image" size={32} />
-                                <p style={{ marginTop: 12, fontSize: 14 }}>
-                                    Foto sedang diproses. Coba refresh sebentar
-                                    lagi.
-                                </p>
-                            </div>
-                        </Card>
-                    )}
-
-                    <a
-                        href={download_url}
-                        className="pb-btn pb-btn-primary pb-btn-xl"
-                        download
-                        style={{ width: '100%' }}
-                    >
-                        <Icon name="download" size={20} />
-                        Download foto (PNG)
-                    </a>
-
-                    {session.photos.length > 0 && (
-                        <Card padding={20}>
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    marginBottom: 12,
-                                }}
-                            >
-                                <h3
-                                    className="pb-h4"
-                                    style={{ margin: 0 }}
-                                >
-                                    Foto asli (tanpa frame)
-                                </h3>
-                                <span
+                            ) : (
+                                <img
+                                    src={current.url}
+                                    alt={current.label}
                                     style={{
-                                        fontSize: 12,
-                                        color: 'var(--pb-text-faint)',
+                                        maxWidth: '100%',
+                                        maxHeight: '100%',
+                                        objectFit: 'contain',
+                                        display: 'block',
+                                    }}
+                                />
+                            )}
+                        </div>
+
+                        {/* Kind badge top-left */}
+                        <div
+                            style={{
+                                position: 'absolute',
+                                top: 12,
+                                left: 12,
+                                padding: '5px 10px',
+                                borderRadius: 999,
+                                background: 'rgba(0,0,0,0.55)',
+                                color: '#fff',
+                                fontSize: 12,
+                                fontWeight: 600,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                backdropFilter: 'blur(4px)',
+                            }}
+                        >
+                            {(current.kind === 'gif' || current.kind === 'video') && (
+                                <Icon name="play" size={12} />
+                            )}
+                            {current.label}
+                        </div>
+
+                        {/* Counter bottom-center */}
+                        <div
+                            style={{
+                                position: 'absolute',
+                                bottom: 12,
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                padding: '4px 12px',
+                                borderRadius: 999,
+                                background: 'rgba(0,0,0,0.55)',
+                                color: '#fff',
+                                fontSize: 12,
+                                fontWeight: 600,
+                                backdropFilter: 'blur(4px)',
+                            }}
+                        >
+                            {active + 1} / {total}
+                        </div>
+
+                        {total > 1 && (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={() => go(-1)}
+                                    aria-label="Sebelumnya"
+                                    style={navBtnStyle('left')}
+                                >
+                                    <Icon name="chevron-left" size={20} />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => go(1)}
+                                    aria-label="Berikutnya"
+                                    style={navBtnStyle('right')}
+                                >
+                                    <Icon name="chevron-right" size={20} />
+                                </button>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Thumbnails */}
+                    {total > 1 && (
+                        <div
+                            style={{
+                                display: 'flex',
+                                gap: 10,
+                                overflowX: 'auto',
+                                paddingBottom: 4,
+                            }}
+                        >
+                            {items.map((it, i) => (
+                                <button
+                                    key={`${it.kind}-${it.slot_number ?? i}`}
+                                    type="button"
+                                    onClick={() => setActive(i)}
+                                    style={{
+                                        position: 'relative',
+                                        flex: '0 0 auto',
+                                        width: 78,
+                                        aspectRatio: '3/4',
+                                        borderRadius: 10,
+                                        overflow: 'hidden',
+                                        border:
+                                            i === active
+                                                ? '2px solid var(--pb-primary, #F5FA0C)'
+                                                : '2px solid transparent',
+                                        background: '#1a1a1a',
+                                        cursor: 'pointer',
+                                        padding: 0,
                                     }}
                                 >
-                                    {session.photos.length} foto
-                                </span>
-                            </div>
-                            <div
-                                style={{
-                                    display: 'grid',
-                                    gridTemplateColumns:
-                                        'repeat(auto-fill, minmax(100px, 1fr))',
-                                    gap: 8,
-                                }}
-                            >
-                                {session.photos.map((p) => (
-                                    <div
-                                        key={p.slot_number}
-                                        style={{
-                                            aspectRatio: '3/4',
-                                            background: '#FAFAFA',
-                                            borderRadius: 8,
-                                            overflow: 'hidden',
-                                            position: 'relative',
-                                        }}
-                                    >
-                                        {p.url ? (
-                                            <img
-                                                src={p.url}
-                                                alt={`Foto ${p.slot_number}`}
-                                                style={{
-                                                    width: '100%',
-                                                    height: '100%',
-                                                    objectFit: 'cover',
-                                                }}
-                                            />
-                                        ) : (
-                                            <div
-                                                style={{
-                                                    width: '100%',
-                                                    height: '100%',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    color: 'var(--pb-text-faint)',
-                                                }}
-                                            >
-                                                <Icon
-                                                    name="image"
-                                                    size={20}
-                                                />
-                                            </div>
-                                        )}
-                                        <div
+                                    {it.kind === 'video' ? (
+                                        <video
+                                            src={it.url}
+                                            muted
+                                            playsInline
+                                            preload="metadata"
+                                            style={{
+                                                width: '100%',
+                                                height: '100%',
+                                                objectFit: 'cover',
+                                            }}
+                                        />
+                                    ) : (
+                                        <img
+                                            src={it.url}
+                                            alt={it.label}
+                                            style={{
+                                                width: '100%',
+                                                height: '100%',
+                                                objectFit: 'cover',
+                                            }}
+                                        />
+                                    )}
+                                    {(it.kind === 'gif' || it.kind === 'video') && (
+                                        <span
                                             style={{
                                                 position: 'absolute',
-                                                top: 4,
-                                                left: 6,
+                                                inset: 0,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
                                                 background:
-                                                    'rgba(10,10,10,0.8)',
-                                                color: 'var(--pb-primary)',
-                                                fontSize: 10,
-                                                fontWeight: 700,
-                                                padding: '2px 6px',
-                                                borderRadius: 999,
+                                                    'rgba(0,0,0,0.35)',
+                                                color: '#fff',
                                             }}
                                         >
-                                            #{p.slot_number}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </Card>
+                                            <Icon name="play" size={20} />
+                                        </span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
                     )}
 
+                    {/* Action buttons */}
                     <div
                         style={{
-                            textAlign: 'center',
-                            fontSize: 12,
-                            color: 'var(--pb-text-faint)',
-                            padding: 16,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 10,
                         }}
                     >
-                        Sudah di-download {session.download_count}× · tag{' '}
-                        <strong>@philobooth.id</strong> di IG biar bisa
-                        direpost ✨
+                        <a
+                            href={zip_url}
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 8,
+                                padding: '15px 20px',
+                                borderRadius: 14,
+                                background: '#fff',
+                                color: '#0A0A0A',
+                                fontWeight: 700,
+                                fontSize: 15,
+                                textDecoration: 'none',
+                            }}
+                        >
+                            <Icon name="download" size={18} />
+                            Download Semua ({total} file)
+                        </a>
+                        <a
+                            href={current.download}
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 8,
+                                padding: '13px 20px',
+                                borderRadius: 14,
+                                background: 'rgba(255,255,255,0.06)',
+                                color: '#fafafa',
+                                fontWeight: 600,
+                                fontSize: 14,
+                                border: '1px solid rgba(255,255,255,0.08)',
+                                textDecoration: 'none',
+                            }}
+                        >
+                            <Icon name="download" size={16} />
+                            Hanya yang ini ({current.label})
+                        </a>
                     </div>
                 </div>
             </div>
         </>
     );
+}
+
+function navBtnStyle(side: 'left' | 'right'): React.CSSProperties {
+    return {
+        position: 'absolute',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        [side]: 8,
+        width: 38,
+        height: 38,
+        borderRadius: 999,
+        background: 'rgba(0,0,0,0.5)',
+        color: '#fff',
+        border: '1px solid rgba(255,255,255,0.12)',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        backdropFilter: 'blur(4px)',
+    };
 }

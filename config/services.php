@@ -42,4 +42,12 @@ return [
         'min_score' => env('RECAPTCHA_MIN_SCORE', 0.5),
     ],
 
+    'doku' => [
+        'client_id' => env('DOKU_CLIENT_ID'),
+        'secret_key' => env('DOKU_SECRET_KEY'),
+        'base_url' => env('DOKU_BASE_URL', 'https://api-sandbox.doku.com'),
+        'notify_url' => env('DOKU_NOTIFY_URL'),
+        'qris_expired_minutes' => (int) env('DOKU_QRIS_EXPIRED_MINUTES', 10),
+    ],
+
 ];

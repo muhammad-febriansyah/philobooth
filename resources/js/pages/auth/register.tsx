@@ -1,120 +1,387 @@
 import { Form, Head } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import InputError from '@/components/input-error';
-import PasswordInput from '@/components/password-input';
-import TextLink from '@/components/text-link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
-import { login } from '@/routes';
+import { AuthBrandPanel } from '@/components/philobooth/auth-brand-panel';
+import { Btn } from '@/components/philobooth/btn';
+import { Icon } from '@/components/philobooth/icon';
+import { Logo } from '@/components/philobooth/logo';
+import { useRecaptcha } from '@/hooks/use-recaptcha';
 import { store } from '@/routes/register';
 
 type Props = {
     passwordRules: string;
+    recaptchaEnabled?: boolean;
+    recaptchaSiteKey?: string | null;
 };
 
-export default function Register({ passwordRules }: Props) {
+const FEATURES = [
+    'Akses semua fitur admin console',
+    'Kelola booth, voucher, dan frame',
+    'Monitoring revenue real-time',
+];
+
+export default function Register({
+    recaptchaEnabled,
+    recaptchaSiteKey,
+}: Props) {
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [recaptchaToken, setRecaptchaToken] = useState('');
+    const { active: recaptchaActive, execute: executeRecaptcha } = useRecaptcha(
+        {
+            enabled: recaptchaEnabled,
+            siteKey: recaptchaSiteKey,
+        },
+    );
+
+    // Pre-fetch & refresh token agar selalu fresh saat user submit.
+    useEffect(() => {
+        if (!recaptchaActive) return;
+
+        let cancelled = false;
+        const fetchToken = async () => {
+            const token = await executeRecaptcha('register');
+
+            if (!cancelled) setRecaptchaToken(token);
+        };
+
+        fetchToken();
+        const id = setInterval(fetchToken, 100_000);
+
+        return () => {
+            cancelled = true;
+            clearInterval(id);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [recaptchaActive]);
+
     return (
         <>
-            <Head title="Register" />
-            <Form
-                {...store.form()}
-                resetOnSuccess={['password', 'password_confirmation']}
-                disableWhileProcessing
-                className="flex flex-col gap-6"
+            <Head title="Daftar" />
+            <div
+                className="pb-root pb-login-shell"
+                style={{
+                    width: '100%',
+                    minHeight: '100vh',
+                    background: '#FAFAFA',
+                }}
             >
-                {({ processing, errors }) => (
-                    <>
-                        <div className="grid gap-6">
-                            <div className="grid gap-2">
-                                <Label htmlFor="name">Name</Label>
-                                <Input
-                                    id="name"
-                                    type="text"
-                                    required
-                                    autoFocus
-                                    tabIndex={1}
-                                    autoComplete="name"
-                                    name="name"
-                                    placeholder="Full name"
-                                />
-                                <InputError
-                                    message={errors.name}
-                                    className="mt-2"
-                                />
-                            </div>
+                <AuthBrandPanel
+                    pill="Buat akun · gratis"
+                    heroPrimary="Mulai kelola"
+                    heroAccent="booth-mu."
+                    subtitle="Daftarkan akun admin philobooth — satu console untuk semua cabang, printer, voucher, dan revenue."
+                    features={FEATURES}
+                    stats={[
+                        { k: '12', v: 'cabang aktif' },
+                        { k: '248', v: 'cetakan / hari' },
+                        { k: '99.4%', v: 'uptime printer' },
+                    ]}
+                />
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    required
-                                    tabIndex={2}
-                                    autoComplete="email"
-                                    name="email"
-                                    placeholder="email@example.com"
-                                />
-                                <InputError message={errors.email} />
-                            </div>
+                {/* Right form panel */}
+                <main className="pb-login-form">
+                    <div className="pb-login-form__inner">
+                        <div className="pb-login-form__brand-mobile">
+                            <Logo size={28} />
+                        </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="password">Password</Label>
-                                <PasswordInput
-                                    id="password"
-                                    required
-                                    tabIndex={3}
-                                    autoComplete="new-password"
-                                    name="password"
-                                    placeholder="Password"
-                                    passwordrules={passwordRules}
-                                />
-                                <InputError message={errors.password} />
-                            </div>
+                        <h2 className="pb-login-title">Buat akun baru</h2>
+                        <p className="pb-login-desc">
+                            Isi data berikut untuk membuat akun admin
+                            philobooth.
+                        </p>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="password_confirmation">
-                                    Confirm password
-                                </Label>
-                                <PasswordInput
-                                    id="password_confirmation"
-                                    required
-                                    tabIndex={4}
-                                    autoComplete="new-password"
-                                    name="password_confirmation"
-                                    placeholder="Confirm password"
-                                    passwordrules={passwordRules}
-                                />
-                                <InputError
-                                    message={errors.password_confirmation}
-                                />
-                            </div>
+                        <Form
+                            {...store.form()}
+                            resetOnSuccess={[
+                                'password',
+                                'password_confirmation',
+                            ]}
+                            disableWhileProcessing
+                            style={{ display: 'flex', flexDirection: 'column' }}
+                        >
+                            {({ processing, errors }) => (
+                                <>
+                                    {recaptchaActive && (
+                                        <input
+                                            type="hidden"
+                                            name="recaptcha_token"
+                                            value={recaptchaToken}
+                                        />
+                                    )}
 
-                            <Button
-                                type="submit"
-                                className="mt-2 w-full"
-                                tabIndex={5}
-                                data-test="register-user-button"
+                                    <label
+                                        className="pb-field-label"
+                                        htmlFor="name"
+                                    >
+                                        Nama lengkap
+                                    </label>
+                                    <div className="pb-field">
+                                        <Icon
+                                            name="user"
+                                            size={16}
+                                            className="pb-field__icon"
+                                        />
+                                        <input
+                                            id="name"
+                                            name="name"
+                                            type="text"
+                                            required
+                                            autoFocus
+                                            autoComplete="name"
+                                            className="pb-field__input"
+                                            placeholder="Nama kamu"
+                                            aria-invalid={Boolean(errors.name)}
+                                        />
+                                    </div>
+                                    <InputError
+                                        message={errors.name}
+                                        className="mb-2"
+                                    />
+
+                                    <label
+                                        className="pb-field-label"
+                                        htmlFor="email"
+                                    >
+                                        Email
+                                    </label>
+                                    <div className="pb-field">
+                                        <Icon
+                                            name="mail"
+                                            size={16}
+                                            className="pb-field__icon"
+                                        />
+                                        <input
+                                            id="email"
+                                            name="email"
+                                            type="email"
+                                            required
+                                            autoComplete="email"
+                                            className="pb-field__input"
+                                            placeholder="admin@philobooth.id"
+                                            aria-invalid={Boolean(errors.email)}
+                                        />
+                                    </div>
+                                    <InputError
+                                        message={errors.email}
+                                        className="mb-2"
+                                    />
+
+                                    <label
+                                        className="pb-field-label"
+                                        htmlFor="password"
+                                    >
+                                        Password
+                                    </label>
+                                    <div className="pb-field">
+                                        <Icon
+                                            name="lock"
+                                            size={16}
+                                            className="pb-field__icon"
+                                        />
+                                        <input
+                                            id="password"
+                                            name="password"
+                                            type={
+                                                showPassword
+                                                    ? 'text'
+                                                    : 'password'
+                                            }
+                                            required
+                                            autoComplete="new-password"
+                                            className="pb-field__input"
+                                            style={{ paddingRight: 44 }}
+                                            placeholder="Minimal 8 karakter"
+                                            aria-invalid={Boolean(
+                                                errors.password,
+                                            )}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setShowPassword((v) => !v)
+                                            }
+                                            className="pb-field__action"
+                                            aria-label={
+                                                showPassword
+                                                    ? 'Sembunyikan password'
+                                                    : 'Tampilkan password'
+                                            }
+                                        >
+                                            <Icon
+                                                name={
+                                                    showPassword
+                                                        ? 'eye-off'
+                                                        : 'eye'
+                                                }
+                                                size={16}
+                                            />
+                                        </button>
+                                    </div>
+                                    <InputError
+                                        message={errors.password}
+                                        className="mb-2"
+                                    />
+
+                                    <label
+                                        className="pb-field-label"
+                                        htmlFor="password_confirmation"
+                                    >
+                                        Konfirmasi password
+                                    </label>
+                                    <div className="pb-field">
+                                        <Icon
+                                            name="lock"
+                                            size={16}
+                                            className="pb-field__icon"
+                                        />
+                                        <input
+                                            id="password_confirmation"
+                                            name="password_confirmation"
+                                            type={
+                                                showConfirm
+                                                    ? 'text'
+                                                    : 'password'
+                                            }
+                                            required
+                                            autoComplete="new-password"
+                                            className="pb-field__input"
+                                            style={{ paddingRight: 44 }}
+                                            placeholder="Ulangi password"
+                                            aria-invalid={Boolean(
+                                                errors.password_confirmation,
+                                            )}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setShowConfirm((v) => !v)
+                                            }
+                                            className="pb-field__action"
+                                            aria-label={
+                                                showConfirm
+                                                    ? 'Sembunyikan konfirmasi'
+                                                    : 'Tampilkan konfirmasi'
+                                            }
+                                        >
+                                            <Icon
+                                                name={
+                                                    showConfirm
+                                                        ? 'eye-off'
+                                                        : 'eye'
+                                                }
+                                                size={16}
+                                            />
+                                        </button>
+                                    </div>
+                                    <InputError
+                                        message={errors.password_confirmation}
+                                        className="mb-2"
+                                    />
+
+                                    <Btn
+                                        type="submit"
+                                        variant="primary"
+                                        size="lg"
+                                        full
+                                        iconRight={
+                                            processing
+                                                ? undefined
+                                                : 'arrow-right'
+                                        }
+                                        disabled={processing}
+                                        style={{ marginTop: 10 }}
+                                    >
+                                        {processing && (
+                                            <span
+                                                className="pb-spin"
+                                                style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                }}
+                                                aria-hidden
+                                            >
+                                                <Icon
+                                                    name="refresh"
+                                                    size={18}
+                                                />
+                                            </span>
+                                        )}
+                                        {processing
+                                            ? 'Membuat akun…'
+                                            : 'Buat akun'}
+                                    </Btn>
+                                </>
+                            )}
+                        </Form>
+
+                        <div
+                            style={{
+                                marginTop: 18,
+                                fontSize: 13,
+                                color: 'var(--pb-text-muted)',
+                                textAlign: 'center',
+                            }}
+                        >
+                            Sudah punya akun?{' '}
+                            <a href="/login" className="pb-link-subtle">
+                                Masuk di sini
+                            </a>
+                        </div>
+
+                        <div className="pb-login-secure">
+                            <Icon name="lock" size={12} />
+                            Koneksi terenkripsi · SSL aktif
+                            {recaptchaActive && ' · reCAPTCHA aktif'}
+                        </div>
+                        {recaptchaActive && (
+                            <div
+                                style={{
+                                    fontSize: 10,
+                                    color: 'var(--pb-text-faint)',
+                                    marginTop: 8,
+                                    lineHeight: 1.4,
+                                }}
                             >
-                                {processing && <Spinner />}
-                                Create account
-                            </Button>
-                        </div>
+                                Situs ini dilindungi reCAPTCHA. Tunduk pada{' '}
+                                <a
+                                    href="https://policies.google.com/privacy"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                        color: 'var(--pb-text-muted)',
+                                    }}
+                                >
+                                    Privacy
+                                </a>{' '}
+                                &amp;{' '}
+                                <a
+                                    href="https://policies.google.com/terms"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                        color: 'var(--pb-text-muted)',
+                                    }}
+                                >
+                                    Terms
+                                </a>{' '}
+                                Google.
+                            </div>
+                        )}
 
-                        <div className="text-center text-sm text-muted-foreground">
-                            Already have an account?{' '}
-                            <TextLink href={login()} tabIndex={6}>
-                                Log in
-                            </TextLink>
-                        </div>
-                    </>
-                )}
-            </Form>
+                        <p className="pb-login-foot">
+                            © 2026 philobooth · butuh bantuan?{' '}
+                            <a
+                                href="mailto:support@philobooth.id"
+                                className="pb-link-subtle"
+                            >
+                                support@philobooth.id
+                            </a>
+                        </p>
+                    </div>
+                </main>
+            </div>
         </>
     );
 }
-
-Register.layout = {
-    title: 'Create an account',
-    description: 'Enter your details below to create your account',
-};

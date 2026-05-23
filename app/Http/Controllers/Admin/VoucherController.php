@@ -15,6 +15,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -115,13 +116,26 @@ class VoucherController extends Controller
         $pdf = Pdf::loadView('exports.voucher-pdf', [
             'voucher' => $voucher,
             'qrDataUri' => $qrDataUri,
-            'appName' => AppSetting::get('app_name', config('app.name')),
-            'tagline' => AppSetting::get('app_tagline'),
+            'logoDataUri' => $this->logoDataUri(),
         ])->setPaper('a6', 'portrait');
 
         $filename = 'voucher-'.$voucher->code.'.pdf';
 
         return $pdf->stream($filename);
+    }
+
+    private function logoDataUri(): ?string
+    {
+        $path = AppSetting::get('logo_path');
+
+        if (! $path || ! Storage::disk('public')->exists($path)) {
+            return null;
+        }
+
+        $contents = Storage::disk('public')->get($path);
+        $mime = Storage::disk('public')->mimeType($path) ?: 'image/png';
+
+        return 'data:'.$mime.';base64,'.base64_encode($contents);
     }
 
     /** @return array<string, mixed> */

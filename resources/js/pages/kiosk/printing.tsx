@@ -12,7 +12,7 @@ const STEPS: Array<{ l: string; done?: boolean; active?: boolean }> = [
 export default function KioskPrinting() {
     return (
         <>
-            <Head title="Mencetak — Kiosk" />
+            <Head title="Mencetak — Philobooth" />
             <div
                 className="pb-root"
                 style={{

@@ -65,7 +65,10 @@ type FrameSlot = {
 };
 
 type Props = {
-    session: { session_code: string };
+    session: {
+        session_code: string;
+        session_type?: 'photo' | 'stop_motion_video' | null;
+    };
     photos: Array<{ slot_number: number; url: string }>;
     frame: {
         id: number;
@@ -177,7 +180,7 @@ const FILTERS: Filter[] = [
     },
 ];
 
-export default function KioskFilter({ photos, frame }: Props) {
+export default function KioskFilter({ session, photos, frame }: Props) {
     const [filterId, setFilterId] = useState<string>('none');
     const [caption, setCaption] = useState('');
     const [showDateStamp, setShowDateStamp] = useState(true);
@@ -257,7 +260,7 @@ export default function KioskFilter({ photos, frame }: Props) {
 
     return (
         <>
-            <Head title="Pilih filter — Kiosk" />
+            <Head title="Pilih filter — Philobooth" />
             <KioskScene>
                 <Spotlight
                     position="top-right"
@@ -772,7 +775,9 @@ export default function KioskFilter({ photos, frame }: Props) {
                         >
                             {processing
                                 ? 'Memproses…'
-                                : 'Lanjut, atur jumlah cetak'}
+                                : session.session_type === 'stop_motion_video'
+                                    ? 'Lanjut, konfirmasi'
+                                    : 'Lanjut, atur jumlah cetak'}
                             <span
                                 style={{
                                     display: 'inline-flex',

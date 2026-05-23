@@ -182,7 +182,7 @@ export default function Transaksi({
     return (
         <>
             <Head title="Transaksi" />
-            <main style={{ padding: 32, flex: 1, overflow: 'auto' }}>
+            <main className="pb-page-main">
                 <PageHead
                     title="Transaksi"
                     subtitle={`${sessions.total} sesi sesuai filter`}
@@ -206,14 +206,7 @@ export default function Transaksi({
                     }
                 />
 
-                <div
-                    style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(4, 1fr)',
-                        gap: 16,
-                        marginBottom: 24,
-                    }}
-                >
+                <div className="pb-stat-grid">
                     <Stat label="Total transaksi" value={stats.total} icon="receipt" />
                     <Stat
                         label="Selesai"
@@ -237,7 +230,7 @@ export default function Transaksi({
                         style={{
                             display: 'grid',
                             gridTemplateColumns:
-                                'minmax(220px, 1fr) repeat(4, minmax(140px, 1fr)) minmax(140px, 1fr) minmax(140px, 1fr)',
+                                'repeat(auto-fit, minmax(160px, 1fr))',
                             gap: 10,
                             alignItems: 'end',
                         }}
@@ -368,7 +361,8 @@ export default function Transaksi({
                 </Card>
 
                 <Card padding={0}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <div className="pb-table-scroll">
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
                             <tr style={{ background: '#FAFAFA' }}>
                                 {[
@@ -544,6 +538,7 @@ export default function Transaksi({
                             ))}
                         </tbody>
                     </table>
+                    </div>
                     <div
                         style={{
                             padding: '14px 22px',

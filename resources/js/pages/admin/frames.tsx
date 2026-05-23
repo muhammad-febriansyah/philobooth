@@ -70,7 +70,7 @@ export default function Frames({ frames, filters, categories, flash }: Props) {
     return (
         <>
             <Head title="Frame Builder" />
-            <main style={{ padding: 32, flex: 1, overflow: 'auto' }}>
+            <main className="pb-page-main">
                 <PageHead
                     title="Frame builder"
                     subtitle={`${frames.total} frame template tersedia · slot foto auto-detect dari PNG`}

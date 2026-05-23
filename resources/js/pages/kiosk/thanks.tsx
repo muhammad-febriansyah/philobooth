@@ -4,7 +4,7 @@ import { Icon } from '@/components/philobooth/icon';
 export default function KioskThanks() {
     return (
         <>
-            <Head title="Terima kasih — Kiosk" />
+            <Head title="Terima kasih — Philobooth" />
             <div
                 className="pb-root"
                 style={{

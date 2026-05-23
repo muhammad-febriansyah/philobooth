@@ -62,7 +62,7 @@ export default function VoucherDetail({ batch, vouchers, filters }: Props) {
     return (
         <>
             <Head title={`Voucher · ${batch.name}`} />
-            <main style={{ padding: 32, flex: 1, overflow: 'auto' }}>
+            <main className="pb-page-main">
                 <Link
                     href="/admin/voucher"
                     style={{

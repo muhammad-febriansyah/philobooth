@@ -65,7 +65,7 @@ export default function DownloadInvalid({ reason }: Props) {
                     >
                         {reason === 'expired'
                             ? 'Foto download link aktif 48 jam setelah sesi. Hubungi cabang tempat kamu foto jika butuh kembali file aslinya.'
-                            : 'Pastikan kamu scan QR yang benar dari kiosk.'}
+                            : 'Pastikan kamu scan QR yang benar dari Philobooth.'}
                     </p>
                 </Card>
             </div>

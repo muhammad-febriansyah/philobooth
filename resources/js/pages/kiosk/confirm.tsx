@@ -13,8 +13,10 @@ type Props = {
         discount_amount: number;
         print_quantity: number;
         payment_method: string | null;
+        session_type?: 'photo' | 'stop_motion_video' | null;
     };
     composite_url?: string | null;
+    video_url?: string | null;
     frame: {
         id: number;
         name: string;
@@ -37,12 +39,14 @@ const METHOD_LABEL: Record<string, string> = {
 export default function KioskConfirm({
     session,
     composite_url,
+    video_url,
     frame,
     frame_category,
     paper,
     filter_label,
 }: Props) {
     const [processing, setProcessing] = useState(false);
+    const isVideo = session.session_type === 'stop_motion_video';
 
     function submit() {
         setProcessing(true);
@@ -62,7 +66,7 @@ export default function KioskConfirm({
 
     return (
         <>
-            <Head title="Konfirmasi — Kiosk" />
+            <Head title="Konfirmasi — Philobooth" />
             <KioskScene>
                 <Spotlight
                     position="top-right"
@@ -117,7 +121,22 @@ export default function KioskConfirm({
                                 aspectRatio: aspect,
                             }}
                         >
-                            {composite_url ? (
+                            {isVideo && video_url ? (
+                                <video
+                                    src={video_url}
+                                    autoPlay
+                                    loop
+                                    muted
+                                    playsInline
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'contain',
+                                        display: 'block',
+                                        background: '#000',
+                                    }}
+                                />
+                            ) : composite_url ? (
                                 <img
                                     src={composite_url}
                                     alt={frame?.name ?? 'Hasil'}
@@ -140,10 +159,12 @@ export default function KioskConfirm({
                                         fontSize: 14,
                                     }}
                                 >
-                                    Composite belum siap
+                                    {isVideo
+                                        ? 'Video belum siap'
+                                        : 'Composite belum siap'}
                                 </div>
                             )}
-                            {session.print_quantity > 1 && (
+                            {!isVideo && session.print_quantity > 1 && (
                                 <div
                                     style={{
                                         position: 'absolute',
@@ -214,7 +235,7 @@ export default function KioskConfirm({
                                     display: 'inline-block',
                                 }}
                             >
-                                dicetak?
+                                {isVideo ? 'simpan video?' : 'dicetak?'}
                                 <svg
                                     aria-hidden
                                     viewBox="0 0 200 12"
@@ -249,8 +270,9 @@ export default function KioskConfirm({
                                 maxWidth: 520,
                             }}
                         >
-                            Cek detail di bawah. Setelah cetak, foto tidak bisa
-                            diubah lagi.
+                            {isVideo
+                                ? 'Boomerang sudah jadi. Klik tombol di bawah untuk menyelesaikan sesi dan dapatkan link download.'
+                                : 'Cek detail di bawah. Setelah cetak, foto tidak bisa diubah lagi.'}
                         </p>
 
                         {/* Detail card */}
@@ -292,10 +314,12 @@ export default function KioskConfirm({
                                 label="Foto"
                                 value={`${frame?.photo_slots ?? 0} pose`}
                             />
-                            <Row
-                                label="Jumlah cetak"
-                                value={`${session.print_quantity} lembar`}
-                            />
+                            {!isVideo && (
+                                <Row
+                                    label="Jumlah cetak"
+                                    value={`${session.print_quantity} lembar`}
+                                />
+                            )}
                             <Row
                                 label="Metode bayar"
                                 value={
@@ -354,7 +378,9 @@ export default function KioskConfirm({
                                         marginTop: 2,
                                     }}
                                 >
-                                    Semua sudah dibayar — siap dicetak.
+                                    {isVideo
+                                        ? 'Semua sudah dibayar — boomerang siap.'
+                                        : 'Semua sudah dibayar — siap dicetak.'}
                                 </div>
                             </div>
                         </div>
@@ -394,8 +420,14 @@ export default function KioskConfirm({
                                     'translateY(0)';
                             }}
                         >
-                            <Icon name="printer" size={22} />
-                            {processing ? 'Mengirim ke printer…' : 'Cetak sekarang'}
+                            <Icon name={isVideo ? 'check-circle' : 'printer'} size={22} />
+                            {processing
+                                ? isVideo
+                                    ? 'Menyimpan…'
+                                    : 'Mengirim ke printer…'
+                                : isVideo
+                                    ? 'Selesai & lanjut download'
+                                    : 'Cetak sekarang'}
                             <span
                                 style={{
                                     display: 'inline-flex',

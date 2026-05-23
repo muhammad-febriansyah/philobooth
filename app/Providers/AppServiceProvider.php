@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\Doku\DokuClient;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +16,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(DokuClient::class, fn () => new DokuClient(
+            clientId: (string) config('services.doku.client_id', ''),
+            secretKey: (string) config('services.doku.secret_key', ''),
+            baseUrl: rtrim((string) config('services.doku.base_url', ''), '/'),
+            notifyUrl: config('services.doku.notify_url'),
+            qrisExpiredMinutes: (int) config('services.doku.qris_expired_minutes', 10),
+        ));
     }
 
     /**

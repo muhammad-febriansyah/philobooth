@@ -6,6 +6,7 @@ enum SessionStep: string
 {
     case Start = 'start';
     case Payment = 'payment';
+    case OutputType = 'output_type';
     case Frame = 'frame';
     case Capture = 'capture';
     case Preview = 'preview';

@@ -2,11 +2,18 @@
 
 namespace App\Http\Controllers\Kiosk;
 
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Frame;
 use App\Models\PhotoSession;
+use App\Models\PricingConfig;
 use App\Services\FrameBuilder\CompositeGenerator;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -56,8 +63,33 @@ class PageController extends Controller
     {
         $session = $this->requireSession($request, 'qris');
 
+        $payment = $session->payments()
+            ->where('method', PaymentMethod::QrisDoku)
+            ->where('status', PaymentStatus::Pending)
+            ->latest('id')
+            ->first();
+
+        $qrisData = null;
+
+        if ($payment && $payment->qris_string) {
+            $renderer = new ImageRenderer(
+                new RendererStyle(420, 1),
+                new SvgImageBackEnd,
+            );
+            $svg = (new Writer($renderer))->writeString($payment->qris_string);
+
+            $qrisData = [
+                'string' => $payment->qris_string,
+                'image_url' => $payment->qris_image_path,
+                'image_data_uri' => 'data:image/svg+xml;base64,'.base64_encode($svg),
+                'invoice_number' => $payment->doku_invoice_number,
+                'expired_at' => $payment->expired_at?->toIso8601String(),
+            ];
+        }
+
         return Inertia::render('kiosk/qris', [
             'session' => $this->sessionProps($session),
+            'qris' => $qrisData,
         ]);
     }
 
@@ -75,6 +107,15 @@ class PageController extends Controller
         $session = $this->requireSession($request, 'validate');
 
         return Inertia::render('kiosk/validate', [
+            'session' => $this->sessionProps($session),
+        ]);
+    }
+
+    public function outputType(Request $request): Response
+    {
+        $session = $this->requireSession($request, 'output-type');
+
+        return Inertia::render('kiosk/output-type', [
             'session' => $this->sessionProps($session),
         ]);
     }
@@ -125,7 +166,11 @@ class PageController extends Controller
             }
         }
 
-        return Inertia::render('kiosk/capture', [
+        $component = $session->session_type?->value === 'stop_motion_video'
+            ? 'kiosk/capture-boomerang'
+            : 'kiosk/capture';
+
+        return Inertia::render($component, [
             'session' => $this->sessionProps($session),
             'frame' => $frame ? [
                 'id' => $frame->id,
@@ -264,7 +309,7 @@ class PageController extends Controller
         $pricing = null;
 
         if ($branchId && $paperSizeId) {
-            $pricing = \App\Models\PricingConfig::query()
+            $pricing = PricingConfig::query()
                 ->where('branch_id', $branchId)
                 ->where('paper_size_id', $paperSizeId)
                 ->where('is_active', true)
@@ -360,6 +405,9 @@ class PageController extends Controller
         return Inertia::render('kiosk/confirm', [
             'session' => $this->sessionProps($session),
             'composite_url' => $this->buildCompositeUrl($session, $composer),
+            'video_url' => $session->video_path && Storage::disk('public')->exists($session->video_path)
+                ? Storage::url($session->video_path)
+                : null,
             'frame' => $this->frameProps($session->frame),
             'frame_category' => $session->frame?->category?->name,
             'paper' => $session->paperSize
@@ -393,6 +441,12 @@ class PageController extends Controller
             'final_url' => $session->final_image_path && Storage::disk('public')->exists($session->final_image_path)
                 ? Storage::url($session->final_image_path)
                 : null,
+            'gif_url' => $session->gif_path && Storage::disk('public')->exists($session->gif_path)
+                ? Storage::url($session->gif_path)
+                : null,
+            'video_url' => $session->video_path && Storage::disk('public')->exists($session->video_path)
+                ? Storage::url($session->video_path)
+                : null,
             'qr_url' => $session->download_qr_path && Storage::disk('public')->exists($session->download_qr_path)
                 ? Storage::url($session->download_qr_path)
                 : null,
@@ -412,7 +466,9 @@ class PageController extends Controller
             return null;
         }
 
-        return PhotoSession::find($id);
+        // Kiosk is anonymous customer flow; bypass BelongsToBranch scope so a
+        // logged-in operator from branch X can still use the booth at branch Y.
+        return PhotoSession::withoutGlobalScopes()->find($id);
     }
 
     /**
@@ -444,6 +500,7 @@ class PageController extends Controller
             'discount_amount' => (float) $session->discount_amount,
             'final_amount' => (float) $session->final_amount,
             'print_quantity' => (int) $session->print_quantity,
+            'session_type' => $session->session_type?->value,
         ];
     }
 }

@@ -11,9 +11,12 @@ type Props = {
         final_amount: number;
         payment_method: string | null;
         print_quantity: number;
+        session_type?: 'photo' | 'stop_motion_video' | null;
     };
     download_url?: string | null;
     final_url?: string | null;
+    gif_url?: string | null;
+    video_url?: string | null;
     qr_url?: string | null;
 };
 
@@ -28,8 +31,27 @@ export default function KioskDownload({
     session,
     download_url,
     final_url,
+    gif_url,
+    video_url,
     qr_url,
 }: Props) {
+    const isVideo = session?.session_type === 'stop_motion_video';
+    const heroUrl = isVideo ? video_url ?? gif_url : final_url;
+    const isVideoFile = isVideo && !!video_url;
+    const videoExt = (() => {
+        if (!video_url) {
+            return 'MP4';
+        }
+
+        const m = video_url.match(/\.(mp4|webm)(\?|$)/i);
+
+        return m ? m[1].toUpperCase() : 'MP4';
+    })();
+    const downloadLabel = isVideoFile
+        ? `Download video (${videoExt})`
+        : isVideo
+            ? 'Download GIF'
+            : 'Download foto (PNG)';
     const [copied, setCopied] = useState(false);
     const [remaining, setRemaining] = useState(60); // 60 detik countdown auto-finish
     const [email, setEmail] = useState('');
@@ -96,7 +118,7 @@ export default function KioskDownload({
 
     return (
         <>
-            <Head title="Download — Kiosk" />
+            <Head title="Download — Philobooth" />
             <KioskScene>
                 <Spotlight
                     position="top-right"
@@ -170,7 +192,7 @@ export default function KioskDownload({
                                 margin: 0,
                             }}
                         >
-                            Foto kamu{' '}
+                            {isVideo ? 'Boomerang' : 'Foto'} kamu{' '}
                             <em
                                 style={{
                                     fontStyle: 'italic',
@@ -214,8 +236,9 @@ export default function KioskDownload({
                                 lineHeight: 1.45,
                             }}
                         >
-                            Cetakan keluar di slot bawah booth. Scan QR di
-                            kanan buat simpan versi digital ke HP kamu.
+                            {isVideo
+                                ? 'Boomerang sudah jadi! Scan QR di kanan buat unduh ke HP kamu.'
+                                : 'Cetakan keluar di slot bawah booth. Scan QR di kanan buat simpan versi digital ke HP kamu.'}
                         </p>
 
                         {/* Preview image */}
@@ -231,10 +254,24 @@ export default function KioskDownload({
                                 justifyContent: 'center',
                             }}
                         >
-                            {final_url ? (
+                            {heroUrl && isVideoFile ? (
+                                <video
+                                    src={heroUrl}
+                                    autoPlay
+                                    loop
+                                    muted
+                                    playsInline
+                                    style={{
+                                        maxWidth: '100%',
+                                        maxHeight: '52vh',
+                                        objectFit: 'contain',
+                                        display: 'block',
+                                    }}
+                                />
+                            ) : heroUrl ? (
                                 <img
-                                    src={final_url}
-                                    alt="Hasil cetak"
+                                    src={heroUrl}
+                                    alt={isVideo ? 'Stop Motion' : 'Hasil cetak'}
                                     style={{
                                         maxWidth: '100%',
                                         maxHeight: '52vh',
@@ -265,8 +302,8 @@ export default function KioskDownload({
                             <a
                                 href={
                                     download_url
-                                        ? `${download_url}/file`
-                                        : final_url ?? '#'
+                                        ? `${download_url}/file?kind=${isVideoFile ? 'video' : isVideo ? 'gif' : 'composite'}`
+                                        : heroUrl ?? '#'
                                 }
                                 download
                                 target="_blank"
@@ -287,7 +324,7 @@ export default function KioskDownload({
                                 }}
                             >
                                 <Icon name="download" size={16} />
-                                Download foto (PNG)
+                                {downloadLabel}
                             </a>
                             <button
                                 type="button"

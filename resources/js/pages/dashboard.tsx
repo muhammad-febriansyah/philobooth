@@ -302,7 +302,7 @@ export default function Dashboard({
     return (
         <>
             <Head title="Dashboard" />
-            <main style={{ padding: 32, flex: 1, overflow: 'auto' }}>
+            <main className="pb-page-main">
                 <PageHead
                     title="Dashboard overview"
                     subtitle={todayLabel}
@@ -343,14 +343,7 @@ export default function Dashboard({
                     }
                 />
 
-                <div
-                    style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(4, 1fr)',
-                        gap: 16,
-                        marginBottom: 24,
-                    }}
-                >
+                <div className="pb-stat-grid">
                     <StatCard
                         label="Revenue hari ini"
                         value={rupiah(stats.revenue.value, true)}
@@ -387,7 +380,8 @@ export default function Dashboard({
                 <div
                     style={{
                         display: 'grid',
-                        gridTemplateColumns: '2fr 1fr',
+                        gridTemplateColumns:
+                            'repeat(auto-fit, minmax(280px, 1fr))',
                         gap: 16,
                         marginBottom: 24,
                     }}

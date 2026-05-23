@@ -172,16 +172,8 @@ export function PageHead({
     actions?: ReactNode;
 }) {
     return (
-        <div
-            style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'space-between',
-                gap: 16,
-                marginBottom: 24,
-            }}
-        >
-            <div>
+        <div className="pb-page-head">
+            <div className="pb-page-head__body">
                 <h1 className="pb-h2" style={{ margin: 0 }}>
                     {title}
                 </h1>
@@ -198,7 +190,7 @@ export function PageHead({
                 )}
             </div>
             {actions && (
-                <div style={{ display: 'flex', gap: 8 }}>{actions}</div>
+                <div className="pb-page-head__actions">{actions}</div>
             )}
         </div>
     );

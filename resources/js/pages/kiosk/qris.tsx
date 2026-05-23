@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { QR } from '@/components/philobooth/extras';
 import { Icon } from '@/components/philobooth/icon';
 import {
@@ -10,15 +10,81 @@ import { Logo } from '@/components/philobooth/logo';
 import { Spotlight } from '@/components/philobooth/kiosk-aceternity';
 import { KioskScene } from '@/components/philobooth/kiosk-scene';
 
+type Qris = {
+    string: string;
+    image_url: string | null;
+    image_data_uri: string;
+    invoice_number: string | null;
+    expired_at: string | null;
+};
+
 type Props = {
     session?: {
         session_code: string;
         final_amount: number;
     };
+    qris?: Qris | null;
 };
 
-export default function KioskQRIS({ session }: Props) {
+function formatCountdown(seconds: number): string {
+    if (seconds <= 0) {
+        return '00:00';
+    }
+
+    const m = Math.floor(seconds / 60)
+        .toString()
+        .padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+
+    return `${m}:${s}`;
+}
+
+export default function KioskQRIS({ session, qris }: Props) {
     const [processing, setProcessing] = useState(false);
+    const [remaining, setRemaining] = useState<number>(() => {
+        if (!qris?.expired_at) return 300;
+
+        return Math.max(
+            0,
+            Math.floor(
+                (new Date(qris.expired_at).getTime() - Date.now()) / 1000,
+            ),
+        );
+    });
+
+    // Countdown tick
+    useEffect(() => {
+        if (!qris?.expired_at) return;
+
+        const interval = setInterval(() => {
+            setRemaining((r) => Math.max(0, r - 1));
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [qris?.expired_at]);
+
+    // Polling status DOKU tiap 3 detik
+    useEffect(() => {
+        if (!qris) return;
+
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch('/kiosk/status', {
+                    headers: { Accept: 'application/json' },
+                });
+                const data = await res.json();
+
+                if (data?.session?.paid) {
+                    clearInterval(interval);
+                    router.visit('/kiosk/validate');
+                }
+            } catch {
+                // silent — polling akan retry
+            }
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, [qris]);
 
     function mockPay() {
         setProcessing(true);
@@ -31,7 +97,7 @@ export default function KioskQRIS({ session }: Props) {
 
     return (
         <>
-            <Head title="Scan QRIS — Kiosk" />
+            <Head title="Scan QRIS — Philobooth" />
             <KioskScene>
                 <Spotlight
                     position="top-right"
@@ -272,7 +338,19 @@ export default function KioskQRIS({ session }: Props) {
                                 <Logo size={26} />
                             </div>
                             <div style={{ position: 'relative' }}>
-                                <QR size={420} seed={12} />
+                                {qris?.image_data_uri ? (
+                                    <img
+                                        src={qris.image_data_uri}
+                                        alt="QRIS DOKU"
+                                        style={{
+                                            width: 420,
+                                            height: 420,
+                                            display: 'block',
+                                        }}
+                                    />
+                                ) : (
+                                    <QR size={420} seed={12} />
+                                )}
                             </div>
                             <div
                                 style={{
@@ -281,18 +359,46 @@ export default function KioskQRIS({ session }: Props) {
                                     color: 'var(--pb-text-muted)',
                                 }}
                             >
-                                Berlaku 5 menit · sisa{' '}
-                                <strong style={{ color: 'var(--pb-ink)' }}>
-                                    04:43
-                                </strong>
+                                {qris?.expired_at ? (
+                                    <>
+                                        Berlaku sampai{' '}
+                                        <strong
+                                            style={{
+                                                color:
+                                                    remaining < 60
+                                                        ? 'var(--pb-danger)'
+                                                        : 'var(--pb-ink)',
+                                            }}
+                                        >
+                                            {formatCountdown(remaining)}
+                                        </strong>
+                                    </>
+                                ) : (
+                                    <>
+                                        Mode demo · klik tombol bawah untuk
+                                        simulasikan pembayaran
+                                    </>
+                                )}
                             </div>
+                            {qris?.invoice_number && (
+                                <div
+                                    style={{
+                                        marginTop: 8,
+                                        fontSize: 11,
+                                        fontFamily: 'monospace',
+                                        color: 'var(--pb-text-faint)',
+                                    }}
+                                >
+                                    {qris.invoice_number}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </main>
                 <KioskFooter
-                    next="Saya sudah bayar"
+                    next={qris ? undefined : 'Saya sudah bayar (demo)'}
                     nextIcon="check"
-                    onNext={mockPay}
+                    onNext={qris ? undefined : mockPay}
                     nextDisabled={processing}
                 />
             </KioskScene>

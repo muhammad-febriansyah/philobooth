@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\CabangController;
 use App\Http\Controllers\Admin\FrameController;
+use App\Http\Controllers\Admin\GlobalSearchController;
 use App\Http\Controllers\Admin\PrinterController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\TransaksiController;
@@ -37,6 +38,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Printer & Voucher: dua role boleh; cabang user otomatis ke-scope via BelongsToBranch trait
         Route::middleware(['role:admin|cabang'])->group(function () {
+            // Global search untuk topbar — kembalikan JSON multi-kategori
+            Route::get('search', GlobalSearchController::class)->name('search');
+
             Route::get('voucher', [VoucherController::class, 'index'])->name('voucher.index');
             Route::post('voucher', [VoucherController::class, 'store'])->name('voucher.store');
             Route::get('voucher/{voucher}/pdf', [VoucherController::class, 'pdf'])->name('voucher.pdf');
@@ -78,6 +82,7 @@ Route::prefix('kiosk')->name('kiosk.')->group(function () {
     Route::get('qris', [KioskPageController::class, 'qris'])->name('qris');
     Route::get('voucher', [KioskPageController::class, 'voucher'])->name('voucher');
     Route::get('validate', [KioskPageController::class, 'validatePay'])->name('validate');
+    Route::get('output-type', [KioskPageController::class, 'outputType'])->name('output-type');
     Route::get('frame-select', [KioskPageController::class, 'frameSelect'])->name('frame-select');
     Route::get('capture', [KioskPageController::class, 'capture'])->name('capture');
     Route::get('preview', [KioskPageController::class, 'preview'])->name('preview');
@@ -96,8 +101,10 @@ Route::prefix('kiosk')->name('kiosk.')->group(function () {
     Route::post('extra-pay', [KioskSessionController::class, 'payExtra'])->name('extra-pay.submit');
     Route::post('email-receipt', [KioskSessionController::class, 'emailReceipt'])->name('email-receipt');
     Route::post('voucher/apply', [KioskSessionController::class, 'applyVoucher'])->name('voucher.apply');
+    Route::post('output-type', [KioskSessionController::class, 'selectOutputType'])->name('output-type.select');
     Route::post('frame', [KioskSessionController::class, 'selectFrame'])->name('frame.select');
     Route::post('photos', [KioskSessionController::class, 'uploadPhotos'])->name('photos.upload');
+    Route::post('video', [KioskSessionController::class, 'uploadVideo'])->name('video.upload');
     Route::post('filter', [KioskSessionController::class, 'selectFilter'])->name('filter.select');
     Route::post('quantity', [KioskSessionController::class, 'setQuantity'])->name('quantity.set');
     Route::post('complete', [KioskSessionController::class, 'complete'])->name('complete');
@@ -108,5 +115,6 @@ Route::prefix('kiosk')->name('kiosk.')->group(function () {
 // Public download landing (via QR scan dari kiosk)
 Route::get('d/{token}', [DownloadController::class, 'show'])->name('download.show');
 Route::get('d/{token}/file', [DownloadController::class, 'file'])->name('download.file');
+Route::get('d/{token}/zip', [DownloadController::class, 'zip'])->name('download.zip');
 
 require __DIR__.'/settings.php';

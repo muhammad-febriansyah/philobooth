@@ -73,7 +73,7 @@ export default function KioskExtraPay({ session, composite_url, frame }: Props) 
 
     return (
         <>
-            <Head title="Bayar tambahan — Kiosk" />
+            <Head title="Bayar tambahan — Philobooth" />
             <KioskScene>
                 <Spotlight
                     position="top-right"

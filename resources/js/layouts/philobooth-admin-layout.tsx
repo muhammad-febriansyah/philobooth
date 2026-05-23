@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
 import { AdminSidebar } from '@/components/philobooth/admin-sidebar';
 import { AdminTopbar } from '@/components/philobooth/admin-topbar';
@@ -23,20 +23,48 @@ type Props = {
 
 const STORAGE_KEY = 'pb-sidebar-hidden';
 
+function subscribe(callback: () => void): () => void {
+    if (typeof window === 'undefined') {
+        return () => {};
+    }
+
+    window.addEventListener('storage', callback);
+    window.addEventListener('pb-sidebar-toggle', callback);
+
+    return () => {
+        window.removeEventListener('storage', callback);
+        window.removeEventListener('pb-sidebar-toggle', callback);
+    };
+}
+
+function getSnapshot(): boolean {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+
+    return window.localStorage.getItem(STORAGE_KEY) === '1';
+}
+
+function getServerSnapshot(): boolean {
+    return false;
+}
+
 export default function PhilobboothAdminLayout({
     active = 'dashboard',
     children,
     bare,
 }: Props) {
-    const [hidden, setHidden] = useState<boolean>(() => {
-        if (typeof window === 'undefined') return false;
+    const hidden = useSyncExternalStore(
+        subscribe,
+        getSnapshot,
+        getServerSnapshot,
+    );
 
-        return window.localStorage.getItem(STORAGE_KEY) === '1';
-    });
-
-    useEffect(() => {
-        window.localStorage.setItem(STORAGE_KEY, hidden ? '1' : '0');
-    }, [hidden]);
+    const toggle = useCallback(() => {
+        const next = !getSnapshot();
+        window.localStorage.setItem(STORAGE_KEY, next ? '1' : '0');
+        window.dispatchEvent(new Event('pb-sidebar-toggle'));
+    }, []);
 
     return (
         <div
@@ -60,10 +88,7 @@ export default function PhilobboothAdminLayout({
                 }}
             >
                 {!bare && (
-                    <AdminTopbar
-                        collapsed={hidden}
-                        onToggleSidebar={() => setHidden((v) => !v)}
-                    />
+                    <AdminTopbar collapsed={hidden} onToggleSidebar={toggle} />
                 )}
                 <main
                     style={{

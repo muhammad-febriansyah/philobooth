@@ -76,7 +76,7 @@ export default function KioskFrameSelect({ session, frames }: Props) {
 
     return (
         <>
-            <Head title="Pilih frame — Kiosk" />
+            <Head title="Pilih frame — Philobooth" />
             <KioskScene>
                 <Spotlight
                     position="top-right"

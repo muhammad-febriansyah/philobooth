@@ -91,7 +91,7 @@ export default function KioskPayment({ session }: Props) {
 
     return (
         <>
-            <Head title="Pilih cara bayar — Kiosk" />
+            <Head title="Pilih cara bayar — Philobooth" />
             <KioskScene>
                 <Spotlight
                     position="top-right"

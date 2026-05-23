@@ -1,0 +1,99 @@
+- generic [ref=e2]:
+  - generic [ref=e293]:
+    - generic:
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+    - generic [ref=e294]:
+      - banner [ref=e295]:
+        - generic [ref=e300]: philobooth
+        - generic [ref=e301]:
+          - generic [ref=e311]: Langkah 8 / 8
+          - generic [ref=e312]:
+            - img [ref=e313]
+            - text: Senayan City
+            - generic [ref=e317]: ·
+            - text: 14:32
+      - main [ref=e318]:
+        - generic [ref=e319]:
+          - generic [ref=e320]: Selesai · Hasilmu siap
+          - heading "Foto kamu jadi !" [level=1] [ref=e322]:
+            - text: Foto kamu
+            - emphasis [ref=e323]:
+              - text: jadi
+              - img [ref=e324]
+            - text: "!"
+          - paragraph [ref=e326]: Cetakan keluar di slot bawah booth. Scan QR di kanan buat simpan versi digital ke HP kamu.
+          - generic [ref=e328]: Hasil belum tersedia
+          - generic [ref=e329]:
+            - link "Download foto (PNG)" [ref=e330] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/d/Hi1ESNOUIibq6zjxyDKStsXs9ptC15upfteIDbd7/file
+              - img [ref=e331]
+              - text: Download foto (PNG)
+            - button "Salin link" [ref=e334] [cursor=pointer]:
+              - img [ref=e335]
+              - text: Salin link
+          - generic [ref=e338]:
+            - generic [ref=e339]:
+              - img [ref=e340]
+              - generic [ref=e343]: Kirim ke email juga? (opsional)
+            - generic [ref=e344]:
+              - textbox "email@contoh.com" [ref=e345]
+              - button "Kirim" [disabled] [ref=e346]
+            - generic [ref=e347]: Kami kirim link unduh + struk ke email kamu.
+        - generic [ref=e348]:
+          - generic [ref=e349]:
+            - generic [ref=e350]: Simpan versi digital
+            - generic [ref=e351]: Scan QR pakai HP kamu
+            - generic [ref=e352]:
+              - img "QR Code" [ref=e354]
+              - generic [ref=e355]:
+                - generic [ref=e356]:
+                  - img [ref=e357]
+                  - generic [ref=e361]: Aktif 7 hari
+                - text: Berisi versi resolusi tinggi tanpa watermark. Bisa repost di Instagram & story.
+                - generic [ref=e362]: 127.0.0.1:8000/d/Hi1ESNOUIibq6zjxyDKStsXs9ptC15upfteIDbd7
+          - generic [ref=e363]:
+            - generic [ref=e364]: Struk pesanan
+            - generic [ref=e365]:
+              - generic [ref=e366]: Order ID
+              - generic "PB-20260522-LUVUOF" [ref=e367]
+            - generic [ref=e368]:
+              - generic [ref=e369]: Jumlah cetak
+              - generic "0 lembar" [ref=e370]
+            - generic [ref=e371]:
+              - generic [ref=e372]: Metode
+              - generic "Voucher" [ref=e373]
+            - generic [ref=e374]:
+              - generic [ref=e375]: Status
+              - generic "Lunas" [ref=e376]
+          - button "Selesai (auto 59s)" [ref=e377] [cursor=pointer]:
+            - img [ref=e378]
+            - text: Selesai
+            - generic [ref=e380]: (auto 59s)
+          - generic [ref=e381]:
+            - text: Tag
+            - strong [ref=e382]: "@philobooth.id"
+            - text: kalau repost ✨
+  - region "Notifications alt+T"

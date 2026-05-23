@@ -45,7 +45,7 @@ export default function SettingsPage({ settings, flash }: Props) {
     return (
         <>
             <Head title="Pengaturan Aplikasi" />
-            <main style={{ padding: 32, flex: 1, overflow: 'auto' }}>
+            <main className="pb-page-main">
                 <PageHead
                     title="Pengaturan aplikasi"
                     subtitle="Identitas web, branding, dan harga transaksi"
@@ -73,12 +73,12 @@ export default function SettingsPage({ settings, flash }: Props) {
                                 <SectionHeader
                                     icon="store"
                                     title="Identitas aplikasi"
-                                    subtitle="Nama, tagline, dan kontak yang ditampilkan di kiosk & email."
+                                    subtitle="Nama, tagline, dan kontak yang ditampilkan di Philobooth & email."
                                 />
                                 <div
                                     style={{
                                         display: 'grid',
-                                        gridTemplateColumns: '1fr 1fr',
+                                        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                                         gap: 16,
                                     }}
                                 >
@@ -141,12 +141,12 @@ export default function SettingsPage({ settings, flash }: Props) {
                                 <SectionHeader
                                     icon="image"
                                     title="Logo & favicon"
-                                    subtitle="Logo digunakan di kiosk, struk, dan sidebar. Favicon tampil di tab browser."
+                                    subtitle="Logo digunakan di Philobooth, struk, dan sidebar. Favicon tampil di tab browser."
                                 />
                                 <div
                                     style={{
                                         display: 'grid',
-                                        gridTemplateColumns: '1fr 1fr',
+                                        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                                         gap: 20,
                                     }}
                                 >
@@ -182,7 +182,7 @@ export default function SettingsPage({ settings, flash }: Props) {
                                 <div
                                     style={{
                                         display: 'grid',
-                                        gridTemplateColumns: '1fr 1fr 1fr',
+                                        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                                         gap: 16,
                                     }}
                                 >

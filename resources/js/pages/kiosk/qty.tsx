@@ -70,7 +70,7 @@ export default function KioskQty({ composite_url, frame, pricing }: Props) {
 
     return (
         <>
-            <Head title="Jumlah cetak — Kiosk" />
+            <Head title="Jumlah cetak — Philobooth" />
             <KioskScene>
                 <Spotlight
                     position="top-right"

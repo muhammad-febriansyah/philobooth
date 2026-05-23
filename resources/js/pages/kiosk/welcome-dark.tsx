@@ -13,7 +13,7 @@ const FEATURES: Array<{ i: IconName; l: string }> = [
 export default function KioskWelcomeDark() {
     return (
         <>
-            <Head title="Welcome — Kiosk" />
+            <Head title="Welcome — Philobooth" />
             <div
                 className="pb-root"
                 style={{

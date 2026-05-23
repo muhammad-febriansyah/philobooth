@@ -24,9 +24,7 @@ const STEPS = [
 ];
 
 export default function KioskWelcome({ branches = [] }: Props) {
-    const { post, processing } = useForm({
-        branch_id: branches[0]?.id ?? '',
-    });
+    const { post, processing } = useForm({});
 
     function startSession() {
         post('/kiosk/start');
@@ -34,7 +32,7 @@ export default function KioskWelcome({ branches = [] }: Props) {
 
     return (
         <>
-            <Head title="Welcome — Kiosk" />
+            <Head title="Welcome — Philobooth" />
             <KioskScene accent="bold">
                 <Spotlight
                     position="top-right"

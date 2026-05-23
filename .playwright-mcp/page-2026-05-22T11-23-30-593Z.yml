@@ -1,0 +1,96 @@
+- generic [ref=e2]:
+  - generic [ref=e168]:
+    - generic:
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+    - generic [ref=e169]:
+      - banner [ref=e170]:
+        - generic [ref=e175]: philobooth
+        - generic [ref=e176]:
+          - generic [ref=e186]: Langkah 5 / 8
+          - generic [ref=e187]:
+            - img [ref=e188]
+            - text: Senayan City
+            - generic [ref=e192]: ·
+            - text: 14:32
+      - main [ref=e193]:
+        - generic [ref=e194]:
+          - generic [ref=e197]: LIVE · Slot 1 / 8
+          - generic [ref=e199]:
+            - button "Ambil foto slot 1" [ref=e200] [cursor=pointer]:
+              - img [ref=e201]
+              - text: Ambil foto slot 1
+            - generic "Lanjut otomatis ke slot berikutnya setelah foto diambil" [ref=e204] [cursor=pointer]:
+              - checkbox "Auto-lanjut" [checked] [ref=e205]
+              - text: Auto-lanjut
+        - generic [ref=e206]:
+          - generic [ref=e207]:
+            - generic [ref=e208]: Preview frame · Cake & Candles
+            - generic [ref=e209]: 0/8 foto siap
+          - generic [ref=e211]:
+            - button "#1" [ref=e212] [cursor=pointer]:
+              - generic [ref=e213]:
+                - img [ref=e214]
+                - generic [ref=e217]: "#1"
+            - button "#2" [ref=e218] [cursor=pointer]:
+              - generic [ref=e219]:
+                - img [ref=e220]
+                - generic [ref=e221]: "#2"
+            - button "#3" [ref=e222] [cursor=pointer]:
+              - generic [ref=e223]:
+                - img [ref=e224]
+                - generic [ref=e225]: "#3"
+            - button "#4" [ref=e226] [cursor=pointer]:
+              - generic [ref=e227]:
+                - img [ref=e228]
+                - generic [ref=e229]: "#4"
+            - button "#5" [ref=e230] [cursor=pointer]:
+              - generic [ref=e231]:
+                - img [ref=e232]
+                - generic [ref=e233]: "#5"
+            - button "#6" [ref=e234] [cursor=pointer]:
+              - generic [ref=e235]:
+                - img [ref=e236]
+                - generic [ref=e237]: "#6"
+            - button "#7" [ref=e238] [cursor=pointer]:
+              - generic [ref=e239]:
+                - img [ref=e240]
+                - generic [ref=e241]: "#7"
+            - button "#8" [ref=e242] [cursor=pointer]:
+              - generic [ref=e243]:
+                - img [ref=e244]
+                - generic [ref=e245]: "#8"
+            - img "Cake & Candles"
+          - generic [ref=e246]:
+            - text: Klik slot terisi untuk
+            - strong [ref=e247]: retake
+            - text: · 8 foto lagi
+      - contentinfo [ref=e248]:
+        - button "← Ganti frame" [ref=e249] [cursor=pointer]:
+          - img [ref=e250]
+          - text: ← Ganti frame
+        - button [ref=e252] [cursor=pointer]:
+          - img [ref=e253]
+  - region "Notifications alt+T"

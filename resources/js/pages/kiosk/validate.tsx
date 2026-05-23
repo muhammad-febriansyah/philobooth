@@ -40,7 +40,7 @@ export default function KioskValidate({ session }: SessionProps) {
             setRemaining((s) => {
                 if (s <= 1) {
                     clearInterval(t);
-                    router.visit('/kiosk/frame-select');
+                    router.visit('/kiosk/output-type');
 
                     return 0;
                 }
@@ -54,7 +54,7 @@ export default function KioskValidate({ session }: SessionProps) {
 
     return (
         <>
-            <Head title="Pembayaran berhasil — Kiosk" />
+            <Head title="Pembayaran berhasil — Philobooth" />
             <KioskScene>
                 <Spotlight
                     position="top-right"
@@ -276,7 +276,7 @@ export default function KioskValidate({ session }: SessionProps) {
                         <button
                             type="button"
                             onClick={() =>
-                                router.visit('/kiosk/frame-select')
+                                router.visit('/kiosk/output-type')
                             }
                             style={{
                                 display: 'inline-flex',

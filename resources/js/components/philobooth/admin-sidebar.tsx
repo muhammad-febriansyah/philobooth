@@ -57,7 +57,7 @@ const SECTIONS: NavSection[] = [
             {
                 id: 'booth',
                 icon: 'camera',
-                label: 'Booth (kiosk)',
+                label: 'Booth Philobooth',
                 href: '/kiosk/welcome',
                 external: true,
             },
@@ -231,6 +231,7 @@ export function AdminSidebar({ active = 'dashboard', collapsed }: Props) {
 
     return (
         <aside
+            className="pb-admin-sidebar"
             style={{
                 width: collapsed ? 76 : 252,
                 background: '#fff',

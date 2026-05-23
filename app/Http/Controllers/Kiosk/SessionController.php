@@ -6,24 +6,30 @@ use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\SessionStatus;
 use App\Enums\SessionStep;
+use App\Enums\SessionType;
 use App\Http\Controllers\Controller;
+use App\Mail\PhotoReadyMail;
+use App\Models\AppSetting;
 use App\Models\Branch;
 use App\Models\Filter;
 use App\Models\Frame;
-use App\Models\AppSetting;
 use App\Models\Payment;
 use App\Models\PhotoSession;
 use App\Models\PricingConfig;
 use App\Models\Printer;
 use App\Models\SessionPhoto;
 use App\Models\Voucher;
+use App\Services\Doku\DokuClient;
+use App\Services\Doku\DokuException;
 use App\Services\FrameBuilder\CompositeGenerator;
 use App\Services\QrCodeService;
+use App\Services\StopMotionGifService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -69,7 +75,7 @@ class SessionController extends Controller
         return redirect('/kiosk/payment');
     }
 
-    public function selectPaymentMethod(Request $request): RedirectResponse
+    public function selectPaymentMethod(Request $request, DokuClient $doku): RedirectResponse
     {
         $session = $this->currentSession($request);
 
@@ -87,10 +93,54 @@ class SessionController extends Controller
             'current_step' => SessionStep::Payment,
         ]);
 
-        return match ($methodEnum) {
-            PaymentMethod::Voucher => redirect('/kiosk/voucher'),
-            default => redirect('/kiosk/qris'),
-        };
+        if ($methodEnum === PaymentMethod::Voucher) {
+            return redirect('/kiosk/voucher');
+        }
+
+        if ($methodEnum === PaymentMethod::QrisDoku && $doku->isConfigured()) {
+            $this->ensureDokuQrisPayment($session, $doku);
+        }
+
+        return redirect('/kiosk/qris');
+    }
+
+    private function ensureDokuQrisPayment(PhotoSession $session, DokuClient $doku): void
+    {
+        $pendingPayment = $session->payments()
+            ->where('method', PaymentMethod::QrisDoku)
+            ->where('status', PaymentStatus::Pending)
+            ->latest('id')
+            ->first();
+
+        if ($pendingPayment && $pendingPayment->expired_at && now()->lt($pendingPayment->expired_at)) {
+            return;
+        }
+
+        $invoiceNumber = 'INV-'.$session->session_code.'-'.Str::upper(Str::random(4));
+
+        try {
+            $result = $doku->createQrisPayment($invoiceNumber, (int) $session->final_amount);
+        } catch (DokuException $e) {
+            Log::error('DOKU createQrisPayment failed', [
+                'session' => $session->session_code,
+                'error' => $e->getMessage(),
+            ]);
+
+            return;
+        }
+
+        Payment::create([
+            'session_id' => $session->id,
+            'method' => PaymentMethod::QrisDoku,
+            'amount' => $session->final_amount,
+            'doku_invoice_number' => $result['invoice_number'],
+            'doku_request_id' => $result['request_id'],
+            'qris_string' => $result['qris_string'],
+            'qris_image_path' => $result['qris_image_url'],
+            'status' => PaymentStatus::Pending,
+            'expired_at' => $result['expired_at'],
+            'raw_response' => $result['raw'],
+        ]);
     }
 
     /**
@@ -114,7 +164,7 @@ class SessionController extends Controller
 
             $session->update([
                 'status' => SessionStatus::Paid,
-                'current_step' => SessionStep::Frame,
+                'current_step' => SessionStep::OutputType,
                 'paid_at' => now(),
             ]);
         });
@@ -190,7 +240,7 @@ class SessionController extends Controller
                 'voucher_id' => $voucher->id,
                 'payment_method' => PaymentMethod::Voucher,
                 'status' => SessionStatus::Paid,
-                'current_step' => SessionStep::Frame,
+                'current_step' => SessionStep::OutputType,
                 'discount_amount' => $session->final_amount,
                 'final_amount' => 0,
                 'paid_at' => now(),
@@ -198,6 +248,24 @@ class SessionController extends Controller
         });
 
         return redirect('/kiosk/validate')->with('success', 'Voucher berhasil diterapkan.');
+    }
+
+    public function selectOutputType(Request $request): RedirectResponse
+    {
+        $session = $this->currentSession($request);
+
+        $request->validate([
+            'session_type' => ['required', 'string', 'in:photo,stop_motion_video'],
+        ]);
+
+        $type = SessionType::from($request->string('session_type')->toString());
+
+        $session->update([
+            'session_type' => $type,
+            'current_step' => SessionStep::Frame,
+        ]);
+
+        return redirect('/kiosk/frame-select');
     }
 
     public function selectFrame(Request $request): RedirectResponse
@@ -230,6 +298,51 @@ class SessionController extends Controller
     /**
      * Upload N foto (sesuai frame.photo_slots). Replace existing kalau ada.
      */
+    /**
+     * Upload a recorded WebM/MP4 video clip for stop-motion-video sessions.
+     * Stored directly without transcoding; rendered via <video loop> on the
+     * download page.
+     */
+    public function uploadVideo(Request $request): RedirectResponse
+    {
+        $session = $this->currentSession($request);
+
+        if ($session->session_type !== SessionType::StopMotionVideo) {
+            return back()->withErrors(['video' => 'Sesi ini bukan tipe video.']);
+        }
+
+        if (! $session->frame_id) {
+            return back()->withErrors(['frame' => 'Pilih frame dulu sebelum rekam.']);
+        }
+
+        $request->validate([
+            'video' => ['required', 'file', 'mimetypes:video/webm,video/mp4', 'max:20480'],
+        ], [
+            'video.required' => 'Video belum terekam.',
+            'video.mimetypes' => 'Format video harus WebM atau MP4.',
+            'video.max' => 'Maksimal 20MB.',
+        ]);
+
+        $file = $request->file('video');
+        $ext = $file->getClientOriginalExtension() ?: ($file->getMimeType() === 'video/mp4' ? 'mp4' : 'webm');
+        $filename = $session->session_code.'-boomerang.'.$ext;
+        $path = $file->storeAs('kiosk/'.$session->session_code, $filename, 'public');
+
+        // Hapus video lama kalau ada (re-record)
+        if ($session->video_path && Storage::disk('public')->exists($session->video_path)) {
+            Storage::disk('public')->delete($session->video_path);
+        }
+
+        $session->update([
+            'video_path' => $path,
+            'current_step' => SessionStep::Generate,
+            'status' => SessionStatus::Editing,
+            'print_quantity' => 0,
+        ]);
+
+        return redirect('/kiosk/confirm');
+    }
+
     public function uploadPhotos(Request $request): RedirectResponse
     {
         $session = $this->currentSession($request);
@@ -239,14 +352,16 @@ class SessionController extends Controller
         }
 
         $session->loadMissing('frame.photoSlots');
-        $expectedCount = $session->frame->photoSlots->count();
+        $isVideo = $session->session_type === SessionType::StopMotionVideo;
+        // Foto: count harus match slot frame. Video boomerang: hingga 40 frame.
+        $maxPhotos = $isVideo ? 40 : $session->frame->photoSlots->count();
 
         $request->validate([
-            'photos' => ['required', 'array', 'min:1', 'max:'.$expectedCount],
+            'photos' => ['required', 'array', 'min:1', 'max:'.$maxPhotos],
             'photos.*' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:10240'],
         ], [
             'photos.required' => 'Wajib upload minimal 1 foto.',
-            'photos.max' => "Maksimal {$expectedCount} foto (sesuai jumlah slot frame).",
+            'photos.max' => "Maksimal {$maxPhotos} frame.",
             'photos.*.image' => 'Setiap file harus gambar.',
             'photos.*.mimes' => 'Format harus JPG atau PNG.',
             'photos.*.max' => 'Maksimal 10MB per foto.',
@@ -319,15 +434,18 @@ class SessionController extends Controller
                 ->all();
         }
 
+        $isVideo = $session->session_type === SessionType::StopMotionVideo;
+
         $session->update([
             'filter_id' => is_numeric($filterId) ? (int) $filterId : null,
             'caption' => $caption !== '' ? mb_substr($caption, 0, 60) : null,
             'show_date_stamp' => $request->boolean('show_date_stamp', true),
             'stickers' => $stickers ?: null,
-            'current_step' => SessionStep::Quantity,
+            'current_step' => $isVideo ? SessionStep::Generate : SessionStep::Quantity,
+            'print_quantity' => $isVideo ? 0 : $session->print_quantity,
         ]);
 
-        return redirect('/kiosk/qty');
+        return redirect($isVideo ? '/kiosk/confirm' : '/kiosk/qty');
     }
 
     public function setQuantity(Request $request): RedirectResponse
@@ -405,6 +523,7 @@ class SessionController extends Controller
         Request $request,
         CompositeGenerator $composer,
         QrCodeService $qr,
+        StopMotionGifService $gif,
     ): RedirectResponse {
         $session = $this->currentSession($request);
 
@@ -412,28 +531,47 @@ class SessionController extends Controller
         $session->loadMissing(['frame.photoSlots', 'photos']);
         $expectedCount = $session->frame?->photoSlots->count() ?? 0;
         $photoCount = $session->photos->count();
+        $isVideo = $session->session_type === SessionType::StopMotionVideo;
 
-        if (! $session->frame || $photoCount !== $expectedCount) {
-            return redirect('/kiosk/capture')->withErrors([
-                'photos' => "Butuh {$expectedCount} foto, baru ada {$photoCount}.",
-            ]);
+        // Video: butuh video_path. Foto: butuh foto sesuai slot count.
+        $valid = $session->frame && (
+            $isVideo
+                ? ($session->video_path && Storage::disk('public')->exists($session->video_path))
+                : $photoCount === $expectedCount
+        );
+
+        if (! $valid) {
+            $msg = $isVideo
+                ? 'Video belum terekam.'
+                : "Butuh {$expectedCount} foto, baru ada {$photoCount}.";
+
+            return redirect('/kiosk/capture')->withErrors(['photos' => $msg]);
         }
 
-        // Generate composite + QR
+        // Generate output sesuai pilihan customer:
+        //   foto  → composite (PNG cetak)
+        //   video → no-op, video_path sudah disimpan saat upload
         try {
-            $finalPath = $composer->generate($session);
             $token = Str::random(40);
             $downloadUrl = url('/d/'.$token);
             $qrPath = $qr->generateSvg($downloadUrl, 'qr/'.$session->session_code);
+
+            if ($isVideo) {
+                $finalPath = null;
+                $gifPath = null;
+            } else {
+                $finalPath = $composer->generate($session);
+                $gifPath = null;
+            }
         } catch (\Throwable $e) {
-            Log::error('Composite/QR gagal: '.$e->getMessage(), ['session' => $session->session_code]);
+            Log::error('Generate hasil gagal: '.$e->getMessage(), ['session' => $session->session_code]);
 
             return redirect('/kiosk/confirm')->withErrors([
                 'composite' => 'Gagal generate hasil akhir: '.$e->getMessage(),
             ]);
         }
 
-        $activePrinter = Printer::withoutGlobalScopes()
+        $activePrinter = $isVideo ? null : Printer::withoutGlobalScopes()
             ->where('branch_id', $session->branch_id)
             ->where('is_active', true)
             ->where('is_default', true)
@@ -444,15 +582,15 @@ class SessionController extends Controller
             'current_step' => SessionStep::Done,
             'completed_at' => now(),
             'final_image_path' => $finalPath,
-            'final_image_url' => Storage::url($finalPath),
+            'final_image_url' => $finalPath ? Storage::url($finalPath) : null,
+            'gif_path' => $gifPath,
             'download_token' => $token,
             'download_qr_path' => $qrPath,
             'download_expires_at' => now()->addHours(48 * 7), // 7 hari
             'printer_id' => $activePrinter?->id,
         ]);
 
-        // Auto-count paper terpakai pada printer aktif
-        if ($activePrinter && $session->print_quantity > 0) {
+        if (! $isVideo && $activePrinter && $session->print_quantity > 0) {
             $settings = (array) ($activePrinter->settings ?? []);
             $settings['paper_consumed'] = (int) ($settings['paper_consumed'] ?? 0) + (int) $session->print_quantity;
 
@@ -466,8 +604,8 @@ class SessionController extends Controller
         // Kirim email notif kalau customer mengisi email
         if ($session->customer_email) {
             try {
-                \Illuminate\Support\Facades\Mail::to($session->customer_email)
-                    ->send(new \App\Mail\PhotoReadyMail($session));
+                Mail::to($session->customer_email)
+                    ->send(new PhotoReadyMail($session));
             } catch (\Throwable $e) {
                 Log::warning('Photo ready email gagal: '.$e->getMessage(), [
                     'session' => $session->session_code,
@@ -499,8 +637,8 @@ class SessionController extends Controller
         $session->update(['customer_email' => $email]);
 
         try {
-            \Illuminate\Support\Facades\Mail::to($email)
-                ->send(new \App\Mail\PhotoReadyMail($session));
+            Mail::to($email)
+                ->send(new PhotoReadyMail($session));
         } catch (\Throwable $e) {
             Log::warning('Email receipt gagal: '.$e->getMessage(), [
                 'session' => $session->session_code,
@@ -530,7 +668,7 @@ class SessionController extends Controller
         return redirect('/kiosk/welcome');
     }
 
-    public function status(Request $request): JsonResponse
+    public function status(Request $request, DokuClient $doku): JsonResponse
     {
         $session = $this->currentSessionOrNull($request);
 
@@ -539,6 +677,16 @@ class SessionController extends Controller
         }
 
         $session->loadMissing(['frame:id,name,photo_slots,thumbnail_path', 'paperSize:id,code']);
+
+        // Polling fallback: kalau session belum paid + ada pending QRIS payment, cek DOKU
+        if (
+            $session->status !== SessionStatus::Paid
+            && $session->paid_at === null
+            && $doku->isConfigured()
+        ) {
+            $this->reconcileDokuPayment($session, $doku);
+            $session->refresh();
+        }
 
         return response()->json([
             'session' => [
@@ -552,6 +700,48 @@ class SessionController extends Controller
                 'final_amount' => (float) $session->final_amount,
             ],
         ]);
+    }
+
+    private function reconcileDokuPayment(PhotoSession $session, DokuClient $doku): void
+    {
+        $payment = $session->payments()
+            ->where('method', PaymentMethod::QrisDoku)
+            ->where('status', PaymentStatus::Pending)
+            ->latest('id')
+            ->first();
+
+        if (! $payment || ! $payment->doku_invoice_number) {
+            return;
+        }
+
+        try {
+            $status = $doku->inquiryStatus($payment->doku_invoice_number);
+        } catch (DokuException $e) {
+            Log::warning('DOKU inquiry failed', [
+                'invoice' => $payment->doku_invoice_number,
+                'error' => $e->getMessage(),
+            ]);
+
+            return;
+        }
+
+        if (in_array($status['status'], ['success', 'paid', 'settlement', 'capture'], true)) {
+            DB::transaction(function () use ($session, $payment, $status) {
+                $payment->update([
+                    'status' => PaymentStatus::Success,
+                    'paid_at' => now(),
+                    'doku_approval_code' => $status['approval_code'],
+                    'doku_acquirer' => $status['acquirer'],
+                    'raw_response' => $status['raw'],
+                ]);
+
+                $session->update([
+                    'status' => SessionStatus::Paid,
+                    'current_step' => SessionStep::OutputType,
+                    'paid_at' => now(),
+                ]);
+            });
+        }
     }
 
     private function currentSession(Request $request): PhotoSession
@@ -573,7 +763,9 @@ class SessionController extends Controller
             return null;
         }
 
-        return PhotoSession::find($id);
+        // Kiosk is anonymous customer flow; bypass BelongsToBranch scope so a
+        // logged-in operator from branch X can still use the booth at branch Y.
+        return PhotoSession::withoutGlobalScopes()->find($id);
     }
 
     private function generateSessionCode(): string
@@ -583,6 +775,21 @@ class SessionController extends Controller
 
     private function resolveDefaultBranchId(): ?int
     {
+        // Prefer the branch of the logged-in operator (cabang user). Public
+        // kiosk without auth falls back to the first active branch.
+        $user = auth()->user();
+
+        if ($user?->branch_id) {
+            $exists = Branch::query()
+                ->where('id', $user->branch_id)
+                ->where('is_active', true)
+                ->exists();
+
+            if ($exists) {
+                return (int) $user->branch_id;
+            }
+        }
+
         return Branch::query()->where('is_active', true)->value('id');
     }
 

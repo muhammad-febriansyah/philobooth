@@ -160,7 +160,7 @@ export default function UsersPage({
     return (
         <>
             <Head title="User & Role" />
-            <main style={{ padding: 32, flex: 1, overflow: 'auto' }}>
+            <main className="pb-page-main">
                 <PageHead
                     title="User & role"
                     subtitle={`${users.total} user terdaftar`}
@@ -175,14 +175,7 @@ export default function UsersPage({
                     }
                 />
 
-                <div
-                    style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(4, 1fr)',
-                        gap: 16,
-                        marginBottom: 24,
-                    }}
-                >
+                <div className="pb-stat-grid">
                     <Stat label="Total user" value={stats.total} icon="users" />
                     <Stat
                         label="User aktif"
@@ -280,7 +273,8 @@ export default function UsersPage({
                 </div>
 
                 <Card padding={0}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <div className="pb-table-scroll">
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
                             <tr style={{ background: '#FAFAFA' }}>
                                 {[
@@ -487,6 +481,7 @@ export default function UsersPage({
                             ))}
                         </tbody>
                     </table>
+                    </div>
                     <div
                         style={{
                             padding: '14px 22px',
@@ -626,7 +621,7 @@ function UserFormSheet({
                             <div
                                 style={{
                                     display: 'grid',
-                                    gridTemplateColumns: '1fr 1fr',
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                                     gap: 12,
                                 }}
                             >
@@ -656,7 +651,7 @@ function UserFormSheet({
                             <div
                                 style={{
                                     display: 'grid',
-                                    gridTemplateColumns: '1fr 1fr',
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                                     gap: 12,
                                 }}
                             >
@@ -720,7 +715,7 @@ function UserFormSheet({
                             <div
                                 style={{
                                     display: 'grid',
-                                    gridTemplateColumns: '1fr 1fr',
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                                     gap: 12,
                                 }}
                             >

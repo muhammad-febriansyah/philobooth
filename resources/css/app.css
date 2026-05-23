@@ -460,6 +460,14 @@
 }
 
 /* Topbar search */
+.pb-topbar-search {
+    display: none;
+}
+@media (min-width: 900px) {
+    .pb-topbar-search {
+        display: block;
+    }
+}
 .pb-search {
     position: relative;
     width: 360px;
@@ -1127,5 +1135,122 @@
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
+    }
+}
+
+/* ── Responsive utilities ─────────────────────────────────────
+   Dipakai semua admin page supaya konsisten breakpoint:
+   - Mobile (<600px): padding rapat, kolom tunggal, table horiz scroll
+   - Tablet (≥600px): kolom mulai split
+   - Desktop (≥900px): layout penuh */
+
+/* Main padding responsive untuk semua admin page */
+.pb-page-main {
+    flex: 1;
+    overflow: auto;
+    padding: 16px;
+}
+@media (min-width: 600px) {
+    .pb-page-main {
+        padding: 24px;
+    }
+}
+@media (min-width: 900px) {
+    .pb-page-main {
+        padding: 32px;
+    }
+}
+
+/* Stat cards grid — auto-fit, gak overflow di mobile */
+.pb-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+@media (min-width: 900px) {
+    .pb-stat-grid {
+        gap: 16px;
+        margin-bottom: 22px;
+    }
+}
+
+/* Form row 2 kolom — tumpuk di mobile */
+.pb-form-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+@media (min-width: 700px) {
+    .pb-form-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+}
+
+/* Filter bar (search + select) — wrap di mobile */
+.pb-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--pb-border);
+}
+.pb-filter-bar > .pb-filter-search {
+    flex: 1 1 100%;
+    min-width: 200px;
+    position: relative;
+}
+.pb-filter-bar > .pb-filter-select {
+    flex: 1 1 140px;
+    min-width: 140px;
+}
+@media (min-width: 700px) {
+    .pb-filter-bar > .pb-filter-search {
+        flex: 1 1 auto;
+    }
+    .pb-filter-bar > .pb-filter-select {
+        flex: 0 0 auto;
+        max-width: 220px;
+    }
+}
+
+/* Table horizontal scroll wrapper — preserve min-width so kolom gak crush */
+.pb-table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.pb-table-scroll > table {
+    min-width: 720px;
+}
+
+/* PageHead — wrap di mobile (title atas, action di bawah) */
+.pb-page-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+.pb-page-head__body {
+    min-width: 0;
+    flex: 1 1 240px;
+}
+.pb-page-head__actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+@media (min-width: 900px) {
+    .pb-page-head {
+        margin-bottom: 24px;
+    }
+}
+
+/* Sidebar auto-hide di mobile — pakai @media biar SSR-safe */
+@media (max-width: 899px) {
+    .pb-admin-sidebar {
+        display: none;
     }
 }

@@ -84,7 +84,7 @@ toast.error(flash.error);
     return (
         <>
             <Head title="Manajemen Cabang" />
-            <main style={{ padding: 32, flex: 1, overflow: 'auto' }}>
+            <main className="pb-page-main">
                 <PageHead
                     title="Manajemen cabang"
                     subtitle={`${branches.total} cabang terdaftar`}
@@ -171,7 +171,8 @@ toast.error(flash.error);
                 </div>
 
                 <Card padding={0}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <div className="pb-table-scroll">
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
                             <tr style={{ background: '#FAFAFA' }}>
                                 {[
@@ -396,6 +397,7 @@ toast.error(flash.error);
                             ))}
                         </tbody>
                     </table>
+                    </div>
                     <div
                         style={{
                             padding: '14px 22px',
@@ -544,7 +546,7 @@ function CabangFormSheet({
                             <div
                                 style={{
                                     display: 'grid',
-                                    gridTemplateColumns: '1fr 1fr',
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                                     gap: 12,
                                 }}
                             >
@@ -583,7 +585,7 @@ function CabangFormSheet({
                             <div
                                 style={{
                                     display: 'grid',
-                                    gridTemplateColumns: '1fr 1fr',
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                                     gap: 12,
                                 }}
                             >

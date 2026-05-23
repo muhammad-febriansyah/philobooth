@@ -1,0 +1,80 @@
+- generic [ref=e2]:
+  - generic [ref=e218]:
+    - generic:
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+    - generic [ref=e219]:
+      - banner [ref=e220]:
+        - generic [ref=e225]: philobooth
+        - generic [ref=e226]:
+          - generic [ref=e236]: Langkah 8 / 8
+          - generic [ref=e237]:
+            - img [ref=e238]
+            - text: Senayan City
+            - generic [ref=e242]: ·
+            - text: 14:32
+      - main [ref=e243]:
+        - img "Cake & Candles" [ref=e246]
+        - generic [ref=e247]:
+          - generic [ref=e248]: Langkah 8 · Konfirmasi
+          - heading "Siap dicetak?" [level=1] [ref=e250]:
+            - text: Siap
+            - emphasis [ref=e251]:
+              - text: dicetak?
+              - img [ref=e252]
+          - paragraph [ref=e254]: Cek detail di bawah. Setelah cetak, foto tidak bisa diubah lagi.
+          - generic [ref=e255]:
+            - generic [ref=e256]:
+              - generic [ref=e257]: Order ID
+              - generic "PB-20260522-LUVUOF" [ref=e258]
+            - generic [ref=e259]:
+              - generic [ref=e260]: Frame
+              - generic "Cake & Candles · Birthday" [ref=e261]
+            - generic [ref=e262]:
+              - generic [ref=e263]: Paper size
+              - generic "STRIP · Photo Strip 2x6" [ref=e264]
+            - generic [ref=e265]:
+              - generic [ref=e266]: Filter
+              - generic "Tidak ada" [ref=e267]
+            - generic [ref=e268]:
+              - generic [ref=e269]: Foto
+              - generic "8 pose" [ref=e270]
+            - generic [ref=e271]:
+              - generic [ref=e272]: Jumlah cetak
+              - generic "0 lembar" [ref=e273]
+            - generic [ref=e274]:
+              - generic [ref=e275]: Metode bayar
+              - generic "Voucher" [ref=e276]
+          - generic [ref=e277]:
+            - img [ref=e279]
+            - generic [ref=e281]:
+              - generic [ref=e282]: Pembayaran lunas
+              - generic [ref=e283]: Semua sudah dibayar — siap dicetak.
+          - button "Cetak sekarang" [ref=e284] [cursor=pointer]:
+            - img [ref=e285]
+            - text: Cetak sekarang
+            - img [ref=e290]
+          - button "← Kembali ubah detail" [ref=e292] [cursor=pointer]
+  - region "Notifications alt+T"

@@ -251,7 +251,7 @@ export default function Printer({
     return (
         <>
             <Head title="Manajemen Printer" />
-            <main style={{ padding: 32, flex: 1, overflow: 'auto' }}>
+            <main className="pb-page-main">
                 <PageHead
                     title="Manajemen printer"
                     subtitle={`${printers.length} printer terdaftar`}
@@ -278,14 +278,7 @@ export default function Printer({
                     }
                 />
 
-                <div
-                    style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(4, 1fr)',
-                        gap: 16,
-                        marginBottom: 24,
-                    }}
-                >
+                <div className="pb-stat-grid">
                     <Stat label="Online" value={stats.online} icon="wifi" />
                     <Stat label="Error" value={stats.error} icon="alert" />
                     <Stat label="Offline" value={stats.offline} icon="x" />
@@ -382,7 +375,8 @@ export default function Printer({
                 <div
                     style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gridTemplateColumns:
+                            'repeat(auto-fit, minmax(260px, 1fr))',
                         gap: 16,
                     }}
                 >
@@ -780,7 +774,7 @@ function PrinterFormSheet({
                             <div
                                 style={{
                                     display: 'grid',
-                                    gridTemplateColumns: '1fr 1fr',
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                                     gap: 12,
                                 }}
                             >
@@ -832,7 +826,7 @@ function PrinterFormSheet({
                             <div
                                 style={{
                                     display: 'grid',
-                                    gridTemplateColumns: '2fr 1fr',
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                                     gap: 12,
                                 }}
                             >

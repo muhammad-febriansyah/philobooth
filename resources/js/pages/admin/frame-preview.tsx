@@ -84,7 +84,7 @@ return;
     return (
         <>
             <Head title={`Preview · ${frame.name}`} />
-            <main style={{ padding: 32, flex: 1, overflow: 'auto' }}>
+            <main className="pb-page-main">
                 <div
                     style={{
                         display: 'flex',
@@ -378,7 +378,7 @@ return;
                             <div
                                 style={{
                                     display: 'grid',
-                                    gridTemplateColumns: '1fr 1fr',
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                                     gap: 8,
                                 }}
                             >

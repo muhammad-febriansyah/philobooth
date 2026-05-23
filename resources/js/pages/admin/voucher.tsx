@@ -202,7 +202,7 @@ toast.error(flash.error);
     return (
         <PhilobboothAdminLayout active="voucher">
             <Head title="Voucher — Philobooth" />
-            <main style={{ padding: 32, flex: 1, overflow: 'auto' }}>
+            <main className="pb-page-main">
                 <PageHead
                     title="Manajemen voucher"
                     subtitle={`${stats.total} voucher terdaftar`}
@@ -213,14 +213,7 @@ toast.error(flash.error);
                     }
                 />
 
-                <div
-                    style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(4, 1fr)',
-                        gap: 16,
-                        marginBottom: 22,
-                    }}
-                >
+                <div className="pb-stat-grid">
                 <Stat label="Total voucher" value={stats.total} icon="ticket" />
                 <Stat label="Aktif" value={stats.active} icon="check" />
                 <Stat label="Tersedia" value={stats.available} icon="store" />
@@ -228,16 +221,8 @@ toast.error(flash.error);
             </div>
 
             <Card padding={0}>
-                <div
-                    style={{
-                        padding: '14px 18px',
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 200px 200px',
-                        gap: 10,
-                        borderBottom: '1px solid var(--pb-border)',
-                    }}
-                >
-                    <div style={{ position: 'relative' }}>
+                <div className="pb-filter-bar">
+                    <div className="pb-filter-search">
                         <Icon
                             name="search"
                             size={16}
@@ -264,7 +249,7 @@ applyFilters({ search });
                     </div>
                     {canPickBranch && (
                         <select
-                            className="pb-input"
+                            className="pb-input pb-filter-select"
                             value={branchId}
                             onChange={(e) => {
                                 setBranchId(e.target.value);
@@ -280,7 +265,7 @@ applyFilters({ search });
                         </select>
                     )}
                     <select
-                        className="pb-input"
+                        className="pb-input pb-filter-select"
                         value={status}
                         onChange={(e) => {
                             setStatus(e.target.value);
@@ -293,7 +278,7 @@ applyFilters({ search });
                     </select>
                 </div>
 
-                <div style={{ overflowX: 'auto' }}>
+                <div className="pb-table-scroll">
                     <table
                         style={{
                             width: '100%',
@@ -869,7 +854,7 @@ function VoucherFormSheet({
                     <div
                         style={{
                             display: 'grid',
-                            gridTemplateColumns: '1fr 1fr',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                             gap: 14,
                         }}
                     >

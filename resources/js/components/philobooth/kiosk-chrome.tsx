@@ -1,7 +1,66 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Icon  } from './icon';
 import type {IconName} from './icon';
 import { Logo } from './logo';
+
+function FullscreenToggle({ dark = false }: { dark?: boolean }) {
+    const [isFullscreen, setIsFullscreen] = useState(false);
+
+    useEffect(() => {
+        const sync = () => setIsFullscreen(!!document.fullscreenElement);
+        document.addEventListener('fullscreenchange', sync);
+        sync();
+
+        return () => document.removeEventListener('fullscreenchange', sync);
+    }, []);
+
+    function toggle() {
+        if (document.fullscreenElement) {
+            document.exitFullscreen().catch(() => {});
+        } else {
+            document.documentElement.requestFullscreen().catch(() => {});
+        }
+    }
+
+    return (
+        <button
+            type="button"
+            onClick={toggle}
+            title={isFullscreen ? 'Keluar fullscreen' : 'Mode fullscreen'}
+            aria-label={isFullscreen ? 'Keluar fullscreen' : 'Mode fullscreen'}
+            style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 36,
+                height: 36,
+                padding: 0,
+                borderRadius: 10,
+                border: dark
+                    ? '1px solid rgba(255,255,255,0.16)'
+                    : '1px solid var(--pb-border)',
+                background: dark ? 'rgba(255,255,255,0.06)' : '#fff',
+                color: dark ? '#fff' : 'var(--pb-ink)',
+                cursor: 'pointer',
+                transition: 'background 160ms ease, transform 120ms ease',
+            }}
+            onMouseDown={(e) => {
+                e.currentTarget.style.transform = 'scale(0.95)';
+            }}
+            onMouseUp={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+            }}
+            onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+            }}
+        >
+            <Icon
+                name={isFullscreen ? 'fullscreen-exit' : 'fullscreen'}
+                size={18}
+            />
+        </button>
+    );
+}
 
 export function KioskHeader({
     step = 1,
@@ -100,6 +159,7 @@ export function KioskHeader({
                     </span>
                     {time}
                 </div>
+                <FullscreenToggle dark={dark} />
             </div>
         </header>
     );
