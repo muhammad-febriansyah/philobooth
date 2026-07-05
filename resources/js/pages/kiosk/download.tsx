@@ -19,6 +19,7 @@ type Props = {
     gif_url?: string | null;
     video_url?: string | null;
     qr_url?: string | null;
+    photos?: { slot_number: number; url: string }[];
 };
 
 const METHOD_LABEL: Record<string, string> = {
@@ -51,6 +52,7 @@ export default function KioskDownload({
     gif_url,
     video_url,
     qr_url,
+    photos = [],
 }: Props) {
     const isVideo = session?.session_type === 'stop_motion_video';
     const heroUrl = isVideo ? (video_url ?? gif_url) : final_url;
@@ -414,6 +416,76 @@ export default function KioskDownload({
                                         Video ({videoExt})
                                     </a>
                                 )}
+                            </div>
+                        )}
+
+                        {/* Foto satuan — tiap foto tanpa template, included. */}
+                        {download_url && photos.length > 0 && (
+                            <div>
+                                <div
+                                    style={{
+                                        fontSize: 11.5,
+                                        fontWeight: 700,
+                                        color: 'var(--pb-text-faint)',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.1em',
+                                        marginBottom: 8,
+                                    }}
+                                >
+                                    Foto satuan (tanpa template)
+                                </div>
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        gap: 10,
+                                        flexWrap: 'wrap',
+                                    }}
+                                >
+                                    {photos.map((photo) => (
+                                        <a
+                                            key={photo.slot_number}
+                                            href={`${download_url}/file?kind=photo&slot=${photo.slot_number}`}
+                                            download
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{
+                                                display: 'inline-flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                gap: 4,
+                                                textDecoration: 'none',
+                                                color: 'var(--pb-ink)',
+                                            }}
+                                        >
+                                            <img
+                                                src={photo.url}
+                                                alt={`Foto ${photo.slot_number}`}
+                                                style={{
+                                                    width: 64,
+                                                    height: 64,
+                                                    objectFit: 'cover',
+                                                    borderRadius: 8,
+                                                    border: '1.5px solid var(--pb-border)',
+                                                }}
+                                            />
+                                            <span
+                                                style={{
+                                                    fontSize: 11,
+                                                    fontWeight: 700,
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: 3,
+                                                }}
+                                            >
+                                                <Icon
+                                                    name="download"
+                                                    size={11}
+                                                />
+                                                #{photo.slot_number}
+                                            </span>
+                                        </a>
+                                    ))}
+                                </div>
                             </div>
                         )}
 

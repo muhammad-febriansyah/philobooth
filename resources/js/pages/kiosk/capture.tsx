@@ -424,20 +424,96 @@ export default function KioskCapture({ frame }: Props) {
         post('/kiosk/photos');
     }
 
-    async function maybeUploadVideo() {
-        const files = slots
-            .filter((s): s is NonNullable<Slot> => s !== null)
-            .map((s) => s.file);
+    /** Grab the current webcam frame as a JPEG blob (mirrored, no object URL). */
+    function grabWebcamBlob(): Promise<Blob> {
+        return new Promise((resolve, reject) => {
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
 
-        if (files.length < 2 || !isVideoEncodingSupported()) {
+            if (!video || !canvas) {
+                reject(new Error('Camera not ready'));
+
+                return;
+            }
+
+            const w = video.videoWidth || 1280;
+            const h = video.videoHeight || 720;
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+
+            if (!ctx) {
+                reject(new Error('Canvas unavailable'));
+
+                return;
+            }
+
+            ctx.save();
+            ctx.translate(w, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, w, h);
+            ctx.restore();
+
+            canvas.toBlob(
+                (blob) =>
+                    blob ? resolve(blob) : reject(new Error('encode failed')),
+                'image/jpeg',
+                0.85,
+            );
+        });
+    }
+
+    /** Record a rapid burst of webcam frames for a smooth boomerang. */
+    async function captureBoomerangBurst(
+        count = 18,
+        intervalMs = 60,
+    ): Promise<Blob[]> {
+        const frames: Blob[] = [];
+
+        for (let i = 0; i < count; i++) {
+            try {
+                frames.push(await grabWebcamBlob());
+            } catch {
+                break;
+            }
+
+            await new Promise((r) => setTimeout(r, intervalMs));
+        }
+
+        return frames;
+    }
+
+    async function maybeUploadVideo() {
+        if (!isVideoEncodingSupported()) {
             return;
         }
 
         setPreparingVideo(true);
 
         try {
-            const { blob, ext } = await encodePhotosToVideo(files, {
+            // Prefer a smooth boomerang recorded live from the webcam; fall back
+            // to the captured strip photos (e.g. DSLR mode, no local webcam feed).
+            let frames: Blob[] = [];
+
+            if (cameraSource === 'webcam' && cameraState === 'ready') {
+                frames = await captureBoomerangBurst();
+            }
+
+            if (frames.length < 2) {
+                frames = slots
+                    .filter((s): s is NonNullable<Slot> => s !== null)
+                    .map((s) => s.file);
+            }
+
+            if (frames.length < 2) {
+                return;
+            }
+
+            // Burst → many frames played fast; stills → few frames held longer.
+            const isBurst = frames.length >= 8;
+            const { blob, ext } = await encodePhotosToVideo(frames, {
                 boomerang: true,
+                frameDurationMs: isBurst ? 60 : 500,
             });
 
             const form = new FormData();

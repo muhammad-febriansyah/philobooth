@@ -423,9 +423,17 @@ class PageController extends Controller
     public function download(Request $request): Response
     {
         $session = $this->requireSession($request, 'download');
+        $session->loadMissing('photos');
 
         return Inertia::render('kiosk/download', [
             'session' => $this->sessionProps($session),
+            'photos' => $session->photos
+                ->sortBy('slot_number')
+                ->map(fn ($p) => [
+                    'slot_number' => (int) $p->slot_number,
+                    'url' => Storage::url($p->original_path),
+                ])
+                ->values(),
             'download_url' => $session->download_token
                 ? url('/d/'.$session->download_token)
                 : null,
