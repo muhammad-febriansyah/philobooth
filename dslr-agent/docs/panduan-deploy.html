@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Panduan Deploy — Philobooth Camera Agent</title>
+<style>
+    @page { size: A4; margin: 18mm 16mm; }
+    * { box-sizing: border-box; }
+    body {
+        font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: #1a1a1a; line-height: 1.5; font-size: 11pt; margin: 0;
+    }
+    h1 { font-size: 26pt; letter-spacing: -0.5px; margin: 0 0 4px; }
+    h2 {
+        font-size: 15pt; margin: 0 0 10px; padding: 8px 12px;
+        background: #0A0A0A; color: #fff; border-radius: 6px;
+        page-break-after: avoid;
+    }
+    h2 .n {
+        display: inline-block; background: #F5FA0C; color: #0A0A0A;
+        border-radius: 4px; padding: 0 8px; margin-right: 8px; font-weight: 800;
+    }
+    h3 { font-size: 12pt; margin: 16px 0 6px; page-break-after: avoid; }
+    section { page-break-before: always; }
+    section.first { page-break-before: avoid; }
+    p { margin: 6px 0; }
+    code, kbd {
+        font-family: "SF Mono", Consolas, monospace; font-size: 9.5pt;
+        background: #f2f2ef; padding: 1px 5px; border-radius: 4px;
+    }
+    pre {
+        background: #0A0A0A; color: #eaeaea; padding: 12px 14px; border-radius: 8px;
+        font-family: "SF Mono", Consolas, monospace; font-size: 9pt; line-height: 1.45;
+        overflow-x: auto; white-space: pre-wrap; word-break: break-word;
+    }
+    pre .c { color: #7bdc8e; }
+    ul, ol { margin: 6px 0; padding-left: 22px; }
+    li { margin: 3px 0; }
+    .cover {
+        border: 2px solid #F5FA0C; border-radius: 14px; padding: 28px 26px; margin-bottom: 22px;
+        background: linear-gradient(135deg, #fffdf0, #ffffff);
+    }
+    .cover .eyebrow { font-size: 10pt; letter-spacing: 2px; text-transform: uppercase; color: #8a8a00; font-weight: 700; }
+    .cover .sub { font-size: 12pt; color: #444; margin-top: 6px; }
+    .meta { font-size: 9.5pt; color: #666; margin-top: 14px; }
+    .callout {
+        border-left: 4px solid #F5FA0C; background: #fffdf0; padding: 10px 14px;
+        border-radius: 0 8px 8px 0; margin: 12px 0; font-size: 10pt;
+    }
+    .warn { border-left-color: #E5484D; background: #fff5f5; }
+    .ok { border-left-color: #16A34A; background: #f2fcf5; }
+    table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 9.5pt; }
+    th, td { border: 1px solid #ddd; padding: 6px 9px; text-align: left; vertical-align: top; }
+    th { background: #f7f7f4; font-weight: 700; }
+    .diagram {
+        font-family: "SF Mono", Consolas, monospace; font-size: 8.5pt; line-height: 1.35;
+        background: #f7f7f4; border: 1px solid #e2e2dc; border-radius: 8px; padding: 12px; white-space: pre;
+    }
+    .foot { margin-top: 8px; font-size: 8.5pt; color: #999; }
+    .check td:first-child { width: 28px; text-align: center; font-size: 12pt; }
+</style>
+</head>
+<body>
+
+<section class="first">
+    <div class="cover">
+        <div class="eyebrow">Philobooth · Dokumentasi Teknis</div>
+        <h1>Panduan Deploy &amp; Instalasi</h1>
+        <div class="sub">Philobooth Camera Agent — kontrol DSLR &amp; printer untuk booth</div>
+        <div class="meta">Versi 1.0 · Untuk developer/deployer &amp; operator booth · philobooth.id</div>
+    </div>
+
+    <h2><span class="n">0</span> Cara kerja singkat</h2>
+    <p>Philobooth berbasis web. Browser tidak bisa mengakses kamera USB atau printer secara langsung,
+    jadi ada satu program kecil (<b>agent</b>) yang diinstall di PC booth. Web memerintah agent lewat
+    <code>http://localhost:5000</code>; agent yang mengendalikan kamera &amp; printer.</p>
+
+    <div class="diagram">philobooth.id  (web, sudah production)
+   ├─ Dashboard admin  →  config kamera &amp; printer, tombol Download aplikasi
+   └─ Kiosk UI (browser booth)
+            │  HTTP localhost:5000
+            ▼
+     philobooth-dslr-agent.exe  (di PC booth)
+            ├─ Kamera  →  Canon/Nikon (PTP/USB)
+            ├─ Printer →  Windows print spooler
+            └─ Tanpa kamera → fallback webcam</div>
+
+    <div class="callout">
+        <b>Ringkas:</b> (1) build exe → (2) upload ke server → (3) operator download dari dashboard →
+        (4) install di PC booth → (5) colok kamera + printer → (6) tes.
+    </div>
+
+    <div class="callout warn">
+        <b>Penting:</b> exe ini <b>belum diuji dengan kamera/printer fisik</b>. Kodenya sudah terbukti
+        kompilasi bersih (cross-build), tapi wajib dites di PC Windows + kamera asli sebelum dipakai
+        ke pelanggan. Kamera Canon M3, R1, M100 tidak bisa di-tether software apa pun (batasan bodi).
+    </div>
+</section>
+
+<section>
+    <h2><span class="n">A</span> Build exe (developer)</h2>
+
+    <h3>A.1 — Di Windows (paling langsung)</h3>
+    <p>Perlu <b>.NET 8 SDK</b>. Target default sudah <code>net8.0-windows</code>:</p>
+    <pre>cd dslr-agent
+dotnet publish -c Release
+<span class="c"># -> bin\Release\net8.0-windows\win-x64\publish\philobooth-dslr-agent.exe</span></pre>
+    <p>Hasilnya <b>single-file self-contained</b> (~181 MB) — jalan tanpa perlu install .NET di PC booth.</p>
+
+    <h3>A.2 — Cross-build dari macOS / Linux (opsional)</h3>
+    <p>Bisa tanpa mesin Windows (restore terpisah karena override target framework):</p>
+    <pre>cd dslr-agent
+dotnet restore -p:TargetFramework=net8.0-windows
+dotnet publish -c Release -p:TargetFramework=net8.0-windows --no-restore</pre>
+    <p>Warning <code>NU1701</code> saat restore itu normal (paket kamera memakai .NET Framework via
+    compat shim).</p>
+
+    <div class="callout ok">
+        <b>Sudah diperbaiki:</b> versi paket <code>CameraControl.Devices</code> diubah dari
+        <code>2.0.6</code> (tidak ada di NuGet — build pasti gagal) ke <code>2.0.73-beta</code>, dan
+        referensi <code>Tray</code> di Program.cs diperbaiki. Tanpa fix ini build Windows tidak jalan.
+    </div>
+</section>
+
+<section>
+    <h2><span class="n">B</span> Build installer (Inno Setup)</h2>
+    <p>Agar operator dapat installer next-next-finish (bukan exe mentah). Wajib dijalankan di
+    <b>Windows</b> — Inno Setup hanya ada di Windows.</p>
+    <ol>
+        <li>Install <b>Inno Setup</b>: <code>jrsoftware.org/isinfo.php</code></li>
+        <li>Build exe dulu (Bagian A).</li>
+        <li>Compile skrip yang sudah disediakan:</li>
+    </ol>
+    <pre>ISCC installer\philobooth-agent.iss
+<span class="c"># -> installer\Output\philobooth-camera-setup.exe</span></pre>
+    <p>Installer ini: install exe, buat shortcut Start Menu, <b>auto-start saat Windows menyala</b>
+    (opsional, ada centangnya), menutup agent lama saat update, dan menjalankan agent setelah install.</p>
+</section>
+
+<section>
+    <h2><span class="n">C</span> Deploy ke server (supaya tombol dashboard nyala)</h2>
+    <p>Dashboard punya tombol <b>“Download aplikasi”</b> di halaman utama. Tombol itu menyajikan file
+    exe dari server. Taruh hasil build (exe <i>atau</i> installer, rename sama) di path berikut pada
+    server produksi:</p>
+    <pre>storage/app/private/agent/philobooth-dslr-agent.exe</pre>
+    <div class="callout">
+        Root disk <code>local</code> di Laravel 11+ adalah <code>storage/app/private</code>
+        (bukan <code>storage/app</code>). Selama file belum ada, tombol tampil
+        <b>“Belum tersedia”</b>. File ini tidak masuk git (gitignored).
+    </div>
+    <p>Setelah frontend diubah, jalankan build sekali: <code>npm run build</code>.</p>
+</section>
+
+<section>
+    <h2><span class="n">D</span> Install di PC booth (operator)</h2>
+    <ol>
+        <li>Buka <b>philobooth.id</b> → login → Dashboard → klik <b>Download aplikasi</b>
+            (atau jalankan <code>philobooth-camera-setup.exe</code> langsung).</li>
+        <li>Jalankan / install (next-next-finish). Agent muncul sebagai <b>ikon di tray</b> dekat jam —
+            tidak ada jendela hitam.</li>
+        <li>Colok <b>DSLR</b> ke PC pakai kabel USB (langsung, bukan lewat hub). Set kamera ke mode
+            <b>PTP</b>, nyalakan, posisi mode foto.</li>
+        <li>Colok <b>printer</b>, pastikan sudah terpasang di Windows.</li>
+        <li>Buka kiosk → pilih mode <b>DSLR</b>. Indikator harus <b>hijau: “Kamera terhubung”</b>.</li>
+    </ol>
+    <div class="callout">
+        Web di <code>https</code> memanggil <code>http://localhost:5000</code>. Chrome akan meminta izin
+        “Local Network” <b>sekali</b> — klik <b>Izinkan</b>. Agent sudah mengirim header yang diperlukan.
+    </div>
+</section>
+
+<section>
+    <h2><span class="n">E</span> Konfigurasi</h2>
+
+    <h3>E.1 — Printer</h3>
+    <p>Di dashboard → <b>Manajemen Printer</b> → tambah/edit printer → tombol <b>“Deteksi”</b> pada
+    kolom “Nama printer di sistem”. Buka halaman ini <b>di PC booth</b> supaya daftar printer Windows
+    asli muncul, lalu pilih. Nama itu yang dipakai agent saat mencetak.</p>
+
+    <h3>E.2 — Kamera (ISO / Shutter / Aperture)</h3>
+    <p>Diatur langsung di halaman <b>kiosk capture</b>, mode DSLR — dropdown ISO, Shutter, Aperture
+    membaca nilai asli dari kamera lewat agent. Tidak perlu setting di file apa pun.</p>
+
+    <h3>E.3 — Output tiap sesi</h3>
+    <p>Satu harga sudah termasuk semua: <b>foto cetak</b>, <b>softcopy frame</b>, <b>softcopy satuan</b>,
+    <b>GIF</b>, dan <b>video</b> (di-encode di browser dari foto yang sama). Tidak ada layar pilih output.</p>
+</section>
+
+<section>
+    <h2><span class="n">F</span> Checklist tes (wajib sebelum ke pelanggan)</h2>
+    <table class="check">
+        <tr><td>☐</td><td>Buka <code>http://localhost:5000/health</code> di PC booth → muncul JSON
+            <code>{ ok:true, cameraConnected, cameraModel, backend }</code>.</td></tr>
+        <tr><td>☐</td><td>Kiosk mode DSLR → indikator <b>hijau “Kamera terhubung: [model]”</b>.</td></tr>
+        <tr><td>☐</td><td>Ubah ISO / Shutter / Aperture di kiosk → nilai berubah di kamera.</td></tr>
+        <tr><td>☐</td><td>Ambil foto → hasil full-res masuk (bukan dari webcam).</td></tr>
+        <tr><td>☐</td><td>Selesaikan sesi → cek hasil: cetak keluar, GIF &amp; video muncul di halaman download.</td></tr>
+        <tr><td>☐</td><td>Cetak → keluar di printer yang benar, ukuran kertas sesuai.</td></tr>
+        <tr><td>☐</td><td>Cabut kamera → indikator kiosk berubah “Kamera tidak terdeteksi” dalam beberapa detik.</td></tr>
+    </table>
+</section>
+
+<section>
+    <h2><span class="n">G</span> Troubleshooting</h2>
+    <table>
+        <tr><th>Gejala</th><th>Penyebab &amp; solusi</th></tr>
+        <tr><td>Kiosk: “Aplikasi kamera belum jalan”</td>
+            <td>Agent (exe) belum dijalankan. Buka dari tray / jalankan exe. Cek
+            <code>localhost:5000/health</code>.</td></tr>
+        <tr><td>Kiosk: “Kamera tidak terdeteksi”</td>
+            <td>Kamera belum mode PTP; kabel USB hanya untuk charge (ganti kabel data); lewat hub
+            (colok langsung); atau <b>EOS Utility</b> mengunci kamera (tutup total).</td></tr>
+        <tr><td>Web tidak bisa panggil localhost</td>
+            <td>Chrome belum diizinkan “Local Network”. Muat ulang, klik Izinkan. Pastikan agent versi
+            terbaru (header Private Network Access sudah ada).</td></tr>
+        <tr><td>Canon terdeteksi di Explorer tapi app tidak lihat</td>
+            <td>Kamera Canon generasi baru (R-series) butuh <b>EDSDK</b> (Bagian H). Canon lama biasanya
+            jalan lewat engine bawaan.</td></tr>
+        <tr><td>Foto tidak muncul di Explorer sama sekali</td>
+            <td>Masalah fisik: kabel / port / setting USB kamera. Bukan software.</td></tr>
+        <tr><td>Cetak salah printer / tidak keluar</td>
+            <td>“Nama printer di sistem” belum diisi via Deteksi, atau tidak cocok dengan nama Windows.</td></tr>
+    </table>
+</section>
+
+<section>
+    <h2><span class="n">H</span> Canon EDSDK (opsional — Canon terbaik)</h2>
+    <p>Engine bawaan (digiCamControl) kuat untuk Nikon, sebagian Canon. Untuk dukungan Canon terbaik
+    (semua kecuali M3, R1, M100 — seperti dslrBooth), pakai <b>Canon EDSDK</b>:</p>
+    <ol>
+        <li>Daftar <b>Canon Developer Programme</b> (gratis, approval 1–3 hari):
+            <code>developers.canon-europe.com</code>. Download EDSDK Windows.</li>
+        <li>Taruh <code>EDSDKLib.cs</code> + DLL native (x64) ke folder <code>dslr-agent/edsdk/</code>.</li>
+        <li>Build dengan flag:
+            <pre>dotnet publish -c Release -p:TargetFramework=net8.0-windows -p:IncludeEdsdk=true</pre></li>
+        <li>Set <code>appsettings.json</code> → <code>"Camera": { "Mode": "Edsdk" }</code>.</li>
+    </ol>
+    <p>Kode <code>EdsdkCameraService</code> sudah disiapkan (di-gate off secara default). Tetap wajib
+    diverifikasi di Windows + kamera Canon asli (tabel nilai ISO/shutter/aperture, alur capture).</p>
+    <div class="foot">Philobooth Camera Agent — dokumentasi ini menyertai repo di folder
+        <code>dslr-agent/</code>. Untuk detail HTTP API &amp; opsi build, lihat <code>dslr-agent/README.md</code>.</div>
+</section>
+
+</body>
+</html>
