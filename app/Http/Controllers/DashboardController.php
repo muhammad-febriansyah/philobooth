@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Enums\PaymentStatus;
 use App\Enums\PrinterStatus;
 use App\Enums\SessionStatus;
+use App\Http\Controllers\Admin\AgentController;
 use App\Models\PhotoSession;
 use App\Models\Printer;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -25,7 +27,25 @@ class DashboardController extends Controller
             'printers' => $this->printerStatuses(),
             'recentTx' => $this->recentTransactions(),
             'todayLabel' => $today->locale('id')->isoFormat('dddd, D MMMM YYYY'),
+            'agent' => $this->agentInfo(),
         ]);
+    }
+
+    /**
+     * Availability + size of the downloadable kiosk camera agent (.exe).
+     *
+     * @return array{available: bool, size_mb: float|null}
+     */
+    private function agentInfo(): array
+    {
+        $exists = Storage::disk('local')->exists(AgentController::AGENT_PATH);
+
+        return [
+            'available' => $exists,
+            'size_mb' => $exists
+                ? round(Storage::disk('local')->size(AgentController::AGENT_PATH) / 1048576, 1)
+                : null,
+        ];
     }
 
     /** @return array<string, mixed> */

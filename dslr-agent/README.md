@@ -57,6 +57,18 @@ The camera engine (`CameraControl.Devices`) is a .NET Framework package used via
 the compat shim (the `NU1701` restore warning is expected). Camera + printing
 still need a real Windows machine to test at runtime.
 
+### Serving the exe from the dashboard
+
+The dashboard has a "Download aplikasi" button (`GET /admin/agent-download`).
+Place the built exe on the server's `local` disk so operators can download it:
+
+```
+storage/app/agent/philobooth-dslr-agent.exe
+```
+
+The button shows "Belum tersedia" until that file exists. Replace it with the
+Inno Setup installer (renamed to the same path) once you build one.
+
 ### Installer (operator-friendly)
 
 `installer/philobooth-agent.iss` is an Inno Setup script that wraps the exe in a

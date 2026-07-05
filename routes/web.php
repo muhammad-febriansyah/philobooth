@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AgentController;
 use App\Http\Controllers\Admin\CabangController;
 use App\Http\Controllers\Admin\FrameController;
 use App\Http\Controllers\Admin\GlobalSearchController;
@@ -40,6 +41,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::middleware(['role:admin|cabang'])->group(function () {
             // Global search untuk topbar — kembalikan JSON multi-kategori
             Route::get('search', GlobalSearchController::class)->name('search');
+
+            // Download aplikasi kamera (.exe) untuk PC booth
+            Route::get('agent-download', [AgentController::class, 'download'])->name('agent.download');
 
             Route::get('voucher', [VoucherController::class, 'index'])->name('voucher.index');
             Route::post('voucher', [VoucherController::class, 'store'])->name('voucher.store');

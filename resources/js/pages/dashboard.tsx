@@ -51,6 +51,7 @@ type Props = {
     printers: PrinterRow[];
     recentTx: TxRow[];
     todayLabel: string;
+    agent: { available: boolean; size_mb: number | null };
 };
 
 function rupiah(n: number, compact = false): string {
@@ -99,7 +100,10 @@ function Sparkline({
         return [x, y] as const;
     });
     const linePath = pts
-        .map(([x, y], i) => `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`)
+        .map(
+            ([x, y], i) =>
+                `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`,
+        )
         .join(' ');
     const areaPath = `${linePath} L ${w} ${h} L 0 ${h} Z`;
 
@@ -238,9 +242,7 @@ function StatCard({
                     gap: 8,
                 }}
             >
-                <span
-                    style={{ fontSize: 11, color: 'var(--pb-text-faint)' }}
-                >
+                <span style={{ fontSize: 11, color: 'var(--pb-text-faint)' }}>
                     vs kemarin
                 </span>
                 {spark && spark.length > 1 && (
@@ -282,6 +284,100 @@ function MethodIcon({ method }: { method: string }) {
     );
 }
 
+function AgentDownloadCard({
+    agent,
+}: {
+    agent: { available: boolean; size_mb: number | null };
+}) {
+    return (
+        <Card
+            padding={18}
+            style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 16,
+                flexWrap: 'wrap',
+            }}
+        >
+            <div
+                style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: 'rgba(245,250,12,0.18)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                }}
+            >
+                <Icon name="camera" size={22} />
+            </div>
+            <div style={{ flex: 1, minWidth: 200 }}>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>
+                    Aplikasi Kamera Booth
+                </div>
+                <div
+                    style={{
+                        fontSize: 13,
+                        color: 'var(--pb-text-muted)',
+                        marginTop: 2,
+                        lineHeight: 1.4,
+                    }}
+                >
+                    Install di PC booth (Windows) supaya bisa pakai DSLR &amp;
+                    printer. Buka sekali, jalan otomatis di tray.
+                    {agent.available && agent.size_mb
+                        ? ` · ${agent.size_mb} MB`
+                        : ''}
+                </div>
+            </div>
+            {agent.available ? (
+                <a
+                    href="/admin/agent-download"
+                    download
+                    style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '11px 20px',
+                        background: 'var(--pb-ink)',
+                        color: '#fff',
+                        borderRadius: 10,
+                        fontSize: 14,
+                        fontWeight: 700,
+                        textDecoration: 'none',
+                        whiteSpace: 'nowrap',
+                    }}
+                >
+                    <Icon name="download" size={16} />
+                    Download aplikasi
+                </a>
+            ) : (
+                <span
+                    style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '11px 20px',
+                        background: 'rgba(10,10,10,0.05)',
+                        color: 'var(--pb-text-faint)',
+                        borderRadius: 10,
+                        fontSize: 14,
+                        fontWeight: 700,
+                        whiteSpace: 'nowrap',
+                        cursor: 'not-allowed',
+                    }}
+                    title="File belum diunggah ke server"
+                >
+                    <Icon name="download" size={16} />
+                    Belum tersedia
+                </span>
+            )}
+        </Card>
+    );
+}
+
 export default function Dashboard({
     stats,
     chart,
@@ -289,6 +385,7 @@ export default function Dashboard({
     printers,
     recentTx,
     todayLabel,
+    agent,
 }: Props) {
     const chartMax = Math.max(1, ...chart.map((c) => c.value));
     const todayKey = chart.length > 0 ? chart[chart.length - 1].date : '';
@@ -342,6 +439,8 @@ export default function Dashboard({
                         </>
                     }
                 />
+
+                <AgentDownloadCard agent={agent} />
 
                 <div className="pb-stat-grid">
                     <StatCard
@@ -407,8 +506,8 @@ export default function Dashboard({
                                         color: 'var(--pb-text-muted)',
                                     }}
                                 >
-                                    Total {rupiah(totalRevenue, true)} · rata-rata{' '}
-                                    {rupiah(avgRevenue, true)}/hari
+                                    Total {rupiah(totalRevenue, true)} ·
+                                    rata-rata {rupiah(avgRevenue, true)}/hari
                                 </p>
                             </div>
                             <div
@@ -498,8 +597,7 @@ export default function Dashboard({
                                         <div
                                             key={i}
                                             style={{
-                                                borderTop:
-                                                    '1px dashed #F0F0F1',
+                                                borderTop: '1px dashed #F0F0F1',
                                             }}
                                         />
                                     ))}
@@ -557,8 +655,7 @@ export default function Dashboard({
                                                             background:
                                                                 'var(--pb-ink)',
                                                             color: '#fff',
-                                                            padding:
-                                                                '6px 10px',
+                                                            padding: '6px 10px',
                                                             borderRadius: 8,
                                                             fontSize: 11.5,
                                                             fontWeight: 600,
@@ -590,7 +687,8 @@ export default function Dashboard({
                                                             : isHover
                                                               ? 'linear-gradient(180deg, #262626 0%, #0a0a0a 100%)'
                                                               : 'linear-gradient(180deg, #1f1f1f 0%, #0a0a0a 100%)',
-                                                        borderRadius: '6px 6px 0 0',
+                                                        borderRadius:
+                                                            '6px 6px 0 0',
                                                         minHeight: 3,
                                                         boxShadow: isHover
                                                             ? '0 -4px 14px -4px rgba(10,10,10,0.25)'
@@ -791,7 +889,8 @@ export default function Dashboard({
                                         color: 'var(--pb-text-muted)',
                                     }}
                                 >
-                                    Top {printers.length} berdasarkan job hari ini
+                                    Top {printers.length} berdasarkan job hari
+                                    ini
                                 </p>
                             </div>
                             <Link
