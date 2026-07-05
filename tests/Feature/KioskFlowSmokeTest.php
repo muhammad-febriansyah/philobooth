@@ -251,6 +251,23 @@ it('POST /kiosk/photos uploads, advances to preview', function () {
         ->and($session->photos()->count())->toBe(2);
 });
 
+it('POST /kiosk/video attaches a browser-encoded clip without advancing the photo flow', function () {
+    $session = seedKiosk([
+        'current_step' => SessionStep::Capture,
+        'session_type' => SessionType::Photo,
+    ]);
+
+    $this->withSession(['kiosk_session_id' => $session->id])
+        ->post('/kiosk/video', [
+            'video' => UploadedFile::fake()->create('clip.webm', 200, 'video/webm'),
+        ])
+        ->assertNoContent();
+
+    expect($session->fresh())
+        ->video_path->not->toBeNull()
+        ->current_step->toBe(SessionStep::Capture);
+});
+
 it('POST /kiosk/filter stores filter and advances to qty', function () {
     $session = seedKiosk(['current_step' => SessionStep::Preview]);
     $filter = Filter::factory()->create();

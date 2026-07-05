@@ -1,8 +1,9 @@
 import { Head, router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { Icon } from '@/components/philobooth/icon';
-import { KioskHeader } from '@/components/philobooth/kiosk-chrome';
 import { Spotlight } from '@/components/philobooth/kiosk-aceternity';
+import { KioskHeader } from '@/components/philobooth/kiosk-chrome';
 import { KioskScene } from '@/components/philobooth/kiosk-scene';
 
 type Props = {
@@ -27,6 +28,22 @@ const METHOD_LABEL: Record<string, string> = {
     cash: 'Tunai',
 };
 
+const extraDownloadStyle: CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    flex: '1 1 auto',
+    padding: '10px 16px',
+    background: '#fff',
+    color: 'var(--pb-ink)',
+    border: '1.5px solid var(--pb-border)',
+    borderRadius: 10,
+    fontSize: 13,
+    fontWeight: 700,
+    textDecoration: 'none',
+};
+
 export default function KioskDownload({
     session,
     download_url,
@@ -36,7 +53,7 @@ export default function KioskDownload({
     qr_url,
 }: Props) {
     const isVideo = session?.session_type === 'stop_motion_video';
-    const heroUrl = isVideo ? video_url ?? gif_url : final_url;
+    const heroUrl = isVideo ? (video_url ?? gif_url) : final_url;
     const isVideoFile = isVideo && !!video_url;
     const videoExt = (() => {
         if (!video_url) {
@@ -50,8 +67,8 @@ export default function KioskDownload({
     const downloadLabel = isVideoFile
         ? `Download video (${videoExt})`
         : isVideo
-            ? 'Download GIF'
-            : 'Download foto (PNG)';
+          ? 'Download GIF'
+          : 'Download foto (PNG)';
     const [copied, setCopied] = useState(false);
     const [remaining, setRemaining] = useState(60); // 60 detik countdown auto-finish
     const [email, setEmail] = useState('');
@@ -86,6 +103,7 @@ export default function KioskDownload({
 
             return;
         }
+
         setEmailSending(true);
         setEmailError(null);
         router.post(
@@ -105,7 +123,10 @@ export default function KioskDownload({
     }
 
     function copyLink() {
-        if (!download_url) return;
+        if (!download_url) {
+            return;
+        }
+
         navigator.clipboard.writeText(download_url).then(() => {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
@@ -271,7 +292,9 @@ export default function KioskDownload({
                             ) : heroUrl ? (
                                 <img
                                     src={heroUrl}
-                                    alt={isVideo ? 'Stop Motion' : 'Hasil cetak'}
+                                    alt={
+                                        isVideo ? 'Stop Motion' : 'Hasil cetak'
+                                    }
                                     style={{
                                         maxWidth: '100%',
                                         maxHeight: '52vh',
@@ -303,7 +326,7 @@ export default function KioskDownload({
                                 href={
                                     download_url
                                         ? `${download_url}/file?kind=${isVideoFile ? 'video' : isVideo ? 'gif' : 'composite'}`
-                                        : heroUrl ?? '#'
+                                        : (heroUrl ?? '#')
                                 }
                                 download
                                 target="_blank"
@@ -356,6 +379,43 @@ export default function KioskDownload({
                                 {copied ? 'Tersalin!' : 'Salin link'}
                             </button>
                         </div>
+
+                        {/* Extra outputs — GIF + video, included with every
+                            session. Shown when generated. */}
+                        {download_url && (gif_url || video_url) && (
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    gap: 10,
+                                    flexWrap: 'wrap',
+                                }}
+                            >
+                                {gif_url && (
+                                    <a
+                                        href={`${download_url}/file?kind=gif`}
+                                        download
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={extraDownloadStyle}
+                                    >
+                                        <Icon name="image" size={15} />
+                                        GIF
+                                    </a>
+                                )}
+                                {video_url && (
+                                    <a
+                                        href={`${download_url}/file?kind=video`}
+                                        download
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={extraDownloadStyle}
+                                    >
+                                        <Icon name="download" size={15} />
+                                        Video ({videoExt})
+                                    </a>
+                                )}
+                            </div>
+                        )}
 
                         {/* Email section */}
                         <div
@@ -487,9 +547,7 @@ export default function KioskDownload({
                                                 whiteSpace: 'nowrap',
                                             }}
                                         >
-                                            {emailSending
-                                                ? 'Kirim…'
-                                                : 'Kirim'}
+                                            {emailSending ? 'Kirim…' : 'Kirim'}
                                         </button>
                                     </div>
                                     {emailError && (
@@ -510,8 +568,8 @@ export default function KioskDownload({
                                             marginTop: 6,
                                         }}
                                     >
-                                        Kami kirim link unduh + struk ke
-                                        email kamu.
+                                        Kami kirim link unduh + struk ke email
+                                        kamu.
                                     </div>
                                 </>
                             )}
@@ -635,9 +693,9 @@ export default function KioskDownload({
                                             Aktif 7 hari
                                         </span>
                                     </div>
-                                    Berisi versi resolusi tinggi tanpa watermark.
-                                    Bisa repost di Instagram &amp; story.
-
+                                    Berisi versi resolusi tinggi tanpa
+                                    watermark. Bisa repost di Instagram &amp;
+                                    story.
                                     <div
                                         style={{
                                             marginTop: 12,
@@ -664,8 +722,7 @@ export default function KioskDownload({
                                 borderRadius: 22,
                                 padding: 'clamp(18px, 2.2vw, 24px)',
                                 border: '1px solid var(--pb-border)',
-                                boxShadow:
-                                    '0 4px 16px rgba(10,10,10,0.04)',
+                                boxShadow: '0 4px 16px rgba(10,10,10,0.04)',
                             }}
                         >
                             <div

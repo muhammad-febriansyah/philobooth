@@ -27,6 +27,7 @@ use App\Services\StopMotionGifService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -289,13 +290,9 @@ class SessionController extends Controller
      * Stored directly without transcoding; rendered via <video loop> on the
      * download page.
      */
-    public function uploadVideo(Request $request): RedirectResponse
+    public function uploadVideo(Request $request): RedirectResponse|Response
     {
         $session = $this->currentSession($request);
-
-        if ($session->session_type !== SessionType::StopMotionVideo) {
-            return back()->withErrors(['video' => 'Sesi ini bukan tipe video.']);
-        }
 
         if (! $session->frame_id) {
             return back()->withErrors(['frame' => 'Pilih frame dulu sebelum rekam.']);
@@ -311,22 +308,32 @@ class SessionController extends Controller
 
         $file = $request->file('video');
         $ext = $file->getClientOriginalExtension() ?: ($file->getMimeType() === 'video/mp4' ? 'mp4' : 'webm');
-        $filename = $session->session_code.'-boomerang.'.$ext;
+        $filename = $session->session_code.'-video.'.$ext;
         $path = $file->storeAs('kiosk/'.$session->session_code, $filename, 'public');
 
-        // Hapus video lama kalau ada (re-record)
+        // Hapus video lama kalau ada (re-record / re-encode)
         if ($session->video_path && Storage::disk('public')->exists($session->video_path)) {
             Storage::disk('public')->delete($session->video_path);
         }
 
-        $session->update([
-            'video_path' => $path,
-            'current_step' => SessionStep::Generate,
-            'status' => SessionStatus::Editing,
-            'print_quantity' => 0,
-        ]);
+        // Legacy stop-motion sessions record the video AS the main output and
+        // advance the flow. In the unified photo flow the video is a side
+        // artifact (encoded in the browser from the captured photos), so just
+        // attach it and leave the photo flow's step/status untouched.
+        if ($session->session_type === SessionType::StopMotionVideo) {
+            $session->update([
+                'video_path' => $path,
+                'current_step' => SessionStep::Generate,
+                'status' => SessionStatus::Editing,
+                'print_quantity' => 0,
+            ]);
 
-        return redirect('/kiosk/confirm');
+            return redirect('/kiosk/confirm');
+        }
+
+        $session->update(['video_path' => $path]);
+
+        return response()->noContent();
     }
 
     public function uploadPhotos(Request $request): RedirectResponse

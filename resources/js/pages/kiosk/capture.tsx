@@ -14,6 +14,10 @@ import type {
     DslrStatus,
 } from '@/lib/dslr-agent';
 import { playBeep, playShutter, unlockAudio } from '@/lib/sfx';
+import {
+    encodePhotosToVideo,
+    isVideoEncodingSupported,
+} from '@/lib/video-encoder';
 
 type FrameSlot = {
     slot_number: number;
@@ -43,6 +47,13 @@ type Slot = { url: string; file: File } | null;
 const COUNTDOWN_FROM = 3;
 const DELAY_BETWEEN_SHOTS = 1200; // ms — kasih waktu user reset pose
 
+/** Laravel's CSRF token from the XSRF-TOKEN cookie, for non-Inertia fetches. */
+function readXsrfToken(): string | null {
+    const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+
+    return match ? decodeURIComponent(match[1]) : null;
+}
+
 export default function KioskCapture({ frame }: Props) {
     const totalSlots = frame?.photo_slots ?? 0;
     const [slots, setSlots] = useState<Slot[]>(() =>
@@ -63,6 +74,7 @@ export default function KioskCapture({ frame }: Props) {
     const [dslrSettings, setDslrSettings] = useState<DslrSettings | null>(null);
     const [dslrBusy, setDslrBusy] = useState(false);
     const [dslrStatus, setDslrStatus] = useState<DslrStatus | null>(null);
+    const [preparingVideo, setPreparingVideo] = useState(false);
 
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -404,8 +416,46 @@ export default function KioskCapture({ frame }: Props) {
         e.target.value = '';
     }
 
-    function submit() {
+    async function submit() {
+        // Best-effort: encode a short "video frame" clip from the captured
+        // photos in the browser and attach it before moving on. Video is always
+        // optional — any failure is swallowed so the session still completes.
+        await maybeUploadVideo();
         post('/kiosk/photos');
+    }
+
+    async function maybeUploadVideo() {
+        const files = slots
+            .filter((s): s is NonNullable<Slot> => s !== null)
+            .map((s) => s.file);
+
+        if (files.length < 2 || !isVideoEncodingSupported()) {
+            return;
+        }
+
+        setPreparingVideo(true);
+
+        try {
+            const { blob, ext } = await encodePhotosToVideo(files, {
+                boomerang: true,
+            });
+
+            const form = new FormData();
+            form.append('video', blob, `video.${ext}`);
+
+            const token = readXsrfToken();
+
+            await fetch('/kiosk/video', {
+                method: 'POST',
+                body: form,
+                headers: token ? { 'X-XSRF-TOKEN': token } : {},
+                credentials: 'same-origin',
+            });
+        } catch (err) {
+            console.warn('Video encode/upload skipped:', err);
+        } finally {
+            setPreparingVideo(false);
+        }
     }
 
     const filledCount = slots.filter(Boolean).length;
@@ -1288,11 +1338,13 @@ export default function KioskCapture({ frame }: Props) {
                 <KioskFooter
                     back="← Ganti frame"
                     next={
-                        processing
-                            ? 'Mengupload…'
-                            : allFilled
-                              ? 'Lanjut ke preview →'
-                              : ''
+                        preparingVideo
+                            ? 'Menyiapkan video…'
+                            : processing
+                              ? 'Mengupload…'
+                              : allFilled
+                                ? 'Lanjut ke preview →'
+                                : ''
                     }
                     nextIcon="arrow-right"
                     onBack={async () => {
@@ -1314,7 +1366,11 @@ export default function KioskCapture({ frame }: Props) {
 
                         router.visit('/kiosk/frame-select');
                     }}
-                    onNext={allFilled && !processing ? submit : undefined}
+                    onNext={
+                        allFilled && !processing && !preparingVideo
+                            ? submit
+                            : undefined
+                    }
                 />
 
                 {/* Inline keyframe styles */}
