@@ -63,6 +63,10 @@ class SessionController extends Controller
             'paper_size_id' => $paperSizeId,
             'status' => SessionStatus::Started,
             'current_step' => SessionStep::Payment,
+            // Every session is a unified photo session: one price includes the
+            // print, softcopy composite, individual photos, and an animated GIF.
+            // There is no output-type choice anymore.
+            'session_type' => SessionType::Photo,
             'total_amount' => $basePrice,
             'final_amount' => $basePrice,
             'started_at' => now(),
@@ -164,7 +168,7 @@ class SessionController extends Controller
 
             $session->update([
                 'status' => SessionStatus::Paid,
-                'current_step' => SessionStep::OutputType,
+                'current_step' => SessionStep::Frame,
                 'paid_at' => now(),
             ]);
         });
@@ -240,7 +244,7 @@ class SessionController extends Controller
                 'voucher_id' => $voucher->id,
                 'payment_method' => PaymentMethod::Voucher,
                 'status' => SessionStatus::Paid,
-                'current_step' => SessionStep::OutputType,
+                'current_step' => SessionStep::Frame,
                 'discount_amount' => $session->final_amount,
                 'final_amount' => 0,
                 'paid_at' => now(),
@@ -248,24 +252,6 @@ class SessionController extends Controller
         });
 
         return redirect('/kiosk/validate')->with('success', 'Voucher berhasil diterapkan.');
-    }
-
-    public function selectOutputType(Request $request): RedirectResponse
-    {
-        $session = $this->currentSession($request);
-
-        $request->validate([
-            'session_type' => ['required', 'string', 'in:photo,stop_motion_video'],
-        ]);
-
-        $type = SessionType::from($request->string('session_type')->toString());
-
-        $session->update([
-            'session_type' => $type,
-            'current_step' => SessionStep::Frame,
-        ]);
-
-        return redirect('/kiosk/frame-select');
     }
 
     public function selectFrame(Request $request): RedirectResponse
@@ -548,9 +534,10 @@ class SessionController extends Controller
             return redirect('/kiosk/capture')->withErrors(['photos' => $msg]);
         }
 
-        // Generate output sesuai pilihan customer:
-        //   foto  → composite (PNG cetak)
-        //   video → no-op, video_path sudah disimpan saat upload
+        // Every paid session includes all outputs: printed strip + softcopy
+        // composite, individual photos (downloaded per-slot), and an animated
+        // GIF built from the same photos. The GIF is best-effort — a failure
+        // (e.g. a single-slot frame) must not block completion.
         try {
             $token = Str::random(40);
             $downloadUrl = url('/d/'.$token);
@@ -558,9 +545,16 @@ class SessionController extends Controller
 
             if ($isVideo) {
                 $finalPath = null;
-                $gifPath = null;
             } else {
                 $finalPath = $composer->generate($session);
+            }
+
+            try {
+                $gifPath = $gif->generate($session);
+            } catch (\Throwable $e) {
+                Log::warning('GIF generate gagal: '.$e->getMessage(), [
+                    'session' => $session->session_code,
+                ]);
                 $gifPath = null;
             }
         } catch (\Throwable $e) {
@@ -737,7 +731,7 @@ class SessionController extends Controller
 
                 $session->update([
                     'status' => SessionStatus::Paid,
-                    'current_step' => SessionStep::OutputType,
+                    'current_step' => SessionStep::Frame,
                     'paid_at' => now(),
                 ]);
             });

@@ -111,15 +111,6 @@ class PageController extends Controller
         ]);
     }
 
-    public function outputType(Request $request): Response
-    {
-        $session = $this->requireSession($request, 'output-type');
-
-        return Inertia::render('kiosk/output-type', [
-            'session' => $this->sessionProps($session),
-        ]);
-    }
-
     public function frameSelect(Request $request): Response
     {
         $session = $this->requireSession($request, 'frame-select');

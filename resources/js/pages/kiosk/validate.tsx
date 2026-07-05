@@ -40,7 +40,7 @@ export default function KioskValidate({ session }: SessionProps) {
             setRemaining((s) => {
                 if (s <= 1) {
                     clearInterval(t);
-                    router.visit('/kiosk/output-type');
+                    router.visit('/kiosk/frame-select');
 
                     return 0;
                 }
@@ -184,8 +184,7 @@ export default function KioskValidate({ session }: SessionProps) {
                                 '0 4px 16px rgba(10,10,10,0.04), 0 1px 2px rgba(10,10,10,0.04)',
                             padding: 'clamp(20px, 2.5vw, 28px)',
                             display: 'grid',
-                            gridTemplateColumns:
-                                'repeat(3, minmax(0, 1fr))',
+                            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
                             gap: 'clamp(16px, 2vw, 32px)',
                             width: '100%',
                             maxWidth: 640,
@@ -234,9 +233,7 @@ export default function KioskValidate({ session }: SessionProps) {
                                         }}
                                     >
                                         Hemat{' '}
-                                        {formatRupiah(
-                                            session.discount_amount,
-                                        )}
+                                        {formatRupiah(session.discount_amount)}
                                     </div>
                                 )}
                             </div>
@@ -275,9 +272,7 @@ export default function KioskValidate({ session }: SessionProps) {
 
                         <button
                             type="button"
-                            onClick={() =>
-                                router.visit('/kiosk/output-type')
-                            }
+                            onClick={() => router.visit('/kiosk/frame-select')}
                             style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',

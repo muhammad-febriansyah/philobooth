@@ -82,7 +82,6 @@ Route::prefix('kiosk')->name('kiosk.')->group(function () {
     Route::get('qris', [KioskPageController::class, 'qris'])->name('qris');
     Route::get('voucher', [KioskPageController::class, 'voucher'])->name('voucher');
     Route::get('validate', [KioskPageController::class, 'validatePay'])->name('validate');
-    Route::get('output-type', [KioskPageController::class, 'outputType'])->name('output-type');
     Route::get('frame-select', [KioskPageController::class, 'frameSelect'])->name('frame-select');
     Route::get('capture', [KioskPageController::class, 'capture'])->name('capture');
     Route::get('preview', [KioskPageController::class, 'preview'])->name('preview');
@@ -101,7 +100,6 @@ Route::prefix('kiosk')->name('kiosk.')->group(function () {
     Route::post('extra-pay', [KioskSessionController::class, 'payExtra'])->name('extra-pay.submit');
     Route::post('email-receipt', [KioskSessionController::class, 'emailReceipt'])->name('email-receipt');
     Route::post('voucher/apply', [KioskSessionController::class, 'applyVoucher'])->name('voucher.apply');
-    Route::post('output-type', [KioskSessionController::class, 'selectOutputType'])->name('output-type.select');
     Route::post('frame', [KioskSessionController::class, 'selectFrame'])->name('frame.select');
     Route::post('photos', [KioskSessionController::class, 'uploadPhotos'])->name('photos.upload');
     Route::post('video', [KioskSessionController::class, 'uploadVideo'])->name('video.upload');

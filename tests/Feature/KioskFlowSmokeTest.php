@@ -4,6 +4,7 @@ use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\SessionStatus;
 use App\Enums\SessionStep;
+use App\Enums\SessionType;
 use App\Models\Branch;
 use App\Models\Filter;
 use App\Models\Frame;
@@ -11,6 +12,7 @@ use App\Models\FramePhotoSlot;
 use App\Models\PaperSize;
 use App\Models\Payment;
 use App\Models\PhotoSession;
+use App\Models\SessionPhoto;
 use App\Models\Voucher;
 use App\Models\VoucherBatch;
 use Illuminate\Http\UploadedFile;
@@ -149,30 +151,26 @@ it('POST /kiosk/payment/mock-pay completes payment and advances', function () {
 
     expect($session->fresh())
         ->status->toBe(SessionStatus::Paid)
-        ->current_step->toBe(SessionStep::OutputType)
+        ->current_step->toBe(SessionStep::Frame)
         ->and(Payment::where('session_id', $session->id)->where('status', PaymentStatus::Success)->count())
         ->toBe(1);
 });
 
-it('POST /kiosk/output-type persists choice and advances to frame', function () {
-    $session = seedKiosk(['current_step' => SessionStep::OutputType]);
+it('POST /kiosk/start defaults to a unified photo session', function () {
+    Branch::factory()->create(['is_active' => true]);
+    PaperSize::factory()->create(['code' => 'STRIP', 'is_active' => true]);
 
-    $this->withSession(['kiosk_session_id' => $session->id])
-        ->post('/kiosk/output-type', ['session_type' => 'stop_motion_video'])
-        ->assertRedirect('/kiosk/frame-select');
+    $this->post('/kiosk/start')->assertRedirect('/kiosk/payment');
 
-    expect($session->fresh())
-        ->session_type->value->toBe('stop_motion_video')
-        ->current_step->toBe(SessionStep::Frame);
+    expect(PhotoSession::first()->session_type)->toBe(SessionType::Photo);
 });
 
-it('GET /kiosk/output-type renders selector page', function () {
-    $session = seedKiosk(['current_step' => SessionStep::OutputType]);
+it('GET /kiosk/output-type is removed (no output-type choice anymore)', function () {
+    $session = seedKiosk();
 
     $this->withSession(['kiosk_session_id' => $session->id])
         ->get('/kiosk/output-type')
-        ->assertOk()
-        ->assertInertia(fn ($p) => $p->component('kiosk/output-type'));
+        ->assertNotFound();
 });
 
 it('POST /kiosk/voucher/apply with valid code applies voucher', function () {
@@ -276,6 +274,46 @@ it('POST /kiosk/quantity updates qty and routes to confirm', function () {
     expect($session->fresh())
         ->print_quantity->toBe(2)
         ->current_step->toBe(SessionStep::Generate);
+});
+
+it('POST /kiosk/complete generates composite + GIF for a paid photo session', function () {
+    $session = seedKiosk(['current_step' => SessionStep::Generate, 'print_quantity' => 1]);
+
+    // Real frame PNG thumbnail large enough to cover both slots.
+    ob_start();
+    imagepng(imagecreatetruecolor(600, 300));
+    $frameBytes = ob_get_clean();
+    Storage::disk('public')->put('frames/test-frame.png', $frameBytes);
+    $session->frame->update(['thumbnail_path' => 'frames/test-frame.png']);
+
+    // Two real captured photos, one per slot.
+    foreach ([1, 2] as $n) {
+        ob_start();
+        imagejpeg(imagecreatetruecolor(200, 100));
+        $bytes = ob_get_clean();
+        $path = "kiosk/{$session->session_code}/photo-{$n}.jpg";
+        Storage::disk('public')->put($path, $bytes);
+
+        SessionPhoto::create([
+            'session_id' => $session->id,
+            'slot_number' => $n,
+            'original_path' => $path,
+            'is_selected' => true,
+            'captured_at' => now(),
+        ]);
+    }
+
+    $this->withSession(['kiosk_session_id' => $session->id])
+        ->post('/kiosk/complete')
+        ->assertRedirect('/kiosk/download');
+
+    $fresh = $session->fresh();
+
+    expect($fresh->status)->toBe(SessionStatus::Completed)
+        ->and($fresh->final_image_path)->not->toBeNull()
+        ->and($fresh->gif_path)->not->toBeNull();
+
+    expect(Storage::disk('public')->exists($fresh->gif_path))->toBeTrue();
 });
 
 it('POST /kiosk/cancel marks session cancelled and clears state', function () {
