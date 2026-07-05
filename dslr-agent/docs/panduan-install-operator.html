@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Panduan Install Aplikasi Kamera — Operator</title>
+<style>
+    @page { size: A4; margin: 16mm 15mm; }
+    * { box-sizing: border-box; }
+    body {
+        font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: #1a1a1a; line-height: 1.5; font-size: 11.5pt; margin: 0;
+    }
+    h1 { font-size: 25pt; letter-spacing: -0.5px; margin: 0 0 4px; }
+    .cover {
+        border: 2px solid #F5FA0C; border-radius: 14px; padding: 24px 24px; margin-bottom: 20px;
+        background: linear-gradient(135deg, #fffdf0, #ffffff);
+    }
+    .cover .eyebrow { font-size: 10pt; letter-spacing: 2px; text-transform: uppercase; color: #8a8a00; font-weight: 700; }
+    .cover .sub { font-size: 12pt; color: #444; margin-top: 6px; }
+    .cover .who { font-size: 10pt; color: #666; margin-top: 12px; }
+    h2 {
+        font-size: 13pt; margin: 22px 0 10px; padding: 7px 12px;
+        background: #0A0A0A; color: #fff; border-radius: 6px; page-break-after: avoid;
+    }
+    .step { display: flex; gap: 14px; margin: 14px 0; page-break-inside: avoid; }
+    .step .num {
+        flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%;
+        background: #F5FA0C; color: #0A0A0A; font-weight: 800; font-size: 16pt;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .step .body { flex: 1; }
+    .step .t { font-size: 12.5pt; font-weight: 700; margin: 4px 0 3px; }
+    .step .body p { margin: 3px 0; }
+    code {
+        font-family: "SF Mono", Consolas, monospace; font-size: 10pt;
+        background: #f2f2ef; padding: 1px 6px; border-radius: 4px;
+    }
+    .callout {
+        border-left: 4px solid #F5FA0C; background: #fffdf0; padding: 11px 14px;
+        border-radius: 0 8px 8px 0; margin: 10px 0; font-size: 10.5pt;
+    }
+    .warn { border-left-color: #E5484D; background: #fff5f5; }
+    .ok { border-left-color: #16A34A; background: #f2fcf5; }
+    table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 10pt; }
+    th, td { border: 1px solid #ddd; padding: 7px 9px; text-align: left; vertical-align: top; }
+    th { background: #f7f7f4; font-weight: 700; }
+    ul { margin: 5px 0; padding-left: 20px; }
+    li { margin: 3px 0; }
+    .checklist td:first-child { width: 26px; text-align: center; font-size: 13pt; }
+    .foot { margin-top: 14px; font-size: 9pt; color: #999; }
+    .pill { display:inline-block; background:#0A0A0A; color:#fff; border-radius:5px; padding:1px 8px; font-size:9.5pt; font-weight:700; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+    <div class="eyebrow">Philobooth · Panduan Operator</div>
+    <h1>Cara Install Aplikasi Kamera</h1>
+    <div class="sub">Supaya booth bisa pakai kamera DSLR &amp; printer di PC Windows</div>
+    <div class="who">Untuk: operator / penjaga booth · Perkiraan waktu: 5–10 menit · Sekali install saja</div>
+</div>
+
+<div class="callout">
+    <b>Kenapa perlu aplikasi ini?</b> Website Philobooth tidak bisa langsung memegang kamera DSLR
+    &amp; printer. Aplikasi kecil ini jadi jembatannya. <b>Website tetap dibuka di Chrome seperti
+    biasa</b> — aplikasi ini cuma jalan diam di belakang.
+</div>
+
+<h2>Yang perlu disiapkan</h2>
+<ul>
+    <li>PC / laptop <b>Windows 10 atau 11</b>.</li>
+    <li>Kamera DSLR + <b>kabel USB data</b> (bukan kabel cas biasa).</li>
+    <li>Printer foto sudah terpasang di Windows.</li>
+    <li>Koneksi internet (untuk buka website booth).</li>
+</ul>
+
+<h2>Langkah instalasi</h2>
+
+<div class="step">
+    <div class="num">1</div>
+    <div class="body">
+        <div class="t">Download aplikasinya</div>
+        <p>Buka <code>philobooth.id</code> di Chrome → login → halaman <b>Dashboard</b> →
+        klik tombol <span class="pill">Download aplikasi</span>. File
+        <code>philobooth-camera.exe</code> akan terunduh.</p>
+        <p>Kalau admin sudah mengirim filenya langsung, pakai file itu.</p>
+    </div>
+</div>
+
+<div class="step">
+    <div class="num">2</div>
+    <div class="body">
+        <div class="t">Jalankan file yang terunduh</div>
+        <p>Buka folder <b>Downloads</b>, <b>klik dua kali</b> file
+        <code>philobooth-camera.exe</code>.</p>
+    </div>
+</div>
+
+<div class="callout warn">
+    <b>Kalau muncul layar biru “Windows protected your PC”:</b> itu normal (aplikasi baru).
+    Klik teks <b>“More info”</b> lalu tombol <b>“Run anyway”</b>. Aplikasi aman — dibuat untuk booth kamu.
+</div>
+
+<div class="step">
+    <div class="num">3</div>
+    <div class="body">
+        <div class="t">Selesaikan pemasangan</div>
+        <p>Kalau ada installer: klik <b>Next → Next → Install → Finish</b> (biarkan centang
+        “Jalankan otomatis saat Windows menyala”).</p>
+        <p>Setelah itu muncul <b>ikon kamera kecil di pojok kanan bawah</b> (dekat jam). Artinya
+        aplikasi sudah jalan.</p>
+    </div>
+</div>
+
+<div class="step">
+    <div class="num">4</div>
+    <div class="body">
+        <div class="t">Colok kamera &amp; printer</div>
+        <p>Colok <b>kabel USB kamera langsung ke PC</b> (jangan lewat colokan cabang/hub).
+        Nyalakan kamera, set ke <b>mode foto</b>. Colok juga printer.</p>
+    </div>
+</div>
+
+<div class="callout warn">
+    <b>Penting untuk kamera Canon:</b> kalau ada aplikasi <b>Canon EOS Utility</b> terbuka,
+    <b>tutup dulu sampai benar-benar mati</b>. Aplikasi itu mengunci kamera sehingga booth tidak bisa
+    memakainya.
+</div>
+
+<div class="step">
+    <div class="num">5</div>
+    <div class="body">
+        <div class="t">Buka halaman booth</div>
+        <p>Di Chrome, buka <code>philobooth.id/kiosk</code>. Kalau Chrome bertanya izin
+        <b>“Local network”</b> → klik <b>Izinkan / Allow</b> (cukup sekali).</p>
+    </div>
+</div>
+
+<div class="step">
+    <div class="num">6</div>
+    <div class="body">
+        <div class="t">Pilih mode DSLR &amp; cek indikator</div>
+        <p>Di halaman ambil foto, pilih <b>DSLR</b>. Indikator harus jadi
+        <b style="color:#166534">hijau: “Kamera terhubung”</b> beserta nama kameranya.</p>
+    </div>
+</div>
+
+<div class="callout ok">
+    <b>Berhasil kalau:</b> indikator hijau, dan saat ambil foto hasilnya dari kamera DSLR (bukan webcam).
+    Setelah ini booth siap dipakai. <b>Jangan tutup ikon aplikasi di tray</b> selama booth beroperasi.
+</div>
+
+<h2>Kalau berhasil, cek ini</h2>
+<table class="checklist">
+    <tr><td>☐</td><td>Ikon aplikasi ada di pojok kanan bawah (dekat jam).</td></tr>
+    <tr><td>☐</td><td>Di kiosk mode DSLR, indikator <b>hijau “Kamera terhubung”</b>.</td></tr>
+    <tr><td>☐</td><td>Ambil 1 foto → hasil tajam dari DSLR.</td></tr>
+    <tr><td>☐</td><td>Cetak → keluar di printer.</td></tr>
+</table>
+
+<h2>Kalau ada masalah</h2>
+<table>
+    <tr><th>Masalah</th><th>Yang harus dilakukan</th></tr>
+    <tr>
+        <td>Kiosk bilang “Aplikasi kamera belum jalan”</td>
+        <td>Cek ikon di pojok kanan bawah. Kalau tidak ada, buka lagi aplikasinya (Start Menu →
+        Philobooth Camera). Lalu klik <b>Coba lagi</b> di kiosk.</td>
+    </tr>
+    <tr>
+        <td>Kiosk bilang “Kamera tidak terdeteksi”</td>
+        <td>1) Nyalakan kamera. 2) Set kamera ke mode foto (bukan mode video/galeri).
+        3) Ganti kabel USB (banyak kabel cuma buat cas). 4) Colok langsung ke PC, bukan lewat hub.
+        5) Tutup Canon EOS Utility kalau terbuka.</td>
+    </tr>
+    <tr>
+        <td>Chrome tidak minta izin / kamera tetap tidak jalan</td>
+        <td>Muat ulang halaman (F5). Kalau muncul izin “Local network”, klik Izinkan.</td>
+    </tr>
+    <tr>
+        <td>Kamera tidak muncul di komputer sama sekali</td>
+        <td>Ini masalah kabel/colokan/kamera, bukan aplikasi. Cek kamera muncul di
+        <b>File Explorer</b>. Kalau tidak muncul di situ pun, ganti kabel/port.</td>
+    </tr>
+    <tr>
+        <td>Tanpa DSLR, mau pakai webcam saja</td>
+        <td>Bisa. Di kiosk pilih mode <b>Webcam</b> — tidak perlu aplikasi kamera.</td>
+    </tr>
+</table>
+
+<div class="callout">
+    <b>Tiap hari sebelum buka booth:</b> nyalakan PC → pastikan ikon aplikasi ada di tray →
+    colok &amp; nyalakan kamera → buka <code>philobooth.id/kiosk</code> → cek indikator hijau.
+</div>
+
+<div class="foot">Philobooth · Panduan operator. Butuh bantuan teknis lebih lanjut? Hubungi admin.
+    Dokumen ini menyertai repo di folder <code>dslr-agent/docs/</code>.</div>
+
+</body>
+</html>
