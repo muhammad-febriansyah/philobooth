@@ -1,6 +1,6 @@
 import { Form, Head, router } from '@inertiajs/react';
-import { useEffect, useState  } from 'react';
-import type {ReactNode} from 'react';
+import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/philobooth/badge';
@@ -8,8 +8,8 @@ import { Btn } from '@/components/philobooth/btn';
 import { Card } from '@/components/philobooth/card';
 import { confirmDialog } from '@/components/philobooth/confirm-dialog';
 import { PageHead } from '@/components/philobooth/extras';
-import { Icon  } from '@/components/philobooth/icon';
-import type {IconName} from '@/components/philobooth/icon';
+import { Icon } from '@/components/philobooth/icon';
+import type { IconName } from '@/components/philobooth/icon';
 import {
     Sheet,
     SheetClose,
@@ -20,6 +20,8 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import PhilobboothAdminLayout from '@/layouts/philobooth-admin-layout';
+import { createPrintAgent } from '@/lib/print-agent';
+import type { PrinterInfo } from '@/lib/print-agent';
 
 type PrinterRow = {
     id: number;
@@ -44,7 +46,12 @@ type Option = { value: string; label: string };
 
 type Props = {
     printers: PrinterRow[];
-    stats: { online: number; error: number; offline: number; jobs_today: number };
+    stats: {
+        online: number;
+        error: number;
+        offline: number;
+        jobs_today: number;
+    };
     branches: Array<{ id: number; name: string; code: string }>;
     filters: { search: string; branch_id: string; status: string };
     options: { models: Option[]; connections: Option[]; statuses: Option[] };
@@ -104,31 +111,31 @@ function Stat({
 
 function formatChecked(iso: string | null): string {
     if (!iso) {
-return 'belum pernah';
-}
+        return 'belum pernah';
+    }
 
     const diff = Date.now() - new Date(iso).getTime();
     const sec = Math.max(0, Math.floor(diff / 1000));
 
     if (sec < 5) {
-return 'baru saja';
-}
+        return 'baru saja';
+    }
 
     if (sec < 60) {
-return `${sec} detik lalu`;
-}
+        return `${sec} detik lalu`;
+    }
 
     const min = Math.floor(sec / 60);
 
     if (min < 60) {
-return `${min} menit lalu`;
-}
+        return `${min} menit lalu`;
+    }
 
     const hour = Math.floor(min / 60);
 
     if (hour < 24) {
-return `${hour} jam lalu`;
-}
+        return `${hour} jam lalu`;
+    }
 
     return new Date(iso).toLocaleString('id-ID', {
         day: '2-digit',
@@ -282,7 +289,11 @@ export default function Printer({
                     <Stat label="Online" value={stats.online} icon="wifi" />
                     <Stat label="Error" value={stats.error} icon="alert" />
                     <Stat label="Offline" value={stats.offline} icon="x" />
-                    <Stat label="Job hari ini" value={stats.jobs_today} icon="package" />
+                    <Stat
+                        label="Job hari ini"
+                        value={stats.jobs_today}
+                        icon="package"
+                    />
                 </div>
 
                 <div
@@ -491,7 +502,8 @@ export default function Printer({
                                                     title: 'Reset counter kertas?',
                                                     description:
                                                         'Counter akan kembali ke 0 — klik lanjutkan setelah ganti roll kertas baru.',
-                                                    confirmText: 'Reset counter',
+                                                    confirmText:
+                                                        'Reset counter',
                                                     tone: 'primary',
                                                     icon: 'refresh',
                                                 });
@@ -560,13 +572,18 @@ export default function Printer({
                                             textAlign: 'center',
                                         }}
                                     >
-                                        Diperiksa: {formatChecked(p.last_checked_at)}
+                                        Diperiksa:{' '}
+                                        {formatChecked(p.last_checked_at)}
                                     </div>
                                     <Btn
                                         type="button"
-                                        variant={p.is_default ? 'ghost' : 'primary'}
+                                        variant={
+                                            p.is_default ? 'ghost' : 'primary'
+                                        }
                                         size="sm"
-                                        icon={p.is_default ? 'check' : 'sparkles'}
+                                        icon={
+                                            p.is_default ? 'check' : 'sparkles'
+                                        }
                                         style={{
                                             width: '100%',
                                             marginBottom: 8,
@@ -618,7 +635,8 @@ export default function Printer({
                                                     title: `Hapus ${p.name}?`,
                                                     description:
                                                         'Printer akan dihapus dari daftar. Job aktif tidak akan terkirim ke printer ini.',
-                                                    confirmText: 'Hapus printer',
+                                                    confirmText:
+                                                        'Hapus printer',
                                                     tone: 'danger',
                                                     icon: 'trash',
                                                 });
@@ -675,7 +693,7 @@ function PrinterFormSheet({
         <Sheet open={isOpen} onOpenChange={(o) => !o && onClose()}>
             <SheetContent
                 side="right"
-                className="w-full sm:max-w-[480px] overflow-y-auto"
+                className="w-full overflow-y-auto sm:max-w-[480px]"
             >
                 <SheetHeader>
                     <SheetTitle>
@@ -689,9 +707,7 @@ function PrinterFormSheet({
                 <Form
                     method={isCreate ? 'post' : 'put'}
                     action={
-                        isCreate
-                            ? '/admin/printer'
-                            : `/admin/printer/${p?.id}`
+                        isCreate ? '/admin/printer' : `/admin/printer/${p?.id}`
                     }
                     onSuccess={onClose}
                     options={{ preserveScroll: true }}
@@ -745,9 +761,7 @@ function PrinterFormSheet({
                                     >
                                         Cabang:
                                     </span>
-                                    <strong>
-                                        {branches[0]?.name ?? '—'}
-                                    </strong>
+                                    <strong>{branches[0]?.name ?? '—'}</strong>
                                     {branches[0]?.id && (
                                         <input
                                             type="hidden"
@@ -774,7 +788,8 @@ function PrinterFormSheet({
                             <div
                                 style={{
                                     display: 'grid',
-                                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                                    gridTemplateColumns:
+                                        'repeat(auto-fit, minmax(180px, 1fr))',
                                     gap: 12,
                                 }}
                             >
@@ -826,7 +841,8 @@ function PrinterFormSheet({
                             <div
                                 style={{
                                     display: 'grid',
-                                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                                    gridTemplateColumns:
+                                        'repeat(auto-fit, minmax(180px, 1fr))',
                                     gap: 12,
                                 }}
                             >
@@ -851,17 +867,10 @@ function PrinterFormSheet({
                                 </Field>
                             </div>
 
-                            <Field
-                                label="Nama printer di sistem (CUPS/Windows)"
+                            <SystemPrinterField
+                                initial={p?.system_printer_name ?? ''}
                                 error={errors.system_printer_name}
-                            >
-                                <input
-                                    name="system_printer_name"
-                                    defaultValue={p?.system_printer_name ?? ''}
-                                    placeholder="EPSON-L8050"
-                                    className="pb-input"
-                                />
-                            </Field>
+                            />
 
                             <div
                                 style={{
@@ -903,7 +912,9 @@ function PrinterFormSheet({
                                             type="checkbox"
                                             name="is_active"
                                             value="1"
-                                            defaultChecked={p?.is_active ?? true}
+                                            defaultChecked={
+                                                p?.is_active ?? true
+                                            }
                                             style={{
                                                 accentColor:
                                                     'var(--pb-primary)',
@@ -962,6 +973,142 @@ function PrinterFormSheet({
                 </Form>
             </SheetContent>
         </Sheet>
+    );
+}
+
+/**
+ * System printer name field with an agent-backed picker. "Deteksi" asks the
+ * local DSLR/print agent (localhost) for the printers installed on this machine
+ * so the operator selects the exact OS name the agent will print to, instead of
+ * typing it. Only works when the dashboard is opened on the booth PC with the
+ * agent running; otherwise the operator can still type the name manually.
+ */
+function SystemPrinterField({
+    initial,
+    error,
+}: {
+    initial: string;
+    error?: string;
+}) {
+    const [value, setValue] = useState(initial);
+    const [detecting, setDetecting] = useState(false);
+    const [found, setFound] = useState<PrinterInfo[] | null>(null);
+    const [agentError, setAgentError] = useState<string | null>(null);
+
+    async function detect() {
+        setDetecting(true);
+        setAgentError(null);
+
+        try {
+            const listing = await createPrintAgent().listPrinters();
+            setFound(listing.printers);
+
+            if (listing.printers.length === 0) {
+                setAgentError('Tidak ada printer terpasang di PC ini.');
+            }
+        } catch {
+            setFound(null);
+            setAgentError(
+                'Agent tidak terhubung. Buka halaman ini di PC booth dan pastikan aplikasi Philobooth Camera berjalan.',
+            );
+        } finally {
+            setDetecting(false);
+        }
+    }
+
+    return (
+        <Field label="Nama printer di sistem (Windows/CUPS)" error={error}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                        name="system_printer_name"
+                        value={value}
+                        onChange={(e) => setValue(e.target.value)}
+                        placeholder="EPSON-L8050"
+                        className="pb-input"
+                        style={{ flex: 1 }}
+                    />
+                    <button
+                        type="button"
+                        onClick={detect}
+                        disabled={detecting}
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '0 14px',
+                            borderRadius: 8,
+                            border: '1px solid var(--pb-border)',
+                            background: '#fff',
+                            fontSize: 13,
+                            fontWeight: 600,
+                            whiteSpace: 'nowrap',
+                            cursor: detecting ? 'wait' : 'pointer',
+                        }}
+                    >
+                        <Icon name="scan" size={14} />
+                        {detecting ? 'Mendeteksi…' : 'Deteksi'}
+                    </button>
+                </div>
+
+                {found && found.length > 0 && (
+                    <div
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 4,
+                        }}
+                    >
+                        {found.map((pr) => (
+                            <button
+                                key={pr.name}
+                                type="button"
+                                onClick={() => setValue(pr.name)}
+                                style={{
+                                    textAlign: 'left',
+                                    padding: '8px 10px',
+                                    borderRadius: 8,
+                                    border: '1px solid var(--pb-border)',
+                                    background:
+                                        value === pr.name
+                                            ? 'var(--pb-primary)'
+                                            : '#fff',
+                                    fontSize: 13,
+                                    fontWeight: value === pr.name ? 700 : 500,
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                {pr.name}
+                                {pr.isDefault ? ' · default' : ''}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {agentError && (
+                    <div
+                        style={{
+                            fontSize: 12,
+                            color: '#B91C1C',
+                            lineHeight: 1.4,
+                        }}
+                    >
+                        {agentError}
+                    </div>
+                )}
+
+                <div
+                    style={{
+                        fontSize: 11.5,
+                        color: 'var(--pb-text-muted)',
+                        lineHeight: 1.4,
+                    }}
+                >
+                    Di PC booth, klik Deteksi untuk mengisi otomatis dari
+                    printer Windows. Nama ini dipakai agent saat mencetak.
+                </div>
+            </div>
+        </Field>
     );
 }
 
