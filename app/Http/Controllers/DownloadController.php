@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use ZipArchive;
 
 class DownloadController extends Controller
@@ -52,7 +51,7 @@ class DownloadController extends Controller
      * Stream a single file. `?kind=composite|gif|photo` selects which one;
      * `?slot=N` picks the photo by slot_number when kind=photo.
      */
-    public function file(Request $request, string $token): StreamedResponse|BinaryFileResponse|RedirectResponse
+    public function file(Request $request, string $token): BinaryFileResponse|RedirectResponse
     {
         $session = $this->resolveSession($token);
 
@@ -184,39 +183,70 @@ class DownloadController extends Controller
         return $items;
     }
 
-    private function downloadComposite(PhotoSession $session): StreamedResponse
+    private function downloadComposite(PhotoSession $session): BinaryFileResponse
     {
         if (! $session->final_image_path || ! Storage::disk('public')->exists($session->final_image_path)) {
             abort(404, 'Foto strip belum tersedia.');
         }
 
-        return Storage::disk('public')->download($session->final_image_path, $session->session_code.'.png');
+        $absolute = Storage::disk('public')->path($session->final_image_path);
+
+        return response()->download(
+            $absolute,
+            $session->session_code.'.png',
+            [
+                'Content-Type' => 'image/png',
+                'Content-Length' => filesize($absolute),
+                'Cache-Control' => 'no-store, no-cache, must-revalidate',
+            ],
+        );
     }
 
-    private function downloadGif(PhotoSession $session): StreamedResponse
+    private function downloadGif(PhotoSession $session): BinaryFileResponse
     {
         if (! $session->gif_path || ! Storage::disk('public')->exists($session->gif_path)) {
             abort(404, 'Video stop motion belum tersedia.');
         }
 
-        return Storage::disk('public')->download($session->gif_path, $session->session_code.'.gif');
+        $absolute = Storage::disk('public')->path($session->gif_path);
+
+        return response()->download(
+            $absolute,
+            $session->session_code.'.gif',
+            [
+                'Content-Type' => 'image/gif',
+                'Content-Length' => filesize($absolute),
+                'Cache-Control' => 'no-store, no-cache, must-revalidate',
+            ],
+        );
     }
 
-    private function downloadVideo(PhotoSession $session): StreamedResponse
+    private function downloadVideo(PhotoSession $session): BinaryFileResponse
     {
         if (! $session->video_path || ! Storage::disk('public')->exists($session->video_path)) {
             abort(404, 'Video belum tersedia.');
         }
 
-        $ext = pathinfo($session->video_path, PATHINFO_EXTENSION) ?: 'webm';
+        $absolute = Storage::disk('public')->path($session->video_path);
+        $ext = strtolower(pathinfo($session->video_path, PATHINFO_EXTENSION) ?: 'webm');
+        $mime = match ($ext) {
+            'mp4' => 'video/mp4',
+            'mov' => 'video/quicktime',
+            default => 'video/webm',
+        };
 
-        return Storage::disk('public')->download(
-            $session->video_path,
+        return response()->download(
+            $absolute,
             $session->session_code.'.'.$ext,
+            [
+                'Content-Type' => $mime,
+                'Content-Length' => filesize($absolute),
+                'Cache-Control' => 'no-store, no-cache, must-revalidate',
+            ],
         );
     }
 
-    private function downloadPhoto(PhotoSession $session, int $slot): StreamedResponse
+    private function downloadPhoto(PhotoSession $session, int $slot): BinaryFileResponse
     {
         $photo = $session->photos()->where('slot_number', $slot)->first();
 
@@ -230,11 +260,22 @@ class DownloadController extends Controller
             abort(404, 'File foto tidak ditemukan.');
         }
 
-        $ext = pathinfo($path, PATHINFO_EXTENSION) ?: 'jpg';
+        $absolute = Storage::disk('public')->path($path);
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION) ?: 'jpg');
+        $mime = match ($ext) {
+            'png' => 'image/png',
+            'webp' => 'image/webp',
+            default => 'image/jpeg',
+        };
 
-        return Storage::disk('public')->download(
-            $path,
+        return response()->download(
+            $absolute,
             $session->session_code.'-foto-'.$slot.'.'.$ext,
+            [
+                'Content-Type' => $mime,
+                'Content-Length' => filesize($absolute),
+                'Cache-Control' => 'no-store, no-cache, must-revalidate',
+            ],
         );
     }
 
