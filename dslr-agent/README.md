@@ -60,10 +60,11 @@ still need a real Windows machine to test at runtime.
 ### Serving the exe from the dashboard
 
 The dashboard has a "Download aplikasi" button (`GET /admin/agent-download`).
-Place the built exe on the server's `local` disk so operators can download it:
+Place the built exe on the server's `local` disk so operators can download it
+(the `local` disk root is `storage/app/private`):
 
 ```
-storage/app/agent/philobooth-dslr-agent.exe
+storage/app/private/agent/philobooth-dslr-agent.exe
 ```
 
 The button shows "Belum tersedia" until that file exists. Replace it with the

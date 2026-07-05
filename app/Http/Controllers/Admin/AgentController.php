@@ -10,7 +10,8 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 /**
  * Serves the kiosk camera agent (.exe) for operators to download and install on
  * the booth PC. The built binary is placed on the `local` disk at
- * {@see self::AGENT_PATH} during deployment (it is not committed to git).
+ * {@see self::AGENT_PATH} during deployment — i.e.
+ * storage/app/private/agent/philobooth-dslr-agent.exe (not committed to git).
  */
 class AgentController extends Controller
 {
