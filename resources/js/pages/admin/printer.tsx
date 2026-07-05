@@ -838,35 +838,6 @@ function PrinterFormSheet({
                                 </Field>
                             </div>
 
-                            <div
-                                style={{
-                                    display: 'grid',
-                                    gridTemplateColumns:
-                                        'repeat(auto-fit, minmax(180px, 1fr))',
-                                    gap: 12,
-                                }}
-                            >
-                                <Field
-                                    label="IP address"
-                                    error={errors.ip_address}
-                                >
-                                    <input
-                                        name="ip_address"
-                                        defaultValue={p?.ip_address ?? ''}
-                                        placeholder="192.168.1.10"
-                                        className="pb-input"
-                                    />
-                                </Field>
-                                <Field label="Port" error={errors.port}>
-                                    <input
-                                        name="port"
-                                        type="number"
-                                        defaultValue={p?.port ?? 9100}
-                                        className="pb-input"
-                                    />
-                                </Field>
-                            </div>
-
                             <SystemPrinterField
                                 initial={p?.system_printer_name ?? ''}
                                 error={errors.system_printer_name}
