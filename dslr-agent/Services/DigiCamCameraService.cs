@@ -1,0 +1,118 @@
+#if WINDOWS
+using CameraControl.Devices;
+using CameraControl.Devices.Classes;
+using DslrAgent.Models;
+
+namespace DslrAgent.Services;
+
+/// <summary>
+/// Real DSLR control via CameraControl.Devices (digiCamControl's engine).
+/// Windows-only: drives Canon/Nikon/Sony over PTP/USB. Compiled only when the
+/// WINDOWS target framework constant is defined (see DslrAgent.csproj).
+/// </summary>
+public sealed class DigiCamCameraService : ICameraService, IDisposable
+{
+    private readonly CameraDeviceManager _manager = new();
+    private readonly ILogger<DigiCamCameraService> _logger;
+
+    public DigiCamCameraService(ILogger<DigiCamCameraService> logger)
+    {
+        _logger = logger;
+        // Detect already-connected cameras + hotplug.
+        _manager.ConnectToCamera();
+    }
+
+    private ICameraDevice Camera =>
+        _manager.SelectedCameraDevice
+        ?? throw new InvalidOperationException("No camera connected");
+
+    public bool IsAvailable => _manager.SelectedCameraDevice is { IsConnected: true };
+
+    public string? Model =>
+        _manager.SelectedCameraDevice is { IsConnected: true } device
+            ? device.DeviceName
+            : null;
+
+    public string Backend => "digicam";
+
+    public Settings GetSettings()
+    {
+        var cam = Camera;
+
+        return new Settings(
+            ToSetting(cam.IsoNumber),
+            ToSetting(cam.ShutterSpeed),
+            ToSetting(cam.FNumber));
+    }
+
+    public void SetSetting(string key, string value)
+    {
+        var cam = Camera;
+        var prop = key switch
+        {
+            "iso" => cam.IsoNumber,
+            "shutter" => cam.ShutterSpeed,
+            "aperture" => cam.FNumber,
+            _ => throw new ArgumentException($"Unknown setting '{key}'", nameof(key)),
+        };
+
+        if (!prop.Values.Contains(value))
+        {
+            throw new ArgumentException($"'{value}' not allowed for '{key}'", nameof(value));
+        }
+
+        prop.SetValue(value);
+    }
+
+    public async Task<CaptureResult> CaptureAsync(CancellationToken ct = default)
+    {
+        var cam = Camera;
+        var tcs = new TaskCompletionSource<CaptureResult>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        void Handler(object? sender, PhotoCapturedEventArgs e)
+        {
+            try
+            {
+                using var ms = new MemoryStream();
+                e.CameraDevice.TransferFile(e.Handle, ms);
+                e.CameraDevice.ReleaseResurce(e.Handle);
+                var name = string.IsNullOrEmpty(e.FileName)
+                    ? $"capture-{DateTime.Now:yyyyMMdd-HHmmss}.jpg"
+                    : e.FileName;
+                tcs.TrySetResult(new CaptureResult(ms.ToArray(), name));
+            }
+            catch (Exception ex)
+            {
+                tcs.TrySetException(ex);
+            }
+        }
+
+        _manager.PhotoCaptured += Handler;
+
+        try
+        {
+            cam.CapturePhoto();
+
+            using (ct.Register(() => tcs.TrySetCanceled(ct)))
+            {
+                return await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30), ct);
+            }
+        }
+        finally
+        {
+            _manager.PhotoCaptured -= Handler;
+        }
+    }
+
+    private static Setting ToSetting(PropertyValue<long> prop)
+    {
+        return new Setting(prop.Values.ToList(), prop.Value);
+    }
+
+    public void Dispose()
+    {
+        _manager.CloseAll();
+    }
+}
+#endif

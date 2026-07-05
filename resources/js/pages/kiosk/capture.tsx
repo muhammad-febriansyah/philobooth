@@ -3,11 +3,16 @@ import { useEffect, useRef, useState } from 'react';
 import { confirmDialog } from '@/components/philobooth/confirm-dialog';
 import { Icon } from '@/components/philobooth/icon';
 import { Spotlight } from '@/components/philobooth/kiosk-aceternity';
-import {
-    KioskFooter,
-    KioskHeader,
-} from '@/components/philobooth/kiosk-chrome';
+import { KioskFooter, KioskHeader } from '@/components/philobooth/kiosk-chrome';
 import { KioskScene } from '@/components/philobooth/kiosk-scene';
+import { createAgent } from '@/lib/dslr-agent';
+import type {
+    DslrAgent,
+    DslrCaptureResult,
+    DslrSettingKey,
+    DslrSettings,
+    DslrStatus,
+} from '@/lib/dslr-agent';
 import { playBeep, playShutter, unlockAudio } from '@/lib/sfx';
 
 type FrameSlot = {
@@ -51,12 +56,25 @@ export default function KioskCapture({ frame }: Props) {
     const [flash, setFlash] = useState(false);
     const [autoMode, setAutoMode] = useState(true);
 
+    // --- Camera source: browser webcam vs tethered DSLR (via local agent) ---
+    const [cameraSource, setCameraSource] = useState<'webcam' | 'dslr'>(
+        'webcam',
+    );
+    const [dslrSettings, setDslrSettings] = useState<DslrSettings | null>(null);
+    const [dslrBusy, setDslrBusy] = useState(false);
+    const [dslrStatus, setDslrStatus] = useState<DslrStatus | null>(null);
+
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const fallbackInputRef = useRef<HTMLInputElement | null>(null);
     const cameraBoxRef = useRef<HTMLDivElement | null>(null);
     const [cameraFs, setCameraFs] = useState(false);
+
+    // DSLR agent. Mock (dev) or HTTP to the local C# agent (prod), selected by
+    // VITE_DSLR_AGENT_MODE. Only used in DSLR mode; webcam mode captures from
+    // the canvas directly.
+    const dslrAgentRef = useRef<DslrAgent | null>(null);
 
     useEffect(() => {
         const sync = () => {
@@ -81,6 +99,9 @@ export default function KioskCapture({ frame }: Props) {
 
     // --- Camera lifecycle ---
     useEffect(() => {
+        dslrAgentRef.current = createAgent((filename) =>
+            grabWebcamFrame(filename),
+        );
         startCamera();
 
         return () => {
@@ -130,15 +151,98 @@ export default function KioskCapture({ frame }: Props) {
         streamRef.current = null;
     }
 
+    // --- DSLR agent ---
+    async function refreshDslrStatus() {
+        if (!dslrAgentRef.current) {
+            return;
+        }
+
+        try {
+            setDslrStatus(await dslrAgentRef.current.getStatus());
+        } catch {
+            setDslrStatus({
+                agentReachable: false,
+                cameraConnected: false,
+                cameraModel: null,
+                backend: null,
+            });
+        }
+    }
+
+    async function selectCameraSource(source: 'webcam' | 'dslr') {
+        setCameraSource(source);
+
+        if (source === 'dslr' && dslrAgentRef.current) {
+            refreshDslrStatus();
+
+            if (!dslrSettings) {
+                setDslrBusy(true);
+
+                try {
+                    const settings = await dslrAgentRef.current.getSettings();
+                    setDslrSettings(settings);
+                } catch (err) {
+                    console.warn('DSLR settings unavailable:', err);
+                } finally {
+                    setDslrBusy(false);
+                }
+            }
+        }
+    }
+
+    // Poll the agent while DSLR mode is active so the operator sees the camera
+    // connect/disconnect live (plug the camera in, status flips within seconds).
+    useEffect(() => {
+        if (cameraSource !== 'dslr') {
+            return;
+        }
+
+        const id = setInterval(refreshDslrStatus, 4000);
+
+        return () => clearInterval(id);
+    }, [cameraSource]);
+
+    async function changeDslrSetting(key: DslrSettingKey, value: string) {
+        if (!dslrAgentRef.current || !dslrSettings) {
+            return;
+        }
+
+        // Optimistic update; roll back if the agent rejects.
+        const previous = dslrSettings[key].current;
+        setDslrSettings({
+            ...dslrSettings,
+            [key]: { ...dslrSettings[key], current: value },
+        });
+        setDslrBusy(true);
+
+        try {
+            await dslrAgentRef.current.setSetting(key, value);
+        } catch (err) {
+            console.warn(`Failed to set ${key}:`, err);
+            setDslrSettings((s) =>
+                s ? { ...s, [key]: { ...s[key], current: previous } } : s,
+            );
+        } finally {
+            setDslrBusy(false);
+        }
+    }
+
+    // Ready to shoot? Webcam mode needs the browser camera; DSLR mode needs the
+    // agent connected (settings loaded) and does NOT depend on the webcam.
+    const captureReady =
+        cameraSource === 'dslr'
+            ? dslrSettings !== null
+            : cameraState === 'ready';
+
     // --- Capture logic ---
     function startCountdown() {
-        if (cameraState !== 'ready' || countdown !== null) {
-return;
-}
+        if (!captureReady || countdown !== null) {
+            return;
+        }
 
         if (activeSlot >= totalSlots) {
-return;
-}
+            return;
+        }
 
         unlockAudio();
         setCountdown(COUNTDOWN_FROM);
@@ -146,8 +250,8 @@ return;
 
     useEffect(() => {
         if (countdown === null) {
-return;
-}
+            return;
+        }
 
         if (countdown === 0) {
             takeShot();
@@ -166,83 +270,102 @@ return;
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [countdown]);
 
-    function takeShot() {
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
+    /** Grab the current webcam frame off the canvas as a JPEG File. */
+    function grabWebcamFrame(filename: string): Promise<DslrCaptureResult> {
+        return new Promise((resolve, reject) => {
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
 
-        if (!video || !canvas) {
-            setCountdown(null);
+            if (!video || !canvas) {
+                reject(new Error('Camera not ready'));
 
-            return;
-        }
+                return;
+            }
 
-        const w = video.videoWidth || 1280;
-        const h = video.videoHeight || 720;
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
+            const w = video.videoWidth || 1280;
+            const h = video.videoHeight || 720;
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
 
-        if (!ctx) {
-            setCountdown(null);
+            if (!ctx) {
+                reject(new Error('Canvas unavailable'));
 
-            return;
-        }
+                return;
+            }
 
-        // Mirror horizontally (selfie style)
-        ctx.save();
-        ctx.translate(w, 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(video, 0, 0, w, h);
-        ctx.restore();
+            // Mirror horizontally (selfie style)
+            ctx.save();
+            ctx.translate(w, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, w, h);
+            ctx.restore();
 
-        canvas.toBlob(
-            (blob) => {
-                if (!blob) {
-                    setCountdown(null);
+            canvas.toBlob(
+                (blob) => {
+                    if (!blob) {
+                        reject(new Error('Failed to encode frame'));
 
-                    return;
-                }
-
-                const file = new File(
-                    [blob],
-                    `slot-${activeSlot + 1}.jpg`,
-                    { type: 'image/jpeg' },
-                );
-                const url = URL.createObjectURL(blob);
-
-                const next = [...slots];
-
-                if (next[activeSlot]) {
-                    URL.revokeObjectURL(next[activeSlot]!.url);
-                }
-
-                next[activeSlot] = { url, file };
-                setSlots(next);
-                syncForm(next);
-
-                // Shutter + flash
-                playShutter();
-                setFlash(true);
-                setTimeout(() => setFlash(false), 200);
-
-                setCountdown(null);
-
-                // Auto-advance to next slot
-                const nextIdx = activeSlot + 1;
-
-                if (nextIdx < totalSlots) {
-                    setActiveSlot(nextIdx);
-
-                    if (autoMode) {
-                        setTimeout(() => {
-                            setCountdown(COUNTDOWN_FROM);
-                        }, DELAY_BETWEEN_SHOTS);
+                        return;
                     }
-                }
-            },
-            'image/jpeg',
-            0.92,
-        );
+
+                    const file = new File([blob], filename, {
+                        type: 'image/jpeg',
+                    });
+                    resolve({ file, url: URL.createObjectURL(blob) });
+                },
+                'image/jpeg',
+                0.92,
+            );
+        });
+    }
+
+    /** Write a captured photo into the active slot and advance. */
+    function commitShot(result: DslrCaptureResult) {
+        const next = [...slots];
+
+        if (next[activeSlot]) {
+            URL.revokeObjectURL(next[activeSlot]!.url);
+        }
+
+        next[activeSlot] = { url: result.url, file: result.file };
+        setSlots(next);
+        syncForm(next);
+
+        // Shutter + flash
+        playShutter();
+        setFlash(true);
+        setTimeout(() => setFlash(false), 200);
+
+        setCountdown(null);
+
+        // Auto-advance to next slot
+        const nextIdx = activeSlot + 1;
+
+        if (nextIdx < totalSlots) {
+            setActiveSlot(nextIdx);
+
+            if (autoMode) {
+                setTimeout(() => {
+                    setCountdown(COUNTDOWN_FROM);
+                }, DELAY_BETWEEN_SHOTS);
+            }
+        }
+    }
+
+    async function takeShot() {
+        const filename = `slot-${activeSlot + 1}.jpg`;
+
+        try {
+            const result =
+                cameraSource === 'dslr' && dslrAgentRef.current
+                    ? await dslrAgentRef.current.capture(filename)
+                    : await grabWebcamFrame(filename);
+            commitShot(result);
+        } catch (err) {
+            console.warn('Capture failed:', err);
+            setCountdown(null);
+        }
     }
 
     function syncForm(next: Slot[]) {
@@ -348,8 +471,7 @@ return;
                         flex: 1,
                         padding: 'clamp(20px, 3vw, 40px)',
                         display: 'grid',
-                        gridTemplateColumns:
-                            'minmax(0, 1.4fr) minmax(0, 1fr)',
+                        gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)',
                         gap: 'clamp(20px, 3vw, 32px)',
                         maxWidth: 1600,
                         margin: '0 auto',
@@ -396,7 +518,11 @@ return;
                             {/* Overlay states */}
                             {cameraState === 'requesting' && (
                                 <CenterOverlay>
-                                    <Icon name="camera" size={36} color="#fff" />
+                                    <Icon
+                                        name="camera"
+                                        size={36}
+                                        color="#fff"
+                                    />
                                     <div
                                         style={{
                                             color: '#fff',
@@ -410,7 +536,11 @@ return;
                             )}
                             {cameraState === 'denied' && (
                                 <CenterOverlay>
-                                    <Icon name="camera" size={36} color="#FCA5A5" />
+                                    <Icon
+                                        name="camera"
+                                        size={36}
+                                        color="#FCA5A5"
+                                    />
                                     <div
                                         style={{
                                             color: '#fff',
@@ -478,15 +608,16 @@ return;
 
                             {/* Countdown overlay */}
                             {countdown !== null && countdown > 0 && (
-                                <CenterOverlay style={{ background: 'transparent' }}>
+                                <CenterOverlay
+                                    style={{ background: 'transparent' }}
+                                >
                                     <div
                                         key={countdown}
                                         style={{
                                             width: 200,
                                             height: 200,
                                             borderRadius: '50%',
-                                            background:
-                                                'rgba(245,250,12,0.92)',
+                                            background: 'rgba(245,250,12,0.92)',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
@@ -680,15 +811,15 @@ return;
                                                     width: slots[i]
                                                         ? 10
                                                         : i === activeSlot
-                                                            ? 24
-                                                            : 10,
+                                                          ? 24
+                                                          : 10,
                                                     height: 6,
                                                     borderRadius: 3,
                                                     background: slots[i]
                                                         ? '#22C55E'
                                                         : i === activeSlot
-                                                            ? 'var(--pb-primary)'
-                                                            : 'rgba(255,255,255,0.35)',
+                                                          ? 'var(--pb-primary)'
+                                                          : 'rgba(255,255,255,0.35)',
                                                     transition:
                                                         'all 200ms ease',
                                                 }}
@@ -698,15 +829,13 @@ return;
                                     <button
                                         type="button"
                                         onClick={
-                                            allFilled
-                                                ? submit
-                                                : startCountdown
+                                            allFilled ? submit : startCountdown
                                         }
                                         disabled={
                                             processing ||
                                             (allFilled
                                                 ? false
-                                                : cameraState !== 'ready' ||
+                                                : !captureReady ||
                                                   countdown !== null)
                                         }
                                         style={{
@@ -729,19 +858,18 @@ return;
                                             cursor: processing
                                                 ? 'wait'
                                                 : allFilled
-                                                    ? 'pointer'
-                                                    : cameraState === 'ready' &&
+                                                  ? 'pointer'
+                                                  : captureReady &&
                                                       countdown === null
-                                                        ? 'pointer'
-                                                        : 'not-allowed',
-                                            opacity:
-                                                processing
-                                                    ? 0.7
-                                                    : allFilled ||
-                                                      (cameraState === 'ready' &&
-                                                          countdown === null)
-                                                        ? 1
-                                                        : 0.55,
+                                                    ? 'pointer'
+                                                    : 'not-allowed',
+                                            opacity: processing
+                                                ? 0.7
+                                                : allFilled ||
+                                                    (captureReady &&
+                                                        countdown === null)
+                                                  ? 1
+                                                  : 0.55,
                                             boxShadow:
                                                 '0 12px 32px rgba(0,0,0,0.45)',
                                         }}
@@ -759,12 +887,166 @@ return;
                                                 ? 'Mengupload…'
                                                 : 'Lanjut ke preview'
                                             : countdown !== null
-                                                ? `Bersiap… ${countdown}`
-                                                : `Ambil foto slot ${activeSlot + 1}/${totalSlots}`}
+                                              ? `Bersiap… ${countdown}`
+                                              : `Ambil foto slot ${activeSlot + 1}/${totalSlots}`}
                                     </button>
                                 </div>
                             )}
                         </div>
+
+                        {/* Camera source toggle: webcam vs DSLR */}
+                        <div
+                            style={{
+                                display: 'flex',
+                                gap: 8,
+                                padding: 4,
+                                background: '#fff',
+                                border: '1px solid var(--pb-border)',
+                                borderRadius: 12,
+                            }}
+                        >
+                            {(['webcam', 'dslr'] as const).map((src) => {
+                                const active = cameraSource === src;
+
+                                return (
+                                    <button
+                                        key={src}
+                                        type="button"
+                                        onClick={() => selectCameraSource(src)}
+                                        style={{
+                                            flex: 1,
+                                            padding: '10px 14px',
+                                            border: 'none',
+                                            borderRadius: 9,
+                                            background: active
+                                                ? 'var(--pb-primary)'
+                                                : 'transparent',
+                                            color: '#0A0A0A',
+                                            fontWeight: active ? 700 : 600,
+                                            fontSize: 13,
+                                            cursor: 'pointer',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: 8,
+                                        }}
+                                    >
+                                        <Icon
+                                            name={
+                                                src === 'webcam'
+                                                    ? 'camera'
+                                                    : 'image'
+                                            }
+                                            size={16}
+                                        />
+                                        {src === 'webcam'
+                                            ? 'Webcam'
+                                            : 'DSLR (tether)'}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* DSLR agent/camera status — tells the operator why a
+                            DSLR isn't working: agent off, or no camera plugged. */}
+                        {cameraSource === 'dslr' && (
+                            <DslrStatusBanner
+                                status={dslrStatus}
+                                onRetry={refreshDslrStatus}
+                            />
+                        )}
+
+                        {/* DSLR exposure controls */}
+                        {cameraSource === 'dslr' && (
+                            <div
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '1fr 1fr 1fr',
+                                    gap: 12,
+                                    padding: 16,
+                                    background: '#fff',
+                                    border: '1px solid var(--pb-border)',
+                                    borderRadius: 16,
+                                    opacity: dslrBusy ? 0.6 : 1,
+                                    transition: 'opacity 150ms ease',
+                                }}
+                            >
+                                {dslrSettings ? (
+                                    (
+                                        [
+                                            ['iso', 'ISO'],
+                                            ['shutter', 'Shutter'],
+                                            ['aperture', 'Aperture'],
+                                        ] as const
+                                    ).map(([key, label]) => (
+                                        <label
+                                            key={key}
+                                            style={{
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: 6,
+                                            }}
+                                        >
+                                            <span
+                                                style={{
+                                                    fontSize: 11,
+                                                    fontWeight: 700,
+                                                    letterSpacing: '0.1em',
+                                                    textTransform: 'uppercase',
+                                                    color: 'var(--pb-text-faint)',
+                                                }}
+                                            >
+                                                {label}
+                                            </span>
+                                            <select
+                                                value={
+                                                    dslrSettings[key].current
+                                                }
+                                                disabled={dslrBusy}
+                                                onChange={(e) =>
+                                                    changeDslrSetting(
+                                                        key,
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                style={{
+                                                    padding: '10px 12px',
+                                                    borderRadius: 10,
+                                                    border: '1px solid var(--pb-border)',
+                                                    background: '#FAFAF7',
+                                                    fontSize: 14,
+                                                    fontWeight: 600,
+                                                    cursor: 'pointer',
+                                                }}
+                                            >
+                                                {dslrSettings[key].options.map(
+                                                    (opt) => (
+                                                        <option
+                                                            key={opt}
+                                                            value={opt}
+                                                        >
+                                                            {opt}
+                                                        </option>
+                                                    ),
+                                                )}
+                                            </select>
+                                        </label>
+                                    ))
+                                ) : (
+                                    <div
+                                        style={{
+                                            gridColumn: '1 / -1',
+                                            textAlign: 'center',
+                                            fontSize: 13,
+                                            color: 'var(--pb-text-faint)',
+                                            padding: '8px 0',
+                                        }}
+                                    >
+                                        Menghubungkan ke kamera…
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         {/* Big shoot button + auto toggle */}
                         <div
@@ -780,7 +1062,7 @@ return;
                                 type="button"
                                 onClick={startCountdown}
                                 disabled={
-                                    cameraState !== 'ready' ||
+                                    !captureReady ||
                                     countdown !== null ||
                                     allFilled
                                 }
@@ -797,16 +1079,13 @@ return;
                                     fontSize: 18,
                                     fontWeight: 700,
                                     cursor:
-                                        cameraState === 'ready' &&
+                                        captureReady &&
                                         countdown === null &&
                                         !allFilled
                                             ? 'pointer'
                                             : 'not-allowed',
                                     opacity:
-                                        cameraState === 'ready' &&
-                                        !allFilled
-                                            ? 1
-                                            : 0.55,
+                                        captureReady && !allFilled ? 1 : 0.55,
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -941,11 +1220,7 @@ return;
                                 }}
                                 role="alert"
                             >
-                                <Icon
-                                    name="alert"
-                                    size={16}
-                                    color="#D97706"
-                                />
+                                <Icon name="alert" size={16} color="#D97706" />
                                 <div>
                                     <strong>Jangan refresh halaman.</strong>{' '}
                                     Foto yang sudah diambil tersimpan sementara
@@ -1075,9 +1350,7 @@ function FramePreview({
     onSlotClick: (idx: number) => void;
 }) {
     const size = frame.image_size;
-    const aspectRatio = size
-        ? `${size.width} / ${size.height}`
-        : '3 / 4';
+    const aspectRatio = size ? `${size.width} / ${size.height}` : '3 / 4';
 
     // Hitung max width berdasar viewport height supaya aspect ratio konsisten — width follows height.
     const aspectValue = size ? size.width / size.height : 0.75;
@@ -1100,8 +1373,8 @@ function FramePreview({
             {/* Slots filled first (under the frame overlay) */}
             {frame.slots.map((s, i) => {
                 if (!size) {
-return null;
-}
+                    return null;
+                }
 
                 const slot = slots[i];
                 const isActive = i === activeSlot;
@@ -1202,6 +1475,106 @@ return null;
                         pointerEvents: 'none',
                     }}
                 />
+            )}
+        </div>
+    );
+}
+
+function DslrStatusBanner({
+    status,
+    onRetry,
+}: {
+    status: DslrStatus | null;
+    onRetry: () => void;
+}) {
+    // Three states operators actually need to tell apart.
+    const view =
+        status === null
+            ? {
+                  tone: '#6B7280',
+                  bg: 'rgba(107,114,128,0.10)',
+                  border: 'rgba(107,114,128,0.30)',
+                  icon: 'camera' as const,
+                  title: 'Memeriksa kamera…',
+                  detail: 'Menghubungi aplikasi kamera di komputer ini.',
+              }
+            : !status.agentReachable
+              ? {
+                    tone: '#B91C1C',
+                    bg: 'rgba(239,68,68,0.10)',
+                    border: 'rgba(239,68,68,0.35)',
+                    icon: 'alert' as const,
+                    title: 'Aplikasi kamera belum jalan',
+                    detail: 'Buka aplikasi Philobooth Camera di komputer booth, lalu coba lagi. Foto tetap bisa pakai Webcam.',
+                }
+              : !status.cameraConnected
+                ? {
+                      tone: '#92400E',
+                      bg: 'rgba(245,158,11,0.10)',
+                      border: 'rgba(245,158,11,0.35)',
+                      icon: 'alert' as const,
+                      title: 'Kamera tidak terdeteksi',
+                      detail: 'Nyalakan kamera, pastikan mode PTP, colok kabel USB langsung ke komputer, dan tutup aplikasi bawaan kamera (mis. EOS Utility).',
+                  }
+                : {
+                      tone: '#166534',
+                      bg: 'rgba(34,197,94,0.10)',
+                      border: 'rgba(34,197,94,0.35)',
+                      icon: 'camera' as const,
+                      title: `Kamera terhubung: ${status.cameraModel ?? 'DSLR'}`,
+                      detail: 'Siap mengambil foto lewat DSLR.',
+                  };
+
+    const showRetry = status !== null && !status.cameraConnected;
+
+    return (
+        <div
+            style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 10,
+                padding: '12px 14px',
+                background: view.bg,
+                border: `1px solid ${view.border}`,
+                borderRadius: 12,
+                color: view.tone,
+            }}
+            role="status"
+        >
+            <Icon name={view.icon} size={18} color={view.tone} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700 }}>
+                    {view.title}
+                </div>
+                <div
+                    style={{
+                        fontSize: 12.5,
+                        lineHeight: 1.45,
+                        marginTop: 2,
+                        opacity: 0.85,
+                    }}
+                >
+                    {view.detail}
+                </div>
+            </div>
+            {showRetry && (
+                <button
+                    type="button"
+                    onClick={onRetry}
+                    style={{
+                        flexShrink: 0,
+                        padding: '6px 12px',
+                        background: '#fff',
+                        border: `1px solid ${view.border}`,
+                        borderRadius: 8,
+                        color: view.tone,
+                        fontSize: 12.5,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                    }}
+                >
+                    Coba lagi
+                </button>
             )}
         </div>
     );
