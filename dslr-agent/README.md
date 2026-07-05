@@ -31,7 +31,8 @@ dotnet run
 
 ## Build kiosk .exe (Windows)
 
-The RID, self-contained, and single-file settings live in the csproj, so:
+The RID, self-contained, and single-file settings live in the csproj, so on
+Windows:
 
 ```bash
 dotnet publish -c Release
@@ -40,6 +41,21 @@ dotnet publish -c Release
 
 The exe runs as a tray app (no console window) and shows an icon near the clock.
 For Canon EDSDK support add `-p:IncludeEdsdk=true` (see `edsdk/README.md`).
+
+### Cross-build the exe from macOS/Linux
+
+The Windows target is keyed off the TFM (not the build OS) and
+`EnableWindowsTargeting` is on, so the kiosk exe can be produced without a
+Windows machine (restore separately because of the TFM override):
+
+```bash
+dotnet restore -p:TargetFramework=net8.0-windows
+dotnet publish -c Release -p:TargetFramework=net8.0-windows --no-restore
+```
+
+The camera engine (`CameraControl.Devices`) is a .NET Framework package used via
+the compat shim (the `NU1701` restore warning is expected). Camera + printing
+still need a real Windows machine to test at runtime.
 
 ### Installer (operator-friendly)
 

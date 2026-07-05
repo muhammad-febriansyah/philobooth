@@ -161,7 +161,7 @@ app.MapPost("/print", async (HttpRequest req, IPrinterService printer) =>
 });
 
 #if WINDOWS
-Tray.Start(app);
+DslrAgent.Tray.Start(app);
 #endif
 
 app.Run();

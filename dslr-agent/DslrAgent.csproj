@@ -6,22 +6,23 @@
     <RootNamespace>DslrAgent</RootNamespace>
     <AssemblyName>philobooth-dslr-agent</AssemblyName>
     <InvariantGlobalization>true</InvariantGlobalization>
+
+    <!-- Default target: the real Windows kiosk build (net8.0-windows) on
+         Windows; the cross-platform mock build (net8.0) elsewhere. Override on
+         any OS to cross-build the kiosk exe:
+           dotnet publish -c Release -p:TargetFramework=net8.0-windows -->
+    <TargetFramework Condition="'$(TargetFramework)' == '' and '$(OS)' == 'Windows_NT'">net8.0-windows</TargetFramework>
+    <TargetFramework Condition="'$(TargetFramework)' == ''">net8.0</TargetFramework>
+
+    <!-- Allow building the net8.0-windows target from macOS/Linux (dev + CI). -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
 
-  <!-- Cross-platform dev target (macOS/Linux): plain net8.0 with the mock
-       camera and mock printer only. The real camera/printer engines and the
-       tray icon are Windows-only, so they are excluded from this build. -->
-  <PropertyGroup Condition="'$(OS)' != 'Windows_NT'">
-    <TargetFramework>net8.0</TargetFramework>
-  </PropertyGroup>
-
-  <!-- Windows kiosk target: net8.0-windows enables the real DSLR engine,
-       printing (System.Drawing), and the system-tray icon. Build the kiosk
-       binary with:
-         dotnet publish -c Release
-       which produces a single self-contained philobooth-dslr-agent.exe. -->
-  <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
-    <TargetFramework>net8.0-windows</TargetFramework>
+  <!-- Windows kiosk target: real DSLR engine, printing (System.Drawing), and the
+       system-tray icon. Keyed on the TFM (not the build OS) so it can be
+       cross-built anywhere. Produces a single self-contained
+       philobooth-dslr-agent.exe. -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
     <UseWindowsForms>true</UseWindowsForms>
     <OutputType>WinExe</OutputType>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
@@ -33,14 +34,14 @@
 
   <!-- digiCamControl's camera engine (Nikon well supported, Canon partial),
        Windows-only, drives cameras over PTP/USB. -->
-  <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
-    <PackageReference Include="CameraControl.Devices" Version="2.0.6" />
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+    <PackageReference Include="CameraControl.Devices" Version="2.0.73-beta" />
   </ItemGroup>
 
   <!-- Optional Canon EDSDK backend (best Canon support). Off by default so the
        standard build needs no proprietary SDK. To enable: drop Canon's
        EDSDKLib.cs wrapper and the native EDSDK DLLs into edsdk/, then build with
-         dotnet publish -c Release -p:IncludeEdsdk=true
+         dotnet publish -c Release -p:TargetFramework=net8.0-windows -p:IncludeEdsdk=true
        See edsdk/README.md. -->
   <PropertyGroup Condition="'$(IncludeEdsdk)' == 'true'">
     <DefineConstants>$(DefineConstants);EDSDK</DefineConstants>
