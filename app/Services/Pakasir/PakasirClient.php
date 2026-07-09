@@ -72,8 +72,12 @@ class PakasirClient
             );
         }
 
+        // Pakasir returns expired_at in UTC (e.g. "...Z"). Convert to the app
+        // timezone before it round-trips through the datetime cast — Eloquent
+        // stores/reads the wall-clock in the app tz, so a raw-UTC Carbon would
+        // be re-read 7h off (Asia/Jakarta) and show as already expired.
         $expiredAt = isset($payment['expired_at'])
-            ? CarbonImmutable::parse($payment['expired_at'])
+            ? CarbonImmutable::parse($payment['expired_at'])->setTimezone(config('app.timezone'))
             : CarbonImmutable::now()->addMinutes($this->qrisExpiredMinutes);
 
         return [
