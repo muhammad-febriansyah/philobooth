@@ -22,6 +22,8 @@ use App\Models\Voucher;
 use App\Services\Doku\DokuClient;
 use App\Services\Doku\DokuException;
 use App\Services\FrameBuilder\CompositeGenerator;
+use App\Services\Pakasir\PakasirClient;
+use App\Services\Pakasir\PakasirException;
 use App\Services\QrCodeService;
 use App\Services\StopMotionGifService;
 use Illuminate\Http\JsonResponse;
@@ -80,16 +82,16 @@ class SessionController extends Controller
         return redirect('/kiosk/payment');
     }
 
-    public function selectPaymentMethod(Request $request, DokuClient $doku): RedirectResponse
+    public function selectPaymentMethod(Request $request, PakasirClient $pakasir): RedirectResponse
     {
         $session = $this->currentSession($request);
 
         $method = $request->string('method')->toString();
         $methodEnum = match ($method) {
-            'qris', 'qris_doku' => PaymentMethod::QrisDoku,
+            'qris', 'qris_pakasir', 'qris_doku' => PaymentMethod::QrisPakasir,
             'qris_manual' => PaymentMethod::QrisManual,
             'voucher' => PaymentMethod::Voucher,
-            default => PaymentMethod::QrisDoku,
+            default => PaymentMethod::QrisPakasir,
         };
 
         $session->update([
@@ -102,11 +104,50 @@ class SessionController extends Controller
             return redirect('/kiosk/voucher');
         }
 
-        if ($methodEnum === PaymentMethod::QrisDoku && $doku->isConfigured()) {
-            $this->ensureDokuQrisPayment($session, $doku);
+        if ($methodEnum === PaymentMethod::QrisPakasir && $pakasir->isConfigured()) {
+            $this->ensurePakasirQrisPayment($session, $pakasir);
         }
 
         return redirect('/kiosk/qris');
+    }
+
+    private function ensurePakasirQrisPayment(PhotoSession $session, PakasirClient $pakasir): void
+    {
+        $pendingPayment = $session->payments()
+            ->where('method', PaymentMethod::QrisPakasir)
+            ->where('status', PaymentStatus::Pending)
+            ->latest('id')
+            ->first();
+
+        if ($pendingPayment && $pendingPayment->expired_at && now()->lt($pendingPayment->expired_at)) {
+            return;
+        }
+
+        // Pakasir order_id must be unique per project; keep it alnum + traceable
+        // back to the session code.
+        $orderId = str_replace('-', '', $session->session_code).Str::upper(Str::random(4));
+
+        try {
+            $result = $pakasir->createQrisPayment($orderId, (int) $session->final_amount);
+        } catch (PakasirException $e) {
+            Log::error('Pakasir createQrisPayment failed', [
+                'session' => $session->session_code,
+                'error' => $e->getMessage(),
+            ]);
+
+            return;
+        }
+
+        Payment::create([
+            'session_id' => $session->id,
+            'method' => PaymentMethod::QrisPakasir,
+            'amount' => $session->final_amount,
+            'pakasir_order_id' => $result['order_id'],
+            'qris_string' => $result['qris_string'],
+            'status' => PaymentStatus::Pending,
+            'expired_at' => $result['expired_at'],
+            'raw_response' => $result['raw'],
+        ]);
     }
 
     private function ensureDokuQrisPayment(PhotoSession $session, DokuClient $doku): void
@@ -159,9 +200,9 @@ class SessionController extends Controller
         DB::transaction(function () use ($session) {
             Payment::create([
                 'session_id' => $session->id,
-                'method' => $session->payment_method ?? PaymentMethod::QrisDoku,
+                'method' => $session->payment_method ?? PaymentMethod::QrisPakasir,
                 'amount' => $session->final_amount,
-                'doku_invoice_number' => 'MOCK-'.Str::upper(Str::random(10)),
+                'pakasir_order_id' => 'MOCK-'.Str::upper(Str::random(10)),
                 'status' => PaymentStatus::Success,
                 'paid_at' => now(),
                 'raw_response' => ['source' => 'mock_pay', 'note' => 'Auto success'],
@@ -483,10 +524,10 @@ class SessionController extends Controller
 
         $method = $request->string('method')->toString();
         $methodEnum = match ($method) {
-            'qris', 'qris_doku' => PaymentMethod::QrisDoku,
+            'qris', 'qris_pakasir', 'qris_doku' => PaymentMethod::QrisPakasir,
             'qris_manual' => PaymentMethod::QrisManual,
             'cash' => PaymentMethod::Cash,
-            default => PaymentMethod::QrisDoku,
+            default => PaymentMethod::QrisPakasir,
         };
 
         DB::transaction(function () use ($session, $methodEnum) {
@@ -494,7 +535,7 @@ class SessionController extends Controller
                 'session_id' => $session->id,
                 'method' => $methodEnum,
                 'amount' => $session->final_amount,
-                'doku_invoice_number' => 'EXT-'.Str::upper(Str::random(10)),
+                'pakasir_order_id' => 'EXT-'.Str::upper(Str::random(10)),
                 'status' => PaymentStatus::Success,
                 'paid_at' => now(),
                 'raw_response' => [
@@ -669,7 +710,7 @@ class SessionController extends Controller
         return redirect('/kiosk/welcome');
     }
 
-    public function status(Request $request, DokuClient $doku): JsonResponse
+    public function status(Request $request, PakasirClient $pakasir): JsonResponse
     {
         $session = $this->currentSessionOrNull($request);
 
@@ -679,13 +720,14 @@ class SessionController extends Controller
 
         $session->loadMissing(['frame:id,name,photo_slots,thumbnail_path', 'paperSize:id,code']);
 
-        // Polling fallback: kalau session belum paid + ada pending QRIS payment, cek DOKU
+        // Polling fallback: kalau session belum paid + ada pending QRIS payment,
+        // verifikasi langsung ke Pakasir (webhook bisa saja gagal/terlambat).
         if (
             $session->status !== SessionStatus::Paid
             && $session->paid_at === null
-            && $doku->isConfigured()
+            && $pakasir->isConfigured()
         ) {
-            $this->reconcileDokuPayment($session, $doku);
+            $this->reconcilePakasirPayment($session, $pakasir);
             $session->refresh();
         }
 
@@ -701,6 +743,46 @@ class SessionController extends Controller
                 'final_amount' => (float) $session->final_amount,
             ],
         ]);
+    }
+
+    private function reconcilePakasirPayment(PhotoSession $session, PakasirClient $pakasir): void
+    {
+        $payment = $session->payments()
+            ->where('method', PaymentMethod::QrisPakasir)
+            ->where('status', PaymentStatus::Pending)
+            ->latest('id')
+            ->first();
+
+        if (! $payment || ! $payment->pakasir_order_id) {
+            return;
+        }
+
+        try {
+            $verified = $pakasir->verifyTransaction($payment->pakasir_order_id, (int) $payment->amount);
+        } catch (PakasirException $e) {
+            Log::warning('Pakasir verify failed on poll', [
+                'order_id' => $payment->pakasir_order_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return;
+        }
+
+        if ($verified['status'] === 'completed' && $verified['amount'] === (int) $payment->amount) {
+            DB::transaction(function () use ($session, $payment, $verified) {
+                $payment->update([
+                    'status' => PaymentStatus::Success,
+                    'paid_at' => now(),
+                    'raw_response' => $verified['raw'],
+                ]);
+
+                $session->update([
+                    'status' => SessionStatus::Paid,
+                    'current_step' => SessionStep::Frame,
+                    'paid_at' => now(),
+                ]);
+            });
+        }
     }
 
     private function reconcileDokuPayment(PhotoSession $session, DokuClient $doku): void

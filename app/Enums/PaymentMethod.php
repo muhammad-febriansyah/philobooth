@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum PaymentMethod: string
 {
+    case QrisPakasir = 'qris_pakasir';
     case QrisDoku = 'qris_doku';
     case QrisManual = 'qris_manual';
     case Voucher = 'voucher';
@@ -13,6 +14,7 @@ enum PaymentMethod: string
     public function label(): string
     {
         return match ($this) {
+            self::QrisPakasir => 'QRIS (Pakasir)',
             self::QrisDoku => 'QRIS (DOKU)',
             self::QrisManual => 'QRIS Manual',
             self::Voucher => 'Voucher',

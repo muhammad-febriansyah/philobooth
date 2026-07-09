@@ -64,7 +64,7 @@ class PageController extends Controller
         $session = $this->requireSession($request, 'qris');
 
         $payment = $session->payments()
-            ->where('method', PaymentMethod::QrisDoku)
+            ->where('method', PaymentMethod::QrisPakasir)
             ->where('status', PaymentStatus::Pending)
             ->latest('id')
             ->first();
@@ -82,7 +82,7 @@ class PageController extends Controller
                 'string' => $payment->qris_string,
                 'image_url' => $payment->qris_image_path,
                 'image_data_uri' => 'data:image/svg+xml;base64,'.base64_encode($svg),
-                'invoice_number' => $payment->doku_invoice_number,
+                'invoice_number' => $payment->pakasir_order_id,
                 'expired_at' => $payment->expired_at?->toIso8601String(),
             ];
         }

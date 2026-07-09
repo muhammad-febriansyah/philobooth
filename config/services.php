@@ -50,4 +50,11 @@ return [
         'qris_expired_minutes' => (int) env('DOKU_QRIS_EXPIRED_MINUTES', 10),
     ],
 
+    'pakasir' => [
+        'base_url' => env('PAKASIR_BASE_URL', 'https://app.pakasir.com'),
+        'slug' => env('PAKASIR_SLUG', ''),
+        'api_key' => env('PAKASIR_API_KEY', ''),
+        'qris_expired_minutes' => (int) env('PAKASIR_QRIS_EXPIRED_MINUTES', 10),
+    ],
+
 ];

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\Doku\DokuClient;
+use App\Services\Pakasir\PakasirClient;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,13 @@ class AppServiceProvider extends ServiceProvider
             baseUrl: rtrim((string) config('services.doku.base_url', ''), '/'),
             notifyUrl: config('services.doku.notify_url'),
             qrisExpiredMinutes: (int) config('services.doku.qris_expired_minutes', 10),
+        ));
+
+        $this->app->singleton(PakasirClient::class, fn () => new PakasirClient(
+            baseUrl: rtrim((string) config('services.pakasir.base_url', ''), '/'),
+            slug: (string) config('services.pakasir.slug', ''),
+            apiKey: (string) config('services.pakasir.api_key', ''),
+            qrisExpiredMinutes: (int) config('services.pakasir.qris_expired_minutes', 10),
         ));
     }
 
