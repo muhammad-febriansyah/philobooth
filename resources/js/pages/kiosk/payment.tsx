@@ -246,7 +246,7 @@ export default function KioskPayment({ session }: Props) {
                             <Trust
                                 icon="lock"
                                 label="Terenkripsi"
-                                hint="Transaksi via DOKU"
+                                hint="Transaksi terenkripsi"
                             />
                             <Trust
                                 icon="sparkles"

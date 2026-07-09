@@ -63,7 +63,7 @@ export default function KioskQRIS({ session, qris }: Props) {
         return () => clearInterval(interval);
     }, [qris?.expired_at]);
 
-    // Polling status DOKU tiap 3 detik
+    // Polling status pembayaran tiap 3 detik
     useEffect(() => {
         if (!qris) return;
 
@@ -341,7 +341,7 @@ export default function KioskQRIS({ session, qris }: Props) {
                                 {qris?.image_data_uri ? (
                                     <img
                                         src={qris.image_data_uri}
-                                        alt="QRIS DOKU"
+                                        alt="Kode QRIS"
                                         style={{
                                             width: 420,
                                             height: 420,

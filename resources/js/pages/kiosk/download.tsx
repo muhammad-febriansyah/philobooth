@@ -23,7 +23,8 @@ type Props = {
 };
 
 const METHOD_LABEL: Record<string, string> = {
-    qris_doku: 'QRIS · DOKU',
+    qris_pakasir: 'QRIS',
+    qris_doku: 'QRIS',
     qris_manual: 'QRIS · Scan',
     voucher: 'Voucher',
     cash: 'Tunai',

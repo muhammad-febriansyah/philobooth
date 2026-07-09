@@ -20,7 +20,8 @@ type SessionProps = {
 const REDIRECT_SECONDS = 5;
 
 const METHOD_LABEL: Record<string, string> = {
-    qris_doku: 'QRIS · DOKU',
+    qris_pakasir: 'QRIS',
+    qris_doku: 'QRIS',
     qris_manual: 'QRIS · Scan kasir',
     voucher: 'Voucher',
     cash: 'Tunai',
