@@ -15,7 +15,6 @@ use App\Models\Filter;
 use App\Models\Frame;
 use App\Models\Payment;
 use App\Models\PhotoSession;
-use App\Models\PricingConfig;
 use App\Models\Printer;
 use App\Models\SessionPhoto;
 use App\Models\Voucher;
@@ -58,7 +57,7 @@ class SessionController extends Controller
             ->value('id')
             ?? DB::table('paper_sizes')->where('is_active', true)->value('id');
 
-        $basePrice = $this->resolveBasePrice($branchId, $paperSizeId);
+        $basePrice = $this->resolveBasePrice();
 
         $session = PhotoSession::create([
             'session_code' => $this->generateSessionCode(),
@@ -877,25 +876,11 @@ class SessionController extends Controller
     }
 
     /**
-     * Sumber harga (urut prioritas):
-     * 1. pricing_configs (branch + paper_size + active)
-     * 2. app_settings.base_price (fallback global)
-     * 3. 25_000 (default akhir)
+     * Harga sesi kiosk selalu mengikuti pengaturan global (app_settings.base_price).
+     * Fallback 25_000 kalau belum diset.
      */
-    private function resolveBasePrice(int $branchId, ?int $paperSizeId): float
+    private function resolveBasePrice(): float
     {
-        if ($paperSizeId) {
-            $pricing = PricingConfig::query()
-                ->where('branch_id', $branchId)
-                ->where('paper_size_id', $paperSizeId)
-                ->where('is_active', true)
-                ->value('base_price');
-
-            if ($pricing !== null) {
-                return (float) $pricing;
-            }
-        }
-
         $globalDefault = AppSetting::get('base_price');
 
         if ($globalDefault !== null) {

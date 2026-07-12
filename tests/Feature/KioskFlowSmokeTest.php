@@ -5,6 +5,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\SessionStatus;
 use App\Enums\SessionStep;
 use App\Enums\SessionType;
+use App\Models\AppSetting;
 use App\Models\Branch;
 use App\Models\Filter;
 use App\Models\Frame;
@@ -12,6 +13,7 @@ use App\Models\FramePhotoSlot;
 use App\Models\PaperSize;
 use App\Models\Payment;
 use App\Models\PhotoSession;
+use App\Models\PricingConfig;
 use App\Models\SessionPhoto;
 use App\Models\Voucher;
 use App\Models\VoucherBatch;
@@ -130,6 +132,28 @@ it('POST /kiosk/start creates a session and redirects to payment', function () {
 
     expect(PhotoSession::count())->toBe(1)
         ->and(PhotoSession::first()->current_step)->toBe(SessionStep::Payment);
+});
+
+it('POST /kiosk/start prices the session from global base_price, ignoring branch pricing', function () {
+    $branch = Branch::factory()->create(['is_active' => true]);
+    $paper = PaperSize::factory()->create(['code' => 'STRIP', 'is_active' => true]);
+
+    // Branch-level override that used to win — must now be ignored.
+    PricingConfig::query()->create([
+        'branch_id' => $branch->id,
+        'paper_size_id' => $paper->id,
+        'base_price' => 35000,
+        'is_active' => true,
+    ]);
+
+    AppSetting::set('base_price', 1, 'float');
+
+    $this->post('/kiosk/start')->assertRedirect('/kiosk/payment');
+
+    $session = PhotoSession::first();
+
+    expect((float) $session->total_amount)->toBe(1.0)
+        ->and((float) $session->final_amount)->toBe(1.0);
 });
 
 it('POST /kiosk/payment/method routes by method', function () {

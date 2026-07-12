@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Kiosk;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
+use App\Models\AppSetting;
 use App\Models\Branch;
 use App\Models\Frame;
 use App\Models\PhotoSession;
-use App\Models\PricingConfig;
 use App\Services\FrameBuilder\CompositeGenerator;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
@@ -295,27 +295,16 @@ class PageController extends Controller
     {
         $session = $this->requireSession($request, 'qty');
         $session->loadMissing('paperSize');
-        $branchId = $session->branch_id;
-        $paperSizeId = $session->paper_size_id;
-        $pricing = null;
-
-        if ($branchId && $paperSizeId) {
-            $pricing = PricingConfig::query()
-                ->where('branch_id', $branchId)
-                ->where('paper_size_id', $paperSizeId)
-                ->where('is_active', true)
-                ->first();
-        }
 
         return Inertia::render('kiosk/qty', [
             'session' => $this->sessionProps($session),
             'composite_url' => $this->buildCompositeUrl($session, $composer),
             'frame' => $this->frameProps($session->frame),
             'pricing' => [
-                'base_price' => (float) ($pricing?->base_price ?? $session->total_amount),
+                'base_price' => (float) AppSetting::get('base_price', $session->total_amount),
                 'free_quantity' => 1,
-                'extra_per_print' => (float) ($pricing?->base_price ?? $session->total_amount) * 0.5,
-                'max_prints' => (int) ($pricing?->max_prints ?? 10),
+                'extra_per_print' => (float) AppSetting::get('extra_print_price', 5000),
+                'max_prints' => (int) AppSetting::get('max_prints', 10),
             ],
         ]);
     }
