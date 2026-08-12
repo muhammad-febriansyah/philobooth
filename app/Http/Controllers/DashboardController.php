@@ -32,18 +32,20 @@ class DashboardController extends Controller
     }
 
     /**
-     * Availability + size of the downloadable kiosk camera agent (.exe).
+     * Availability + size of the downloadable kiosk camera installer. The size
+     * shown is the installer's, not the agent's — the installer fetches the
+     * large payload itself once it is running.
      *
      * @return array{available: bool, size_mb: float|null}
      */
     private function agentInfo(): array
     {
-        $exists = Storage::disk('local')->exists(AgentController::AGENT_PATH);
+        $exists = Storage::disk('local')->exists(AgentController::INSTALLER_PATH);
 
         return [
             'available' => $exists,
             'size_mb' => $exists
-                ? round(Storage::disk('local')->size(AgentController::AGENT_PATH) / 1048576, 1)
+                ? round(Storage::disk('local')->size(AgentController::INSTALLER_PATH) / 1048576, 1)
                 : null,
         ];
     }

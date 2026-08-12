@@ -47,6 +47,21 @@ return [
             'report' => false,
         ],
 
+        /*
+         * The kiosk camera agent payload. It sits directly under the web root
+         * (not behind the `storage` symlink) so the web server streams it with
+         * byte-range support and PHP never holds the connection open — a ~180 MB
+         * download through PHP was being cut short on booth connections.
+         */
+        'agent' => [
+            'driver' => 'local',
+            'root' => public_path('agent'),
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/agent',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

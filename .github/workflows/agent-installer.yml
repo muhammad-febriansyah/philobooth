@@ -1,0 +1,103 @@
+name: agent-installer
+
+# Builds the kiosk camera agent and its installer on a Windows runner, because
+# both the .NET Windows target and Inno Setup need Windows. Run it by hand from
+# the Actions tab.
+#
+# The large agent exe is published as a GitHub Release asset rather than served
+# from the app: the app runs behind a tunnel that was cutting the ~180 MB
+# download short, and a release asset comes off GitHub's CDN with byte-range
+# support instead. The installer is compiled with that asset's URL and SHA-256
+# baked in, so it downloads the payload itself and refuses a corrupted one.
+#
+# Afterwards, publish the installer so the dashboard button serves it:
+#   php artisan agent:publish --installer --installer-file=philobooth-camera-setup.exe
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version — also the release tag (e.g. 1.0.0)'
+        required: true
+        default: '1.0.0'
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build agent
+        working-directory: dslr-agent
+        run: dotnet publish -c Release -p:TargetFramework=net8.0-windows
+
+      - name: Hash the payload and resolve its release URL
+        id: payload
+        shell: pwsh
+        run: |
+          $exe = 'dslr-agent/bin/Release/net8.0-windows/win-x64/publish/philobooth-dslr-agent.exe'
+          $hash = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLower()
+          $tag = 'agent-v${{ inputs.version }}'
+          $url = "${{ github.server_url }}/${{ github.repository }}/releases/download/$tag/philobooth-dslr-agent.exe"
+          $sizeMb = [math]::Round((Get-Item $exe).Length / 1MB, 1)
+
+          "sha256=$hash" >> $env:GITHUB_OUTPUT
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "url=$url" >> $env:GITHUB_OUTPUT
+          "Payload: $sizeMb MB" >> $env:GITHUB_STEP_SUMMARY
+          "SHA-256: ``$hash``" >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Compile installer
+        working-directory: dslr-agent
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          & $iscc installer\philobooth-agent.iss `
+            "/DPayloadUrl=${{ steps.payload.outputs.url }}" `
+            "/DPayloadSha256=${{ steps.payload.outputs.sha256 }}" `
+            "/DAppVersion=${{ inputs.version }}"
+          if ($LASTEXITCODE -ne 0) { throw 'ISCC failed' }
+          $setup = 'installer\Output\philobooth-camera-setup.exe'
+          $sizeMb = [math]::Round((Get-Item $setup).Length / 1MB, 1)
+          "Installer: $sizeMb MB" >> $env:GITHUB_STEP_SUMMARY
+
+      # Both files go on the release: the payload because the installer fetches
+      # it from there, the installer so it can be downloaded without digging
+      # through workflow artifacts.
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.payload.outputs.tag }}
+          name: Philobooth Camera ${{ inputs.version }}
+          body: |
+            Aplikasi kamera untuk PC booth (Windows 10/11, 64-bit).
+
+            Operator cukup mengunduh `philobooth-camera-setup.exe` — installer
+            akan mengunduh sisanya sendiri.
+
+            SHA-256 payload: `${{ steps.payload.outputs.sha256 }}`
+          files: |
+            dslr-agent/bin/Release/net8.0-windows/win-x64/publish/philobooth-dslr-agent.exe
+            dslr-agent/installer/Output/philobooth-camera-setup.exe
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer
+          path: dslr-agent/installer/Output/philobooth-camera-setup.exe
+          compression-level: 0
+          if-no-files-found: error

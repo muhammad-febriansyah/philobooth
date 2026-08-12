@@ -326,7 +326,9 @@ function AgentDownloadCard({
                     }}
                 >
                     Install di PC booth (Windows) supaya bisa pakai DSLR &amp;
-                    printer. Buka sekali, jalan otomatis di tray.
+                    printer. Buka sekali, jalan otomatis di tray. Installer akan
+                    mengunduh sisanya sendiri — biarkan internet tersambung
+                    sampai selesai.
                     {agent.available && agent.size_mb
                         ? ` · ${agent.size_mb} MB`
                         : ''}

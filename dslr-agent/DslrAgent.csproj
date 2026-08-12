@@ -29,6 +29,9 @@
     <SelfContained>true</SelfContained>
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <!-- Deflate the bundled assemblies. Roughly halves the download size, at the
+         cost of a slightly slower first start (the bundle is extracted once). -->
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
     <EnableComHosting>false</EnableComHosting>
   </PropertyGroup>
 

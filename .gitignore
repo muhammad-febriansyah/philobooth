@@ -1,6 +1,7 @@
 /.phpunit.cache
 /bootstrap/ssr
 /node_modules
+/public/agent
 /public/build
 /public/fonts-manifest.dev.json
 /public/hot
@@ -12,6 +13,11 @@
 /resources/js/wayfinder
 /vendor
 .DS_Store
+/.playwright-mcp
+/.codex
+/.gemini
+/GEMINI.md
+/AGENTS.md
 .env
 .env.backup
 .env.production
