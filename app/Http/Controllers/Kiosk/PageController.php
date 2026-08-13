@@ -90,6 +90,7 @@ class PageController extends Controller
         return Inertia::render('kiosk/qris', [
             'session' => $this->sessionProps($session),
             'qris' => $qrisData,
+            'allowMock' => ! app()->isProduction(),
         ]);
     }
 

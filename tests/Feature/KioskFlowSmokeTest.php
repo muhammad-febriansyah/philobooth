@@ -180,6 +180,28 @@ it('POST /kiosk/payment/mock-pay completes payment and advances', function () {
         ->toBe(1);
 });
 
+it('POST /kiosk/payment/mock-pay is blocked in production', function () {
+    $session = seedKiosk(['payment_method' => PaymentMethod::QrisPakasir]);
+    $this->app->detectEnvironment(fn () => 'production');
+
+    $this->withoutMiddleware()
+        ->withSession(['kiosk_session_id' => $session->id])
+        ->post('/kiosk/payment/mock-pay')
+        ->assertForbidden();
+
+    expect($session->fresh()->status)->not->toBe(SessionStatus::Paid);
+    expect(Payment::where('session_id', $session->id)->count())->toBe(0);
+});
+
+it('GET /kiosk/qris hides mock button in production', function () {
+    $session = seedKiosk();
+    $this->app->detectEnvironment(fn () => 'production');
+
+    $this->withSession(['kiosk_session_id' => $session->id])
+        ->get('/kiosk/qris')
+        ->assertInertia(fn ($page) => $page->where('allowMock', false));
+});
+
 it('POST /kiosk/start defaults to a unified photo session', function () {
     Branch::factory()->create(['is_active' => true]);
     PaperSize::factory()->create(['code' => 'STRIP', 'is_active' => true]);
