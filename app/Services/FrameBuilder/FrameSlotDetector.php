@@ -21,14 +21,19 @@ final class FrameSlotDetector
     /**
      * @param  int  $darknessThreshold  R+G+B max value untuk dianggap "dark" (0-765)
      * @param  float  $minAreaPercent  Minimum area cluster vs total image (0-100), filter noise
+     * @param  float  $maxAreaPercent  Maximum area cluster vs total image (0-100), filter background-merge
      * @param  int  $scanMaxDimension  Resize image ke max sisi ini sebelum scan (performa)
      * @param  int  $minClusterRows  Minimum tinggi cluster dalam piksel (downsampled)
+     * @param  int  $backgroundTolerance  Jarak warna minimal (Euclidean RGB, 0-441) dari warna background
+     *                                    supaya pixel gelap dianggap slot, bukan bagian background gelap
      */
     public function __construct(
         private int $darknessThreshold = 90,
         private float $minAreaPercent = 0.5,
+        private float $maxAreaPercent = 60.0,
         private int $scanMaxDimension = 600,
         private int $minClusterRows = 10,
+        private int $backgroundTolerance = 40,
     ) {}
 
     /**
@@ -57,8 +62,9 @@ final class FrameSlotDetector
 
         $boxes = $this->findBoundingBoxes($mask, $scanWidth, $scanHeight);
 
-        // Convert ke koordinat asli & filter ukuran minimal
+        // Convert ke koordinat asli & filter ukuran minimal/maksimal
         $minArea = ($origWidth * $origHeight) * ($this->minAreaPercent / 100);
+        $maxArea = ($origWidth * $origHeight) * ($this->maxAreaPercent / 100);
         $slots = [];
 
         foreach ($boxes as $box) {
@@ -67,7 +73,7 @@ final class FrameSlotDetector
             $w = (int) round(($box['maxX'] - $box['minX'] + 1) / $scale);
             $h = (int) round(($box['maxY'] - $box['minY'] + 1) / $scale);
 
-            if ($w * $h < $minArea) {
+            if ($w * $h < $minArea || $w * $h > $maxArea) {
                 continue;
             }
 
@@ -171,6 +177,10 @@ final class FrameSlotDetector
         $transparentRatio = $sampledTotal > 0 ? $transparentCount / $sampledTotal : 0;
         $useTransparentMode = $transparentRatio > 0.02; // >2%
 
+        // Warna background disample dari pojok gambar (biasanya bukan area slot),
+        // dipakai supaya background gelap (mis. navy) tidak ikut kehitung sebagai slot.
+        $background = $this->sampleBackgroundColor($image, $w, $h);
+
         $mask = [];
 
         for ($y = 0; $y < $h; $y++) {
@@ -194,7 +204,11 @@ final class FrameSlotDetector
                     $r = ($rgba >> 16) & 0xFF;
                     $g = ($rgba >> 8) & 0xFF;
                     $b = $rgba & 0xFF;
-                    $row[] = ($r + $g + $b) <= $this->darknessThreshold;
+
+                    $isDark = ($r + $g + $b) <= $this->darknessThreshold;
+                    $differsFromBackground = $this->colorDistance($r, $g, $b, $background) >= $this->backgroundTolerance;
+
+                    $row[] = $isDark && $differsFromBackground;
                 }
             }
 
@@ -202,6 +216,65 @@ final class FrameSlotDetector
         }
 
         return $mask;
+    }
+
+    /**
+     * Sample warna dominan di pojok/tepi gambar sebagai referensi warna background,
+     * supaya background gelap tidak ikut dianggap slot foto.
+     *
+     * @return array{0:int, 1:int, 2:int}
+     */
+    private function sampleBackgroundColor(GdImage $image, int $w, int $h): array
+    {
+        $margin = max(1, (int) (min($w, $h) * 0.02));
+        $points = [
+            [$margin, $margin],
+            [$w - 1 - $margin, $margin],
+            [$margin, $h - 1 - $margin],
+            [$w - 1 - $margin, $h - 1 - $margin],
+        ];
+
+        $rTotal = $gTotal = $bTotal = 0;
+        $count = 0;
+
+        foreach ($points as [$px, $py]) {
+            $px = max(0, min($w - 1, $px));
+            $py = max(0, min($h - 1, $py));
+
+            $rgba = imagecolorat($image, $px, $py);
+            $alpha = ($rgba >> 24) & 0x7F;
+
+            if ($alpha > 100) {
+                continue;
+            }
+
+            $rTotal += ($rgba >> 16) & 0xFF;
+            $gTotal += ($rgba >> 8) & 0xFF;
+            $bTotal += $rgba & 0xFF;
+            $count++;
+        }
+
+        if ($count === 0) {
+            return [255, 255, 255];
+        }
+
+        return [
+            (int) round($rTotal / $count),
+            (int) round($gTotal / $count),
+            (int) round($bTotal / $count),
+        ];
+    }
+
+    /**
+     * @param  array{0:int, 1:int, 2:int}  $background
+     */
+    private function colorDistance(int $r, int $g, int $b, array $background): float
+    {
+        return sqrt(
+            ($r - $background[0]) ** 2
+            + ($g - $background[1]) ** 2
+            + ($b - $background[2]) ** 2
+        );
     }
 
     /**

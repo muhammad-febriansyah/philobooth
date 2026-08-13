@@ -24,6 +24,7 @@ type Props = {
         final_amount: number;
     };
     qris?: Qris | null;
+    allowMock?: boolean;
 };
 
 function formatCountdown(seconds: number): string {
@@ -39,7 +40,8 @@ function formatCountdown(seconds: number): string {
     return `${m}:${s}`;
 }
 
-export default function KioskQRIS({ session, qris }: Props) {
+export default function KioskQRIS({ session, qris, allowMock = false }: Props) {
+    const showMock = !qris && allowMock;
     const [processing, setProcessing] = useState(false);
     const [remaining, setRemaining] = useState<number>(() => {
         if (!qris?.expired_at) return 300;
@@ -396,9 +398,9 @@ export default function KioskQRIS({ session, qris }: Props) {
                     </div>
                 </main>
                 <KioskFooter
-                    next={qris ? undefined : 'Saya sudah bayar (demo)'}
+                    next={showMock ? 'Saya sudah bayar (demo)' : undefined}
                     nextIcon="check"
-                    onNext={qris ? undefined : mockPay}
+                    onNext={showMock ? mockPay : undefined}
                     nextDisabled={processing}
                 />
             </KioskScene>

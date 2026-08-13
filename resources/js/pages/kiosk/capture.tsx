@@ -602,6 +602,7 @@ export default function KioskCapture({ frame }: Props) {
                         maxWidth: 1600,
                         margin: '0 auto',
                         width: '100%',
+                        minHeight: 0,
                     }}
                 >
                     {/* LEFT — Live camera */}
@@ -611,6 +612,7 @@ export default function KioskCapture({ frame }: Props) {
                             flexDirection: 'column',
                             gap: 16,
                             minWidth: 0,
+                            minHeight: 0,
                         }}
                     >
                         <div
@@ -621,6 +623,7 @@ export default function KioskCapture({ frame }: Props) {
                                 borderRadius: cameraFs ? 0 : 20,
                                 overflow: 'hidden',
                                 aspectRatio: cameraFs ? 'auto' : '16 / 9',
+                                maxHeight: cameraFs ? undefined : '46vh',
                                 width: cameraFs ? '100%' : undefined,
                                 height: cameraFs ? '100%' : undefined,
                                 boxShadow:

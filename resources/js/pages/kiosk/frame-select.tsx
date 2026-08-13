@@ -101,7 +101,7 @@ export default function KioskFrameSelect({ session, frames }: Props) {
                         padding: 'clamp(20px, 3vw, 36px)',
                         display: 'grid',
                         gridTemplateColumns:
-                            'minmax(0, 1.45fr) minmax(0, 1fr)',
+                            'minmax(0, 1.7fr) minmax(0, 0.85fr)',
                         gap: 'clamp(20px, 3vw, 40px)',
                         minHeight: 0,
                         maxWidth: 1600,
@@ -520,12 +520,14 @@ function PreviewPane({
                     <div
                         style={{
                             position: 'relative',
-                            width: '100%',
+                            width: 'auto',
+                            maxWidth: 220,
+                            maxHeight: '26vh',
                             aspectRatio: '3 / 4',
+                            margin: '0 auto 14px',
                             background: '#FAFAFA',
                             borderRadius: 14,
                             overflow: 'hidden',
-                            marginBottom: 18,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -574,12 +576,12 @@ function PreviewPane({
                     {/* Info */}
                     <div
                         style={{
-                            marginBottom: 16,
+                            marginBottom: 12,
                         }}
                     >
                         <div
                             style={{
-                                fontSize: 'clamp(20px, 1.8vw, 24px)',
+                                fontSize: 'clamp(18px, 1.6vw, 22px)',
                                 fontWeight: 700,
                                 letterSpacing: '-0.02em',
                                 color: 'var(--pb-ink)',
@@ -604,7 +606,7 @@ function PreviewPane({
                             display: 'grid',
                             gridTemplateColumns: 'repeat(2, 1fr)',
                             gap: 8,
-                            marginBottom: 18,
+                            marginBottom: 14,
                         }}
                     >
                         <Stat

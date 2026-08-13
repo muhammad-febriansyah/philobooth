@@ -194,6 +194,8 @@ class SessionController extends Controller
      */
     public function mockPaySuccess(Request $request): RedirectResponse
     {
+        abort_if(app()->isProduction(), 403, 'Mock payment disabled in production.');
+
         $session = $this->currentSession($request);
 
         DB::transaction(function () use ($session) {
