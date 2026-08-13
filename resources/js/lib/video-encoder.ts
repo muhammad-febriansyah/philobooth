@@ -21,6 +21,17 @@ export type VideoEncodeOptions = {
     fps?: number;
     /** Longest canvas edge in px; frames are scaled to fit. */
     maxEdge?: number;
+    /**
+     * When set, the canvas is sized to the frame template and each photo is
+     * drawn into `slotRect` (cover-fit) before the frame thumbnail is
+     * overlaid on top — matching the composite photo layout instead of a
+     * plain letterboxed clip.
+     */
+    frameOverlay?: {
+        imageSize: { width: number; height: number };
+        slotRect: { x: number; y: number; width: number; height: number };
+        thumbnailUrl: string;
+    };
 };
 
 export type VideoEncodeResult = {
@@ -140,6 +151,7 @@ export async function encodePhotosToVideo(
         boomerang = true,
         fps = 30,
         maxEdge = 720,
+        frameOverlay,
     } = options;
 
     const bitmaps = await Promise.all(
@@ -147,22 +159,44 @@ export async function encodePhotosToVideo(
     );
 
     try {
-        // Canvas size derived from the first frame, scaled so the long edge
-        // is at most maxEdge (keeps orientation natural).
-        const first = bitmaps[0];
+        let canvasSourceW: number;
+        let canvasSourceH: number;
+
+        if (frameOverlay) {
+            canvasSourceW = frameOverlay.imageSize.width;
+            canvasSourceH = frameOverlay.imageSize.height;
+        } else {
+            // Canvas size derived from the first frame, scaled so the long
+            // edge is at most maxEdge (keeps orientation natural).
+            const first = bitmaps[0];
+            canvasSourceW = first.width;
+            canvasSourceH = first.height;
+        }
+
         const scale = Math.min(
             1,
-            maxEdge / Math.max(first.width, first.height),
+            maxEdge / Math.max(canvasSourceW, canvasSourceH),
         );
         const canvas = document.createElement('canvas');
-        canvas.width = Math.round(first.width * scale);
-        canvas.height = Math.round(first.height * scale);
+        canvas.width = Math.round(canvasSourceW * scale);
+        canvas.height = Math.round(canvasSourceH * scale);
 
         const ctx = canvas.getContext('2d');
 
         if (!ctx) {
             throw new Error('Canvas 2D context unavailable');
         }
+
+        const frameImg = frameOverlay
+            ? await new Promise<HTMLImageElement>((resolve, reject) => {
+                  const img = new Image();
+                  img.crossOrigin = 'anonymous';
+                  img.onload = () => resolve(img);
+                  img.onerror = () =>
+                      reject(new Error('Frame overlay gagal dimuat.'));
+                  img.src = frameOverlay.thumbnailUrl;
+              })
+            : null;
 
         const stream = canvas.captureStream(fps);
         const recorder = new MediaRecorder(stream, {
@@ -185,15 +219,37 @@ export async function encodePhotosToVideo(
 
         for (const index of sequence) {
             const bmp = bitmaps[index];
-            ctx.fillStyle = '#000';
+            ctx.fillStyle = frameOverlay ? '#FFFFFF' : '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            const r = coverRect(
-                bmp.width,
-                bmp.height,
-                canvas.width,
-                canvas.height,
-            );
-            ctx.drawImage(bmp, r.x, r.y, r.w, r.h);
+
+            if (frameOverlay) {
+                const slot = frameOverlay.slotRect;
+                const x = slot.x * scale;
+                const y = slot.y * scale;
+                const w = slot.width * scale;
+                const h = slot.height * scale;
+                const r = coverRect(bmp.width, bmp.height, w, h);
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(x, y, w, h);
+                ctx.clip();
+                ctx.drawImage(bmp, x + r.x, y + r.y, r.w, r.h);
+                ctx.restore();
+
+                if (frameImg) {
+                    ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
+                }
+            } else {
+                const r = coverRect(
+                    bmp.width,
+                    bmp.height,
+                    canvas.width,
+                    canvas.height,
+                );
+                ctx.drawImage(bmp, r.x, r.y, r.w, r.h);
+            }
+
             await wait(frameDurationMs);
         }
 

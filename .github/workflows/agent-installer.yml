@@ -11,7 +11,9 @@ name: agent-installer
 # baked in, so it downloads the payload itself and refuses a corrupted one.
 #
 # Afterwards, publish the installer so the dashboard button serves it:
-#   php artisan agent:publish --installer --installer-file=philobooth-camera-setup.exe
+#   php artisan agent:publish --installer \
+#     --installer-file=philobooth-camera-setup.exe \
+#     --installer-sha256=<value from philobooth-camera-checksums.txt>
 
 on:
   workflow_dispatch:
@@ -25,6 +27,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: agent-release-${{ inputs.version }}
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: windows-latest
@@ -33,6 +39,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Validate immutable release version
+        shell: pwsh
+        env:
+          VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ($env:VERSION -notmatch '^\d+\.\d+\.\d+(?:\.\d+)?$') {
+            throw 'Version must contain 3 or 4 numeric parts, for example 1.0.0 or 1.0.0.1'
+          }
+
+          $releaseOutput = gh release view "agent-v$env:VERSION" --repo $env:GITHUB_REPOSITORY 2>&1
+          $releaseExitCode = $LASTEXITCODE
+          $global:LASTEXITCODE = 0
+
+          if ($releaseExitCode -eq 0) {
+            throw "Release agent-v$env:VERSION already exists. Use a new version so old installers remain valid."
+          }
+
+          if (($releaseOutput -join "`n") -notmatch '(?i)(release not found|HTTP 404)') {
+            throw "Unable to confirm that the release version is unused: $releaseOutput"
+          }
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -40,15 +68,17 @@ jobs:
 
       - name: Build agent
         working-directory: dslr-agent
-        run: dotnet publish -c Release -p:TargetFramework=net8.0-windows
+        run: dotnet publish -c Release -f net8.0-windows -r win-x64 --self-contained true
 
       - name: Hash the payload and resolve its release URL
         id: payload
         shell: pwsh
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
           $exe = 'dslr-agent/bin/Release/net8.0-windows/win-x64/publish/philobooth-dslr-agent.exe'
           $hash = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLower()
-          $tag = 'agent-v${{ inputs.version }}'
+          $tag = "agent-v$env:VERSION"
           $url = "${{ github.server_url }}/${{ github.repository }}/releases/download/$tag/philobooth-dslr-agent.exe"
           $sizeMb = [math]::Round((Get-Item $exe).Length / 1MB, 1)
 
@@ -64,16 +94,45 @@ jobs:
       - name: Compile installer
         working-directory: dslr-agent
         shell: pwsh
+        env:
+          APP_VERSION: ${{ inputs.version }}
+          PAYLOAD_URL: ${{ steps.payload.outputs.url }}
+          PAYLOAD_SHA256: ${{ steps.payload.outputs.sha256 }}
         run: |
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           & $iscc installer\philobooth-agent.iss `
-            "/DPayloadUrl=${{ steps.payload.outputs.url }}" `
-            "/DPayloadSha256=${{ steps.payload.outputs.sha256 }}" `
-            "/DAppVersion=${{ inputs.version }}"
+            "/DPayloadUrl=$env:PAYLOAD_URL" `
+            "/DPayloadSha256=$env:PAYLOAD_SHA256" `
+            "/DAppVersion=$env:APP_VERSION"
           if ($LASTEXITCODE -ne 0) { throw 'ISCC failed' }
           $setup = 'installer\Output\philobooth-camera-setup.exe'
           $sizeMb = [math]::Round((Get-Item $setup).Length / 1MB, 1)
           "Installer: $sizeMb MB" >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Create trusted checksum manifest
+        shell: pwsh
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          $payload = 'dslr-agent/bin/Release/net8.0-windows/win-x64/publish/philobooth-dslr-agent.exe'
+          $installer = 'dslr-agent/installer/Output/philobooth-camera-setup.exe'
+          $payloadHash = (Get-FileHash $payload -Algorithm SHA256).Hash.ToLower()
+          $installerHash = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLower()
+          $manifest = @(
+            "version=$env:VERSION"
+            "payload_file=philobooth-dslr-agent.exe"
+            "payload_size=$((Get-Item $payload).Length)"
+            "payload_sha256=$payloadHash"
+            "installer_file=philobooth-camera-setup.exe"
+            "installer_size=$((Get-Item $installer).Length)"
+            "installer_sha256=$installerHash"
+          )
+          $manifest | Set-Content -Encoding ascii philobooth-camera-checksums.txt
+          "Installer SHA-256: ``$installerHash``" >> $env:GITHUB_STEP_SUMMARY
+
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item $installer dist/philobooth-camera-setup.exe
+          Copy-Item philobooth-camera-checksums.txt dist/philobooth-camera-checksums.txt
 
       # Both files go on the release: the payload because the installer fetches
       # it from there, the installer so it can be downloaded without digging
@@ -93,11 +152,12 @@ jobs:
           files: |
             dslr-agent/bin/Release/net8.0-windows/win-x64/publish/philobooth-dslr-agent.exe
             dslr-agent/installer/Output/philobooth-camera-setup.exe
+            philobooth-camera-checksums.txt
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: installer
-          path: dslr-agent/installer/Output/philobooth-camera-setup.exe
+          path: dist/*
           compression-level: 0
           if-no-files-found: error

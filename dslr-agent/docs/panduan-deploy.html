@@ -124,14 +124,17 @@ dotnet publish -c Release -p:TargetFramework=net8.0-windows --no-restore</pre>
 
 <section>
     <h2><span class="n">B</span> Build installer (Inno Setup)</h2>
-    <p>Agar operator dapat installer next-next-finish (bukan exe mentah). Wajib dijalankan di
-    <b>Windows</b> — Inno Setup hanya ada di Windows.</p>
+    <p>Agar operator dapat installer next-next-finish (bukan exe mentah), gunakan workflow
+        GitHub Actions <code>agent-installer</code>. Untuk build manual, proses ini wajib dijalankan di
+        <b>Windows</b> — Inno Setup hanya ada di Windows.</p>
     <ol>
         <li>Install <b>Inno Setup</b>: <code>jrsoftware.org/isinfo.php</code></li>
         <li>Build exe dulu (Bagian A).</li>
         <li>Compile skrip yang sudah disediakan:</li>
     </ol>
-    <pre>ISCC installer\philobooth-agent.iss
+    <pre>ISCC installer\philobooth-agent.iss \
+  /DPayloadUrl="https://.../philobooth-dslr-agent.exe" \
+  /DPayloadSha256="&lt;64 karakter SHA-256&gt;"
 <span class="c"># -> installer\Output\philobooth-camera-setup.exe</span></pre>
     <p>Installer ini: install exe, buat shortcut Start Menu, <b>auto-start saat Windows menyala</b>
     (opsional, ada centangnya), menutup agent lama saat update, dan menjalankan agent setelah install.</p>
@@ -139,10 +142,14 @@ dotnet publish -c Release -p:TargetFramework=net8.0-windows --no-restore</pre>
 
 <section>
     <h2><span class="n">C</span> Deploy ke server (supaya tombol dashboard nyala)</h2>
-    <p>Dashboard punya tombol <b>“Download aplikasi”</b> di halaman utama. Tombol itu menyajikan file
-    exe dari server. Taruh hasil build (exe <i>atau</i> installer, rename sama) di path berikut pada
-    server produksi:</p>
-    <pre>storage/app/private/agent/philobooth-dslr-agent.exe</pre>
+    <p>Dashboard hanya boleh menyajikan installer kecil, bukan agent mentah ~180 MB. Jalankan
+        workflow GitHub Actions <code>agent-installer</code>, download artifact installer beserta
+        <code>philobooth-camera-checksums.txt</code>, lalu publish dengan checksum tepercaya:</p>
+    <pre>php artisan agent:publish --installer \
+  --installer-file=philobooth-camera-setup.exe \
+  --installer-sha256=&lt;installer_sha256 dari manifest&gt;</pre>
+    <p>File tervalidasi akan dipasang secara atomik ke:</p>
+    <pre>storage/app/private/agent/philobooth-camera-setup.exe</pre>
     <div class="callout">
         Root disk <code>local</code> di Laravel 11+ adalah <code>storage/app/private</code>
         (bukan <code>storage/app</code>). Selama file belum ada, tombol tampil

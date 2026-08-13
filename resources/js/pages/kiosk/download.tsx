@@ -164,15 +164,16 @@ export default function KioskDownload({
                         flex: 1,
                         position: 'relative',
                         zIndex: 1,
-                        padding: 'clamp(20px, 3vw, 40px)',
+                        padding: 'clamp(16px, 2.4vw, 32px)',
                         display: 'grid',
                         gridTemplateColumns:
                             'minmax(0, 0.95fr) minmax(0, 1.05fr)',
-                        gap: 'clamp(20px, 3vw, 40px)',
+                        gap: 'clamp(16px, 2.4vw, 32px)',
                         alignItems: 'start',
                         maxWidth: 1600,
                         margin: '0 auto',
                         width: '100%',
+                        minHeight: 0,
                     }}
                 >
                     {/* LEFT — Composite preview + actions */}
@@ -180,8 +181,9 @@ export default function KioskDownload({
                         style={{
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: 16,
+                            gap: 12,
                             minWidth: 0,
+                            minHeight: 0,
                         }}
                     >
                         <div
@@ -287,7 +289,7 @@ export default function KioskDownload({
                                     playsInline
                                     style={{
                                         maxWidth: '100%',
-                                        maxHeight: '52vh',
+                                        maxHeight: '40vh',
                                         objectFit: 'contain',
                                         display: 'block',
                                     }}
@@ -300,7 +302,7 @@ export default function KioskDownload({
                                     }
                                     style={{
                                         maxWidth: '100%',
-                                        maxHeight: '52vh',
+                                        maxHeight: '40vh',
                                         objectFit: 'contain',
                                         display: 'block',
                                     }}
@@ -654,8 +656,9 @@ export default function KioskDownload({
                         style={{
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: 16,
+                            gap: 12,
                             minWidth: 0,
+                            minHeight: 0,
                         }}
                     >
                         {/* QR card */}
@@ -663,7 +666,7 @@ export default function KioskDownload({
                             style={{
                                 background: '#fff',
                                 borderRadius: 22,
-                                padding: 'clamp(20px, 2.4vw, 28px)',
+                                padding: 'clamp(14px, 1.8vw, 22px)',
                                 border: '1px solid var(--pb-border)',
                                 boxShadow:
                                     '0 24px 56px rgba(10,10,10,0.08), 0 4px 12px rgba(10,10,10,0.04)',
@@ -677,17 +680,17 @@ export default function KioskDownload({
                                     letterSpacing: '0.12em',
                                     textTransform: 'uppercase',
                                     color: 'var(--pb-text-faint)',
-                                    marginBottom: 8,
+                                    marginBottom: 6,
                                 }}
                             >
                                 Simpan versi digital
                             </div>
                             <div
                                 style={{
-                                    fontSize: 'clamp(22px, 2vw, 28px)',
+                                    fontSize: 'clamp(18px, 1.7vw, 24px)',
                                     fontWeight: 700,
                                     letterSpacing: '-0.02em',
-                                    marginBottom: 14,
+                                    marginBottom: 10,
                                     lineHeight: 1.05,
                                 }}
                             >
@@ -708,8 +711,8 @@ export default function KioskDownload({
                                         border: '1px solid var(--pb-border)',
                                         padding: 10,
                                         borderRadius: 14,
-                                        width: 180,
-                                        height: 180,
+                                        width: 'min(140px, 16vh)',
+                                        height: 'min(140px, 16vh)',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
@@ -793,7 +796,7 @@ export default function KioskDownload({
                             style={{
                                 background: '#fff',
                                 borderRadius: 22,
-                                padding: 'clamp(18px, 2.2vw, 24px)',
+                                padding: 'clamp(12px, 1.6vw, 18px)',
                                 border: '1px solid var(--pb-border)',
                                 boxShadow: '0 4px 16px rgba(10,10,10,0.04)',
                             }}
@@ -805,7 +808,7 @@ export default function KioskDownload({
                                     letterSpacing: '0.12em',
                                     textTransform: 'uppercase',
                                     color: 'var(--pb-text-faint)',
-                                    marginBottom: 10,
+                                    marginBottom: 6,
                                 }}
                             >
                                 Struk pesanan
@@ -845,7 +848,7 @@ export default function KioskDownload({
                                 justifyContent: 'center',
                                 gap: 12,
                                 padding:
-                                    'clamp(16px, 1.8vw, 20px) clamp(24px, 2.5vw, 32px)',
+                                    'clamp(14px, 1.6vw, 18px) clamp(24px, 2.5vw, 32px)',
                                 background: 'var(--pb-primary)',
                                 color: 'var(--pb-ink)',
                                 border: 'none',

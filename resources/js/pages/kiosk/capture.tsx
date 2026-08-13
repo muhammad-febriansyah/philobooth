@@ -511,9 +511,18 @@ export default function KioskCapture({ frame }: Props) {
 
             // Burst → many frames played fast; stills → few frames held longer.
             const isBurst = frames.length >= 8;
+            const mainSlot = frame?.slots?.[0] ?? null;
             const { blob, ext } = await encodePhotosToVideo(frames, {
                 boomerang: true,
                 frameDurationMs: isBurst ? 60 : 500,
+                frameOverlay:
+                    frame?.image_size && frame.thumbnail_url && mainSlot
+                        ? {
+                              imageSize: frame.image_size,
+                              slotRect: mainSlot,
+                              thumbnailUrl: frame.thumbnail_url,
+                          }
+                        : undefined,
             });
 
             const form = new FormData();

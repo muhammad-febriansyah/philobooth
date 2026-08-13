@@ -61,7 +61,14 @@ class AnimatedGifEncoder
     {
         $colorFlag = ord($frame[10]);
         $hasGlobal = ($colorFlag & 0x80) !== 0;
-        $globalSize = $hasGlobal ? 3 * (2 << ($colorFlag & 0x07)) : 0;
+        $globalSizeBits = $colorFlag & 0x07;
+        $globalSize = $hasGlobal ? 3 * (2 << $globalSizeBits) : 0;
+        // Each source frame is an independently GD-quantized single-image GIF,
+        // so its pixel indices are only meaningful against *this* palette. It
+        // must travel with the frame as a Local Color Table — dropping it (as
+        // this encoder used to) leaves later frames decoded against frame 1's
+        // unrelated palette, rendering as scrambled/static-like colors.
+        $globalTable = $hasGlobal ? substr($frame, 13, $globalSize) : '';
 
         $cursor = 13 + $globalSize;
         $len = strlen($frame);
@@ -96,8 +103,19 @@ class AnimatedGifEncoder
                 $tableStart = $cursor + 10;
                 $tableEnd = $tableStart + $localSize;
 
-                $out .= $imageDesc;
-                $out .= substr($frame, $tableStart, $localSize);
+                if ($hasLocal) {
+                    $out .= $imageDesc;
+                    $out .= substr($frame, $tableStart, $localSize);
+                } elseif ($hasGlobal) {
+                    // No local table of its own — reattach this frame's
+                    // global palette as a local one so its color indices
+                    // still resolve correctly in the composite GIF.
+                    $packedFlag = ($flag & 0x60) | 0x80 | $globalSizeBits;
+                    $out .= substr($imageDesc, 0, 9).chr($packedFlag);
+                    $out .= $globalTable;
+                } else {
+                    $out .= $imageDesc;
+                }
 
                 $cursor = $tableEnd + 1;
                 $out .= substr($frame, $tableEnd, 1);

@@ -34,14 +34,19 @@
 #define Publisher "Philobooth"
 
 ; Where the installer fetches the agent exe from, and the SHA-256 it must have.
-; Both are overridden at compile time (see the ISCC line above); the defaults
-; only exist so the script compiles unattended. An empty hash skips verification
-; — never ship a release built that way.
+; Both values are mandatory. Refuse to compile an installer that could download
+; from a development URL or skip integrity verification.
 #ifndef PayloadUrl
-  #define PayloadUrl "https://philobooth.test/agent/philobooth-dslr-agent.exe"
+  #error PayloadUrl is required. Pass /DPayloadUrl="https://..."
 #endif
 #ifndef PayloadSha256
-  #define PayloadSha256 ""
+  #error PayloadSha256 is required. Pass /DPayloadSha256="<64 hex characters>"
+#endif
+#if PayloadUrl == ""
+  #error PayloadUrl cannot be empty
+#endif
+#if PayloadSha256 == ""
+  #error PayloadSha256 cannot be empty
 #endif
 
 ; Path to the published build. Only the small side files (EDSDK natives, if the

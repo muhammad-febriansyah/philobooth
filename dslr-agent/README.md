@@ -57,28 +57,42 @@ The camera engine (`CameraControl.Devices`) is a .NET Framework package used via
 the compat shim (the `NU1701` restore warning is expected). Camera + printing
 still need a real Windows machine to test at runtime.
 
-### Serving the exe from the dashboard
+### Publishing the installer to the dashboard
 
 The dashboard has a "Download aplikasi" button (`GET /admin/agent-download`).
-Place the built exe on the server's `local` disk so operators can download it
-(the `local` disk root is `storage/app/private`):
+Operators must receive the small verified installer, **not** the raw ~180 MB
+agent executable. Run the `agent-installer` GitHub Actions workflow with a new
+SemVer version, then download both files from its `installer` artifact:
 
 ```
-storage/app/private/agent/philobooth-dslr-agent.exe
+philobooth-camera-setup.exe
+philobooth-camera-checksums.txt
 ```
 
-The button shows "Belum tersedia" until that file exists. Replace it with the
-Inno Setup installer (renamed to the same path) once you build one.
+Read `installer_sha256` from the checksum file and publish the installer on the
+Laravel server:
+
+```bash
+php artisan agent:publish --installer \
+  --installer-file=philobooth-camera-setup.exe \
+  --installer-sha256=<installer_sha256>
+```
+
+The command verifies the Windows executable and trusted checksum, copies it
+atomically to `storage/app/private/agent/philobooth-camera-setup.exe`, and only
+then makes the dashboard button available.
 
 ### Installer (operator-friendly)
 
-`installer/philobooth-agent.iss` is an Inno Setup script that wraps the exe in a
-next-next-finish installer, auto-starts it on login, and launches it after setup:
+`installer/philobooth-agent.iss` builds a small next-next-finish installer. It
+downloads the large payload with retries, verifies SHA-256, enables optional
+auto-start, and launches the agent after setup. Use the workflow above for a
+release build. A manual Windows build requires a real payload URL and hash:
 
 ```bash
 dotnet publish -c Release
-ISCC installer\philobooth-agent.iss
-# -> installer\Output\philobooth-agent-setup.exe
+ISCC installer\philobooth-agent.iss /DPayloadUrl="https://.../philobooth-dslr-agent.exe" /DPayloadSha256="<64 hex characters>"
+# -> installer\Output\philobooth-camera-setup.exe
 ```
 
 Plug in the DSLR (set to PTP mode), run the installer, then open the kiosk.

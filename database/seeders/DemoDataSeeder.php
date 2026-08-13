@@ -14,9 +14,9 @@ use App\Models\FrameCategory;
 use App\Models\PaperSize;
 use App\Models\Payment;
 use App\Models\PhotoSession;
+use App\Models\PricingConfig;
 use App\Models\Printer;
 use App\Models\PrinterPaperConfig;
-use App\Models\PricingConfig;
 use App\Models\SessionPhoto;
 use App\Models\Sticker;
 use App\Models\StickerCategory;
@@ -50,6 +50,7 @@ class DemoDataSeeder extends Seeder
         $data = [
             ['code' => '4R', 'name' => '4R Photo', 'width_mm' => 102, 'height_mm' => 152],
             ['code' => '5R', 'name' => '5R Photo', 'width_mm' => 127, 'height_mm' => 178],
+            ['code' => 'A3', 'name' => 'A3', 'width_mm' => 297, 'height_mm' => 420],
             ['code' => 'A4', 'name' => 'A4', 'width_mm' => 210, 'height_mm' => 297],
             ['code' => 'A5', 'name' => 'A5', 'width_mm' => 148, 'height_mm' => 210],
             ['code' => 'STRIP', 'name' => 'Photo Strip 2x6', 'width_mm' => 51, 'height_mm' => 152],
