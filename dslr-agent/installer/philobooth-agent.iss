@@ -116,7 +116,7 @@ end;
 
 { Downloads the payload, retrying a few times so a single dropped connection
   doesn't send the operator back to the browser. Returns True once the file is
-  in {tmp} with a matching hash. }
+  in the temp folder with a matching hash. }
 function DownloadPayload: Boolean;
 var
   Attempt: Integer;
