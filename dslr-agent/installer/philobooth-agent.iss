@@ -59,8 +59,8 @@
 #if Len(PayloadSha256) != 64
   #error PayloadSha256 must contain exactly 64 hexadecimal characters
 #endif
-#if PayloadSize <= 0
-  #error PayloadSize must be greater than zero
+#if PayloadSize == ""
+  #error PayloadSize cannot be empty
 #endif
 
 ; Path to the published build. Only the small side files (EDSDK natives, if the
