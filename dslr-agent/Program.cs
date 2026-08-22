@@ -77,6 +77,7 @@ app.MapGet("/health", (ICameraService cam) =>
         cameraConnected = cam.IsAvailable,
         cameraModel = cam.Model,
         backend = cam.Backend,
+        error = cam.Error,
     }));
 
 app.MapGet("/settings", (ICameraService cam) =>

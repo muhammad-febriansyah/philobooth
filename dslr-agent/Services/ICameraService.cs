@@ -27,6 +27,12 @@ public interface ICameraService
     /// <summary>Which backend drives this service: "mock" | "digicam".</summary>
     string Backend { get; }
 
+    /// <summary>
+    /// Actionable initialization error, or <c>null</c> when the backend loaded
+    /// normally. A default keeps optional camera backends source-compatible.
+    /// </summary>
+    string? Error => null;
+
     /// <summary>Read current settings + allowed values from the camera.</summary>
     Settings GetSettings();
 

@@ -12,28 +12,43 @@ namespace DslrAgent.Services;
 /// </summary>
 public sealed class DigiCamCameraService : ICameraService, IDisposable
 {
-    private readonly CameraDeviceManager _manager = new();
+    private readonly CameraDeviceManager? _manager;
     private readonly ILogger<DigiCamCameraService> _logger;
+    private readonly string? _initializationError;
 
     public DigiCamCameraService(ILogger<DigiCamCameraService> logger)
     {
         _logger = logger;
-        // Detect already-connected cameras + hotplug.
-        _manager.ConnectToCamera();
+
+        try
+        {
+            _manager = new CameraDeviceManager();
+            // Detect already-connected cameras + hotplug.
+            _manager.ConnectToCamera();
+        }
+        catch (Exception exception)
+        {
+            _initializationError =
+                "Driver kamera gagal dimuat. Tutup EOS Utility/aplikasi kamera lain, cabut-pasang USB, lalu buka ulang Philobooth Camera.";
+            _logger.LogError(exception, "Failed to initialize the digiCam camera backend");
+        }
     }
 
     private ICameraDevice Camera =>
-        _manager.SelectedCameraDevice
-        ?? throw new InvalidOperationException("No camera connected");
+        _manager?.SelectedCameraDevice
+        ?? throw new InvalidOperationException(
+            _initializationError ?? "Kamera tidak terdeteksi. Pastikan kamera menyala dan USB terhubung.");
 
-    public bool IsAvailable => _manager.SelectedCameraDevice is { IsConnected: true };
+    public bool IsAvailable => _manager?.SelectedCameraDevice is { IsConnected: true };
 
     public string? Model =>
-        _manager.SelectedCameraDevice is { IsConnected: true } device
+        _manager?.SelectedCameraDevice is { IsConnected: true } device
             ? device.DeviceName
             : null;
 
     public string Backend => "digicam";
+
+    public string? Error => _initializationError;
 
     public Settings GetSettings()
     {
@@ -88,7 +103,10 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
             }
         }
 
-        _manager.PhotoCaptured += Handler;
+        var manager = _manager
+            ?? throw new InvalidOperationException(_initializationError ?? "Camera backend is unavailable");
+
+        manager.PhotoCaptured += Handler;
 
         try
         {
@@ -101,7 +119,7 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
         }
         finally
         {
-            _manager.PhotoCaptured -= Handler;
+            manager.PhotoCaptured -= Handler;
         }
     }
 
@@ -112,7 +130,7 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
 
     public void Dispose()
     {
-        _manager.CloseAll();
+        _manager?.CloseAll();
     }
 }
 #endif
