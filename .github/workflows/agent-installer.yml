@@ -70,6 +70,71 @@ jobs:
         working-directory: dslr-agent
         run: dotnet publish -c Release -f net8.0-windows -r win-x64 --self-contained true
 
+      - name: Smoke test the published Windows app
+        shell: pwsh
+        env:
+          Camera__Mode: Mock
+        run: |
+          $exe = Resolve-Path 'dslr-agent/bin/Release/net8.0-windows/win-x64/publish/philobooth-dslr-agent.exe'
+          $capture = Join-Path $env:RUNNER_TEMP 'philobooth-agent-smoke.jpg'
+          $process = Start-Process -FilePath $exe -PassThru
+
+          try {
+            $health = $null
+
+            for ($attempt = 1; $attempt -le 30; $attempt++) {
+              if ($process.HasExited) {
+                throw "Agent exited during startup with code $($process.ExitCode)"
+              }
+
+              try {
+                $health = Invoke-RestMethod -Uri 'http://localhost:5000/health' -TimeoutSec 2
+                break
+              } catch {
+                Start-Sleep -Seconds 1
+              }
+            }
+
+            if ($null -eq $health) {
+              throw 'Agent did not answer /health within 30 seconds'
+            }
+
+            if (-not $health.ok -or -not $health.cameraConnected -or $health.backend -ne 'mock') {
+              throw "Unexpected health response: $($health | ConvertTo-Json -Compress)"
+            }
+
+            $settings = Invoke-RestMethod -Uri 'http://localhost:5000/settings' -TimeoutSec 5
+            if ($settings.iso.current -ne '400') {
+              throw "Unexpected camera settings response: $($settings | ConvertTo-Json -Compress)"
+            }
+
+            Invoke-RestMethod `
+              -Uri 'http://localhost:5000/set' `
+              -Method Post `
+              -ContentType 'application/json' `
+              -Body '{"key":"iso","value":"800"}' `
+              -TimeoutSec 5 | Out-Null
+
+            Invoke-WebRequest `
+              -Uri 'http://localhost:5000/capture' `
+              -Method Post `
+              -OutFile $capture `
+              -TimeoutSec 35
+
+            $captureBytes = [System.IO.File]::ReadAllBytes($capture)
+            if ($captureBytes.Length -lt 100 -or $captureBytes[0] -ne 0xff -or $captureBytes[1] -ne 0xd8) {
+              throw 'Capture endpoint did not return a valid JPEG'
+            }
+
+            Invoke-RestMethod -Uri 'http://localhost:5000/printers' -TimeoutSec 5 | Out-Null
+          } finally {
+            if (-not $process.HasExited) {
+              Stop-Process -Id $process.Id -Force
+            }
+
+            Remove-Item $capture -ErrorAction SilentlyContinue
+          }
+
       - name: Hash the payload and resolve its release URL
         id: payload
         shell: pwsh
@@ -80,9 +145,11 @@ jobs:
           $hash = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLower()
           $tag = "agent-v$env:VERSION"
           $url = "${{ github.server_url }}/${{ github.repository }}/releases/download/$tag/philobooth-dslr-agent.exe"
-          $sizeMb = [math]::Round((Get-Item $exe).Length / 1MB, 1)
+          $size = (Get-Item $exe).Length
+          $sizeMb = [math]::Round($size / 1MB, 1)
 
           "sha256=$hash" >> $env:GITHUB_OUTPUT
+          "size=$size" >> $env:GITHUB_OUTPUT
           "tag=$tag" >> $env:GITHUB_OUTPUT
           "url=$url" >> $env:GITHUB_OUTPUT
           "Payload: $sizeMb MB" >> $env:GITHUB_STEP_SUMMARY
@@ -98,11 +165,13 @@ jobs:
           APP_VERSION: ${{ inputs.version }}
           PAYLOAD_URL: ${{ steps.payload.outputs.url }}
           PAYLOAD_SHA256: ${{ steps.payload.outputs.sha256 }}
+          PAYLOAD_SIZE: ${{ steps.payload.outputs.size }}
         run: |
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           & $iscc installer\philobooth-agent.iss `
             "/DPayloadUrl=$env:PAYLOAD_URL" `
             "/DPayloadSha256=$env:PAYLOAD_SHA256" `
+            "/DPayloadSize=$env:PAYLOAD_SIZE" `
             "/DAppVersion=$env:APP_VERSION"
           if ($LASTEXITCODE -ne 0) { throw 'ISCC failed' }
           $setup = 'installer\Output\philobooth-camera-setup.exe'

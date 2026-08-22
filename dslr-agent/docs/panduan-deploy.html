@@ -134,9 +134,11 @@ dotnet publish -c Release -p:TargetFramework=net8.0-windows --no-restore</pre>
     </ol>
     <pre>ISCC installer\philobooth-agent.iss \
   /DPayloadUrl="https://.../philobooth-dslr-agent.exe" \
-  /DPayloadSha256="&lt;64 karakter SHA-256&gt;"
+  /DPayloadSha256="&lt;64 karakter SHA-256&gt;" \
+  /DPayloadSize=&lt;ukuran payload dalam byte&gt;
 <span class="c"># -> installer\Output\philobooth-camera-setup.exe</span></pre>
-    <p>Installer ini: install exe, buat shortcut Start Menu, <b>auto-start saat Windows menyala</b>
+    <p>Installer ini menggunakan downloader bawaan Inno Setup, memverifikasi ukuran dan SHA-256
+    payload, membuat shortcut Start Menu, menyediakan <b>auto-start saat Windows menyala</b>
     (opsional, ada centangnya), menutup agent lama saat update, dan menjalankan agent setelah install.</p>
 </section>
 

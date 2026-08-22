@@ -85,13 +85,14 @@ then makes the dashboard button available.
 ### Installer (operator-friendly)
 
 `installer/philobooth-agent.iss` builds a small next-next-finish installer. It
-downloads the large payload with retries, verifies SHA-256, enables optional
-auto-start, and launches the agent after setup. Use the workflow above for a
-release build. A manual Windows build requires a real payload URL and hash:
+uses Inno Setup's built-in downloader, verifies the payload size and SHA-256,
+enables optional auto-start, and launches the agent after setup. Use the
+workflow above for a release build. A manual Windows build requires a real
+payload URL, hash, and byte size:
 
 ```bash
 dotnet publish -c Release
-ISCC installer\philobooth-agent.iss /DPayloadUrl="https://.../philobooth-dslr-agent.exe" /DPayloadSha256="<64 hex characters>"
+ISCC installer\philobooth-agent.iss /DPayloadUrl="https://.../philobooth-dslr-agent.exe" /DPayloadSha256="<64 hex characters>" /DPayloadSize=<size in bytes>
 # -> installer\Output\philobooth-camera-setup.exe
 ```
 
