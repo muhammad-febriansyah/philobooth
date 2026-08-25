@@ -23,15 +23,22 @@ export type VideoEncodeOptions = {
     maxEdge?: number;
     /**
      * When set, the canvas is sized to the frame template and each photo is
-     * drawn into `slotRect` (cover-fit) before the frame thumbnail is
+     * drawn into every template slot (cover-fit) before the frame thumbnail is
      * overlaid on top — matching the composite photo layout instead of a
      * plain letterboxed clip.
      */
     frameOverlay?: {
         imageSize: { width: number; height: number };
-        slotRect: { x: number; y: number; width: number; height: number };
+        slotRects: FrameRect[];
         thumbnailUrl: string;
     };
+};
+
+export type FrameRect = {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
 };
 
 export type VideoEncodeResult = {
@@ -119,6 +126,56 @@ function coverRect(
     return { x: (dstW - w) / 2, y: (dstH - h) / 2, w, h };
 }
 
+export function scaleFrameRects(
+    slots: FrameRect[],
+    scale: number,
+): FrameRect[] {
+    return slots.map((slot) => ({
+        x: slot.x * scale,
+        y: slot.y * scale,
+        width: slot.width * scale,
+        height: slot.height * scale,
+    }));
+}
+
+async function prepareFrameOverlay(
+    thumbnailUrl: string,
+    canvasWidth: number,
+    canvasHeight: number,
+    slots: FrameRect[],
+): Promise<HTMLCanvasElement> {
+    const frameImage = await new Promise<HTMLImageElement>(
+        (resolve, reject) => {
+            const image = new Image();
+            image.crossOrigin = 'anonymous';
+            image.onload = () => resolve(image);
+            image.onerror = () =>
+                reject(new Error('Frame overlay gagal dimuat.'));
+            image.src = thumbnailUrl;
+        },
+    );
+
+    const overlay = document.createElement('canvas');
+    overlay.width = canvasWidth;
+    overlay.height = canvasHeight;
+    const context = overlay.getContext('2d');
+
+    if (!context) {
+        throw new Error('Canvas frame overlay tidak tersedia.');
+    }
+
+    context.drawImage(frameImage, 0, 0, canvasWidth, canvasHeight);
+
+    // Some uploaded templates use solid black slot placeholders instead of
+    // transparent PNG cut-outs. Clear the detected slot rectangles explicitly
+    // so both template formats reveal the moving video beneath them.
+    slots.forEach((slot) => {
+        context.clearRect(slot.x, slot.y, slot.width, slot.height);
+    });
+
+    return overlay;
+}
+
 function wait(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -187,15 +244,16 @@ export async function encodePhotosToVideo(
             throw new Error('Canvas 2D context unavailable');
         }
 
-        const frameImg = frameOverlay
-            ? await new Promise<HTMLImageElement>((resolve, reject) => {
-                  const img = new Image();
-                  img.crossOrigin = 'anonymous';
-                  img.onload = () => resolve(img);
-                  img.onerror = () =>
-                      reject(new Error('Frame overlay gagal dimuat.'));
-                  img.src = frameOverlay.thumbnailUrl;
-              })
+        const scaledSlots = frameOverlay
+            ? scaleFrameRects(frameOverlay.slotRects, scale)
+            : [];
+        const frameCanvas = frameOverlay
+            ? await prepareFrameOverlay(
+                  frameOverlay.thumbnailUrl,
+                  canvas.width,
+                  canvas.height,
+                  scaledSlots,
+              )
             : null;
 
         const stream = canvas.captureStream(fps);
@@ -223,22 +281,30 @@ export async function encodePhotosToVideo(
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             if (frameOverlay) {
-                const slot = frameOverlay.slotRect;
-                const x = slot.x * scale;
-                const y = slot.y * scale;
-                const w = slot.width * scale;
-                const h = slot.height * scale;
-                const r = coverRect(bmp.width, bmp.height, w, h);
+                scaledSlots.forEach((slot) => {
+                    const r = coverRect(
+                        bmp.width,
+                        bmp.height,
+                        slot.width,
+                        slot.height,
+                    );
 
-                ctx.save();
-                ctx.beginPath();
-                ctx.rect(x, y, w, h);
-                ctx.clip();
-                ctx.drawImage(bmp, x + r.x, y + r.y, r.w, r.h);
-                ctx.restore();
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(slot.x, slot.y, slot.width, slot.height);
+                    ctx.clip();
+                    ctx.drawImage(bmp, slot.x + r.x, slot.y + r.y, r.w, r.h);
+                    ctx.restore();
+                });
 
-                if (frameImg) {
-                    ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
+                if (frameCanvas) {
+                    ctx.drawImage(
+                        frameCanvas,
+                        0,
+                        0,
+                        canvas.width,
+                        canvas.height,
+                    );
                 }
             } else {
                 const r = coverRect(

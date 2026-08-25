@@ -2,6 +2,10 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
+import {
+    index as transaksiIndex,
+    resolveReconciliation,
+} from '@/actions/App/Http/Controllers/Admin/TransaksiController';
 import { Badge } from '@/components/philobooth/badge';
 import { Btn } from '@/components/philobooth/btn';
 import { Card } from '@/components/philobooth/card';
@@ -32,6 +36,17 @@ type SessionRow = {
 
 type Option = { value: string; label: string };
 
+type ReconciliationRow = {
+    id: number;
+    session_code: string | null;
+    branch: string | null;
+    order_id: string | null;
+    purpose: string;
+    amount: number;
+    reason: string | null;
+    provider_paid_at: string | null;
+};
+
 type Paginated<T> = {
     data: T[];
     current_page: number;
@@ -58,6 +73,7 @@ type Props = {
     can_pick_branch: boolean;
     filters: Filters;
     options: { statuses: Option[]; methods: Option[] };
+    reconciliations: ReconciliationRow[];
     flash?: { success?: string; error?: string };
 };
 
@@ -90,6 +106,17 @@ function statusTone(
     if (status === 'payment_pending') return 'warning';
 
     return 'neutral';
+}
+
+function reconciliationReason(reason: string | null): string {
+    const labels: Record<string, string> = {
+        duplicate_provider_settlement: 'Pembayaran ganda',
+        stale_billing_revision: 'Tagihan lama dibayar',
+        amount_mismatch: 'Nominal tidak cocok',
+        terminal_session_settlement: 'Sesi sudah ditutup',
+    };
+
+    return (reason && labels[reason]) || reason || 'Perlu diperiksa';
 }
 
 function Stat({
@@ -149,6 +176,7 @@ export default function Transaksi({
     can_pick_branch,
     filters,
     options,
+    reconciliations,
     flash,
 }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
@@ -164,10 +192,24 @@ export default function Transaksi({
 
     function applyFilter(patch: Partial<Filters>) {
         router.get(
-            '/admin/transaksi',
+            transaksiIndex.url(),
             { ...filters, ...patch },
             { preserveScroll: true, preserveState: true, replace: true },
         );
+    }
+
+    function markReconciliationResolved(payment: ReconciliationRow) {
+        if (
+            !window.confirm(
+                `Tandai order ${payment.order_id ?? payment.id} selesai direfund/direkonsiliasi?`,
+            )
+        ) {
+            return;
+        }
+
+        router.patch(resolveReconciliation.url(payment.id), {}, {
+            preserveScroll: true,
+        });
     }
 
     function exportQuery(): string {
@@ -205,6 +247,87 @@ export default function Transaksi({
                         </>
                     }
                 />
+
+                {reconciliations.length > 0 && (
+                    <Card padding={0} style={{ marginBottom: 18 }}>
+                        <div className="flex flex-col gap-2 border-b border-red-200 bg-red-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-start gap-3">
+                                <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-700">
+                                    <Icon name="alert" size={18} />
+                                </div>
+                                <div>
+                                    <div className="font-semibold text-red-950">
+                                        {reconciliations.length} pembayaran perlu
+                                        rekonsiliasi/refund
+                                    </div>
+                                    <div className="text-xs text-red-700">
+                                        Cocokkan mutasi Pakasir dan simpan bukti refund
+                                        sebelum menandai selesai.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full border-collapse text-left text-sm">
+                                <thead className="bg-zinc-50 text-[11px] uppercase tracking-wide text-zinc-500">
+                                    <tr>
+                                        <th className="px-4 py-3">Order / sesi</th>
+                                        <th className="px-4 py-3">Cabang</th>
+                                        <th className="px-4 py-3">Alasan</th>
+                                        <th className="px-4 py-3">Dibayar provider</th>
+                                        <th className="px-4 py-3 text-right">Nominal</th>
+                                        <th className="px-4 py-3 text-right">Tindakan</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {reconciliations.map((payment) => (
+                                        <tr
+                                            key={payment.id}
+                                            className="border-t border-zinc-100"
+                                        >
+                                            <td className="px-4 py-3">
+                                                <div className="font-mono text-xs font-semibold text-zinc-900">
+                                                    {payment.order_id ?? '—'}
+                                                </div>
+                                                <div className="text-xs text-zinc-500">
+                                                    {payment.session_code ?? '—'} ·{' '}
+                                                    {payment.purpose === 'extra_print'
+                                                        ? 'Cetak tambahan'
+                                                        : 'Pembayaran utama'}
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 text-zinc-700">
+                                                {payment.branch ?? '—'}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <Badge tone="danger">
+                                                    {reconciliationReason(payment.reason)}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-4 py-3 text-xs text-zinc-600">
+                                                {formatDateTime(payment.provider_paid_at)}
+                                            </td>
+                                            <td className="px-4 py-3 text-right font-semibold">
+                                                {formatRupiah(payment.amount)}
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                <button
+                                                    type="button"
+                                                    className="pb-btn pb-btn-dark"
+                                                    onClick={() =>
+                                                        markReconciliationResolved(payment)
+                                                    }
+                                                >
+                                                    Sudah direfund
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </Card>
+                )}
 
                 <div className="pb-stat-grid">
                     <Stat label="Total transaksi" value={stats.total} icon="receipt" />
@@ -346,7 +469,7 @@ export default function Transaksi({
                             icon="x"
                             onClick={() =>
                                 router.get(
-                                    '/admin/transaksi',
+                                    transaksiIndex.url(),
                                     {},
                                     {
                                         preserveScroll: true,

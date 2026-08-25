@@ -19,6 +19,12 @@ class PhotoSession extends Model
 
     protected $guarded = ['id'];
 
+    protected $attributes = [
+        'extra_amount' => 0,
+        'billing_revision' => 1,
+        'artifact_disk' => 'public',
+    ];
+
     protected $casts = [
         'status' => SessionStatus::class,
         'current_step' => SessionStep::class,
@@ -27,6 +33,8 @@ class PhotoSession extends Model
         'total_amount' => 'decimal:2',
         'discount_amount' => 'decimal:2',
         'final_amount' => 'decimal:2',
+        'extra_amount' => 'decimal:2',
+        'billing_revision' => 'integer',
         'print_quantity' => 'integer',
         'download_count' => 'integer',
         'show_date_stamp' => 'boolean',
@@ -66,6 +74,11 @@ class PhotoSession extends Model
     public function operator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'operator_id');
+    }
+
+    public function boothDevice(): BelongsTo
+    {
+        return $this->belongsTo(BoothDevice::class);
     }
 
     public function photos(): HasMany

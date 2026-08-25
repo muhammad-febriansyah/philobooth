@@ -9,7 +9,6 @@ use App\Http\Controllers\Admin\AgentController;
 use App\Models\PhotoSession;
 use App\Models\Printer;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -40,14 +39,10 @@ class DashboardController extends Controller
      */
     private function agentInfo(): array
     {
-        $exists = Storage::disk('local')->exists(AgentController::INSTALLER_PATH);
-
-        return [
-            'available' => $exists,
-            'size_mb' => $exists
-                ? round(Storage::disk('local')->size(AgentController::INSTALLER_PATH) / 1048576, 1)
-                : null,
-        ];
+        return array_intersect_key(
+            AgentController::installerInfo(),
+            ['available' => true, 'size_mb' => true],
+        );
     }
 
     /** @return array<string, mixed> */

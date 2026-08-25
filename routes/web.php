@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AgentController;
+use App\Http\Controllers\Admin\BoothDeviceController;
 use App\Http\Controllers\Admin\CabangController;
 use App\Http\Controllers\Admin\FrameController;
 use App\Http\Controllers\Admin\GlobalSearchController;
@@ -44,6 +45,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             // Download aplikasi kamera (.exe) untuk PC booth
             Route::get('agent-download', [AgentController::class, 'download'])->name('agent.download');
+            Route::post('booth-devices/pairing-code', [BoothDeviceController::class, 'createPairingCode'])
+                ->name('booth-devices.pairing-code');
+            Route::post('booth-devices/{boothDevice}/revoke', [BoothDeviceController::class, 'revoke'])
+                ->name('booth-devices.revoke');
 
             Route::get('voucher', [VoucherController::class, 'index'])->name('voucher.index');
             Route::post('voucher', [VoucherController::class, 'store'])->name('voucher.store');
@@ -74,6 +79,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('transaksi', [TransaksiController::class, 'index'])->name('transaksi.index');
             Route::get('transaksi/export/pdf', [TransaksiController::class, 'exportPdf'])->name('transaksi.export.pdf');
             Route::get('transaksi/export/csv', [TransaksiController::class, 'exportCsv'])->name('transaksi.export.csv');
+            Route::patch('transaksi/reconciliations/{payment}', [TransaksiController::class, 'resolveReconciliation'])
+                ->name('transaksi.reconciliations.resolve');
         });
     });
 });

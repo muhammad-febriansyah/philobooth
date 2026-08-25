@@ -15,7 +15,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  * your PC", which reads to an operator as a broken app):
  *
  * - The **installer** is a few MB and is streamed through PHP from the private
- *   `local` disk, so the admin-only gate on the route still applies. See
+ *   `local` disk, so the admin/cabang gate on the route still applies. See
  *   {@see self::INSTALLER_PATH}.
  * - The **payload** is the ~180 MB single-file agent exe, which PHP never
  *   touches. The installer downloads it itself, with a progress bar, its own
@@ -34,6 +34,9 @@ class AgentController extends Controller
     /** Path on the private `local` disk where the built installer is placed. */
     public const INSTALLER_PATH = 'agent/philobooth-camera-setup.exe';
 
+    /** Trusted size and SHA-256 written by `agent:publish`. */
+    public const INSTALLER_MANIFEST_PATH = 'agent/philobooth-camera-setup.json';
+
     /** Filename of the large agent payload on the public `agent` disk. */
     public const PAYLOAD_PATH = 'philobooth-dslr-agent.exe';
 
@@ -42,17 +45,85 @@ class AgentController extends Controller
 
     public function download(): BinaryFileResponse|RedirectResponse
     {
-        if (! Storage::disk('local')->exists(self::INSTALLER_PATH)) {
+        $installer = self::installerInfo();
+
+        if (! $installer['available']) {
             return back()->withErrors([
-                'agent' => 'File aplikasi belum diunggah ke server.',
+                'agent' => 'File aplikasi belum siap atau pemeriksaan integritasnya gagal. Hubungi administrator.',
             ]);
         }
 
-        return response()->download(
+        $response = response()->download(
             Storage::disk('local')->path(self::INSTALLER_PATH),
             self::DOWNLOAD_FILENAME,
-            ['Content-Type' => 'application/vnd.microsoft.portable-executable'],
+            [
+                'Content-Type' => 'application/vnd.microsoft.portable-executable',
+                'X-Checksum-SHA256' => $installer['sha256'],
+            ],
         );
+
+        $response->setPrivate();
+        $response->setMaxAge(0);
+        $response->headers->addCacheControlDirective('no-store');
+
+        return $response;
+    }
+
+    /**
+     * Validate the currently published installer against trusted metadata.
+     * Merely finding a file is insufficient: interrupted/manual copies retain
+     * an .exe name and can make Windows report "This app can't run on your PC".
+     *
+     * @return array{available: bool, size_mb: float|null, sha256: string|null}
+     */
+    public static function installerInfo(): array
+    {
+        $disk = Storage::disk('local');
+
+        if (! $disk->exists(self::INSTALLER_PATH)
+            || ! $disk->exists(self::INSTALLER_MANIFEST_PATH)) {
+            return self::unavailableInstaller();
+        }
+
+        try {
+            $manifest = json_decode(
+                $disk->get(self::INSTALLER_MANIFEST_PATH),
+                true,
+                flags: JSON_THROW_ON_ERROR,
+            );
+
+            $expectedSize = $manifest['size'] ?? null;
+            $expectedHash = strtolower((string) ($manifest['sha256'] ?? ''));
+
+            if (! is_int($expectedSize)
+                || $expectedSize < 1
+                || ! preg_match('/\A[a-f0-9]{64}\z/', $expectedHash)
+                || $disk->size(self::INSTALLER_PATH) !== $expectedSize) {
+                return self::unavailableInstaller();
+            }
+
+            $actualHash = hash_file('sha256', $disk->path(self::INSTALLER_PATH));
+
+            if ($actualHash === false || ! hash_equals($expectedHash, $actualHash)) {
+                return self::unavailableInstaller();
+            }
+
+            return [
+                'available' => true,
+                'size_mb' => round($expectedSize / 1048576, 1),
+                'sha256' => $expectedHash,
+            ];
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return self::unavailableInstaller();
+        }
+    }
+
+    /** @return array{available: false, size_mb: null, sha256: null} */
+    private static function unavailableInstaller(): array
+    {
+        return ['available' => false, 'size_mb' => null, 'sha256' => null];
     }
 
     /** Absolute filesystem path of the statically served payload. */

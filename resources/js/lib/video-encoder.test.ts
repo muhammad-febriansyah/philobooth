@@ -3,6 +3,7 @@ import {
     buildFrameSequence,
     isVideoEncodingSupported,
     pickVideoMimeType,
+    scaleFrameRects,
 } from './video-encoder';
 
 describe('buildFrameSequence', () => {
@@ -21,6 +22,23 @@ describe('buildFrameSequence', () => {
 
     it('stays forward when too few frames to bounce', () => {
         expect(buildFrameSequence(2, true)).toEqual([0, 1]);
+    });
+});
+
+describe('scaleFrameRects', () => {
+    it('keeps every template slot aligned with the scaled video canvas', () => {
+        expect(
+            scaleFrameRects(
+                [
+                    { x: 100, y: 200, width: 400, height: 300 },
+                    { x: 550, y: 200, width: 400, height: 300 },
+                ],
+                0.5,
+            ),
+        ).toEqual([
+            { x: 50, y: 100, width: 200, height: 150 },
+            { x: 275, y: 100, width: 200, height: 150 },
+        ]);
     });
 });
 

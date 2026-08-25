@@ -392,7 +392,7 @@ applyFilters({ search });
                                             </Td>
                                             <Td align="center">
                                                 {v.used_count > 0 ? (
-                                                    <Badge tone="muted">
+                                                    <Badge tone="neutral">
                                                         Terpakai
                                                     </Badge>
                                                 ) : (
@@ -425,7 +425,7 @@ applyFilters({ search });
                                             </Td>
                                             <Td align="center">
                                                 {isExhausted ? (
-                                                    <Badge tone="muted">
+                                                    <Badge tone="neutral">
                                                         Habis
                                                     </Badge>
                                                 ) : v.is_active ? (
@@ -433,7 +433,7 @@ applyFilters({ search });
                                                         Aktif
                                                     </Badge>
                                                 ) : (
-                                                    <Badge tone="muted">
+                                                    <Badge tone="neutral">
                                                         Nonaktif
                                                     </Badge>
                                                 )}

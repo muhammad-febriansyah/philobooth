@@ -6,11 +6,15 @@ use App\Enums\PaymentMethod;
 use App\Enums\SessionStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Models\Payment;
 use App\Models\PhotoSession;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -66,7 +70,67 @@ class TransaksiController extends Controller
                     'label' => $m->label(),
                 ])->values(),
             ],
+            'reconciliations' => Payment::query()
+                ->with(['session:id,branch_id,session_code', 'session.branch:id,name'])
+                ->where('requires_reconciliation', true)
+                ->whereNull('reconciliation_resolved_at')
+                ->when(
+                    $request->user() && ! $request->user()->hasRole('admin'),
+                    fn ($query) => $query->whereHas(
+                        'session',
+                        fn ($session) => $session->where('branch_id', $request->user()->branch_id),
+                    ),
+                )
+                ->latest('paid_at')
+                ->limit(50)
+                ->get()
+                ->map(fn (Payment $payment) => [
+                    'id' => $payment->id,
+                    'session_code' => $payment->session?->session_code,
+                    'branch' => $payment->session?->branch?->name,
+                    'order_id' => $payment->pakasir_order_id,
+                    'purpose' => $payment->purpose,
+                    'amount' => (float) $payment->amount,
+                    'reason' => $payment->reconciliation_reason,
+                    'provider_paid_at' => data_get(
+                        $payment->raw_response,
+                        '_philobooth_provider_paid_at',
+                        $payment->paid_at?->toIso8601String(),
+                    ),
+                ]),
         ]);
+    }
+
+    public function resolveReconciliation(Request $request, Payment $payment): RedirectResponse
+    {
+        abort_unless($payment->requires_reconciliation, 404);
+        abort_if(
+            ! $request->user()?->hasRole('admin')
+                && $payment->session()->value('branch_id') !== $request->user()?->branch_id,
+            403,
+        );
+
+        DB::transaction(function () use ($payment, $request): void {
+            $lockedPayment = Payment::query()->lockForUpdate()->findOrFail($payment->id);
+
+            if ($lockedPayment->reconciliation_resolved_at) {
+                return;
+            }
+
+            $lockedPayment->update([
+                'reconciliation_resolved_at' => now(),
+                'reconciliation_resolved_by' => $request->user()->id,
+            ]);
+
+            Log::notice('Payment reconciliation marked resolved.', [
+                'payment_id' => $lockedPayment->id,
+                'session_id' => $lockedPayment->session_id,
+                'order_id' => $lockedPayment->pakasir_order_id,
+                'resolved_by' => $request->user()->id,
+            ]);
+        });
+
+        return back()->with('success', 'Rekonsiliasi ditandai selesai. Pastikan bukti refund tersimpan.');
     }
 
     public function exportPdf(Request $request): Response

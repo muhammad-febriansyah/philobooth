@@ -45,8 +45,15 @@ class PublishAgent extends Command
         $installer = (bool) $this->option('installer');
 
         if (! $payload && ! $installer) {
-            $payload = true;
-            $installer = true;
+            $this->components->error('Choose exactly one publish mode: --payload or --installer.');
+
+            return self::FAILURE;
+        }
+
+        if ($payload && $installer) {
+            $this->components->error('Publish payload and installer in separate verified steps.');
+
+            return self::FAILURE;
         }
 
         if ($payload && $this->publishPayload() !== self::SUCCESS) {
@@ -121,6 +128,16 @@ class PublishAgent extends Command
             return self::FAILURE;
         }
 
+        $manifest = json_encode([
+            'size' => File::size($source),
+            'sha256' => $sourceHash,
+        ], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
+        $manifestDestination = Storage::disk('local')->path(AgentController::INSTALLER_MANIFEST_PATH);
+
+        if (! $this->publishContentsAtomically($manifest."\n", $manifestDestination)) {
+            return self::FAILURE;
+        }
+
         $this->components->info(sprintf(
             'Installer published (%s MB). Operators can download it from the dashboard.',
             number_format(filesize($source) / 1048576, 1)
@@ -191,6 +208,31 @@ class PublishAgent extends Command
         } catch (\Throwable $exception) {
             report($exception);
             $this->components->error("Failed to publish Windows executable to: {$destination}");
+
+            return false;
+        } finally {
+            File::delete($temporaryPath);
+        }
+
+        return true;
+    }
+
+    /** Write small trusted metadata without exposing a partially written file. */
+    private function publishContentsAtomically(string $contents, string $destination): bool
+    {
+        File::ensureDirectoryExists(dirname($destination));
+        $temporaryPath = $destination.'.'.Str::uuid().'.tmp';
+
+        try {
+            if (File::put($temporaryPath, $contents) !== strlen($contents)
+                || ! rename($temporaryPath, $destination)) {
+                $this->components->error("Failed to publish installer metadata to: {$destination}");
+
+                return false;
+            }
+        } catch (\Throwable $exception) {
+            report($exception);
+            $this->components->error("Failed to publish installer metadata to: {$destination}");
 
             return false;
         } finally {

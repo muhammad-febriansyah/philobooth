@@ -57,10 +57,11 @@ function seedKiosk(array $sessionOverrides = []): PhotoSession
         'paper_size_id' => $paper->id,
         'frame_id' => $frame->id,
         'session_code' => 'PB-TEST-'.uniqid(),
-        'status' => SessionStatus::Started,
-        'current_step' => SessionStep::Payment,
+        'status' => SessionStatus::Paid,
+        'current_step' => SessionStep::Frame,
         'total_amount' => 35000,
         'final_amount' => 35000,
+        'paid_at' => now(),
     ], $sessionOverrides));
 }
 
@@ -157,7 +158,11 @@ it('POST /kiosk/start prices the session from global base_price, ignoring branch
 });
 
 it('POST /kiosk/payment/method routes by method', function () {
-    $session = seedKiosk();
+    $session = seedKiosk([
+        'status' => SessionStatus::Started,
+        'current_step' => SessionStep::Payment,
+        'paid_at' => null,
+    ]);
 
     $this->withSession(['kiosk_session_id' => $session->id])
         ->post('/kiosk/payment/method', ['method' => 'voucher'])
@@ -167,7 +172,12 @@ it('POST /kiosk/payment/method routes by method', function () {
 });
 
 it('POST /kiosk/payment/mock-pay completes payment and advances', function () {
-    $session = seedKiosk(['payment_method' => PaymentMethod::QrisDoku]);
+    $session = seedKiosk([
+        'status' => SessionStatus::Started,
+        'current_step' => SessionStep::Payment,
+        'paid_at' => null,
+        'payment_method' => PaymentMethod::QrisDoku,
+    ]);
 
     $this->withSession(['kiosk_session_id' => $session->id])
         ->post('/kiosk/payment/mock-pay')
@@ -181,7 +191,12 @@ it('POST /kiosk/payment/mock-pay completes payment and advances', function () {
 });
 
 it('POST /kiosk/payment/mock-pay is blocked in production', function () {
-    $session = seedKiosk(['payment_method' => PaymentMethod::QrisPakasir]);
+    $session = seedKiosk([
+        'status' => SessionStatus::Started,
+        'current_step' => SessionStep::Payment,
+        'paid_at' => null,
+        'payment_method' => PaymentMethod::QrisPakasir,
+    ]);
     $this->app->detectEnvironment(fn () => 'production');
 
     $this->withoutMiddleware()
@@ -220,7 +235,12 @@ it('GET /kiosk/output-type is removed (no output-type choice anymore)', function
 });
 
 it('POST /kiosk/voucher/apply with valid code applies voucher', function () {
-    $session = seedKiosk(['payment_method' => PaymentMethod::Voucher]);
+    $session = seedKiosk([
+        'status' => SessionStatus::Started,
+        'current_step' => SessionStep::Payment,
+        'paid_at' => null,
+        'payment_method' => PaymentMethod::Voucher,
+    ]);
 
     $batch = VoucherBatch::factory()->create([
         'is_active' => true,
@@ -245,7 +265,11 @@ it('POST /kiosk/voucher/apply with valid code applies voucher', function () {
 });
 
 it('POST /kiosk/voucher/apply with branch mismatch is rejected', function () {
-    $session = seedKiosk();
+    $session = seedKiosk([
+        'status' => SessionStatus::Started,
+        'current_step' => SessionStep::Payment,
+        'paid_at' => null,
+    ]);
     $otherBranch = Branch::factory()->create(['is_active' => true, 'name' => 'Other']);
 
     $batch = VoucherBatch::factory()->create([
@@ -278,6 +302,71 @@ it('POST /kiosk/frame stores frame and advances to capture', function () {
     expect($session->fresh())
         ->current_step->toBe(SessionStep::Capture)
         ->status->toBe(SessionStatus::Capturing);
+});
+
+it('allows the paid session to continue after frame selection', function () {
+    $session = seedKiosk(['current_step' => SessionStep::Frame, 'frame_id' => null]);
+    Payment::factory()->create([
+        'session_id' => $session->id,
+        'purpose' => 'base',
+        'status' => PaymentStatus::Success,
+        'paid_at' => now(),
+    ]);
+
+    $this->withSession(['kiosk_session_id' => $session->id])
+        ->post('/kiosk/frame', ['frame_id' => $session->branch->frames()->value('id') ?? Frame::value('id')])
+        ->assertRedirect('/kiosk/capture');
+
+    $this->withSession(['kiosk_session_id' => $session->id])
+        ->post('/kiosk/photos', [
+            'photos' => [
+                UploadedFile::fake()->image('after-frame-a.jpg', 400, 600),
+                UploadedFile::fake()->image('after-frame-b.jpg', 400, 600),
+            ],
+        ])
+        ->assertRedirect('/kiosk/preview');
+});
+
+it('does not report the base payment as paid while an extra payment is pending', function () {
+    $session = seedKiosk([
+        'status' => SessionStatus::PaymentPending,
+        'paid_at' => now(),
+        'extra_amount' => 5000,
+        'final_amount' => 5000,
+    ]);
+
+    $this->withSession(['kiosk_session_id' => $session->id])
+        ->getJson('/kiosk/status')
+        ->assertOk()
+        ->assertJsonPath('session.paid', false);
+});
+
+it('rejects a frame belonging to another branch', function () {
+    $session = seedKiosk(['current_step' => SessionStep::Frame]);
+    $otherBranch = Branch::factory()->create(['is_active' => true]);
+    $otherFrame = Frame::factory()->create([
+        'branch_id' => $otherBranch->id,
+        'is_active' => true,
+    ]);
+
+    $this->withSession(['kiosk_session_id' => $session->id])
+        ->post('/kiosk/frame', ['frame_id' => $otherFrame->id])
+        ->assertNotFound();
+});
+
+it('rejects capture flow actions before a verified payment', function () {
+    $session = seedKiosk([
+        'status' => SessionStatus::Started,
+        'current_step' => SessionStep::Frame,
+        'paid_at' => null,
+        'frame_id' => null,
+    ]);
+
+    $this->withSession(['kiosk_session_id' => $session->id])
+        ->post('/kiosk/frame', ['frame_id' => Frame::value('id')])
+        ->assertForbidden();
+
+    expect($session->fresh()->status)->toBe(SessionStatus::Started);
 });
 
 it('POST /kiosk/photos uploads, advances to preview', function () {
@@ -329,14 +418,29 @@ it('POST /kiosk/filter stores filter and advances to qty', function () {
 
 it('POST /kiosk/quantity updates qty and routes to confirm', function () {
     $session = seedKiosk(['current_step' => SessionStep::Quantity]);
+    Payment::factory()->create(['session_id' => $session->id, 'purpose' => 'base']);
 
     $this->withSession(['kiosk_session_id' => $session->id])
         ->post('/kiosk/quantity', ['quantity' => 2])
-        ->assertRedirect('/kiosk/confirm');
+        ->assertRedirect('/kiosk/extra-pay');
 
     expect($session->fresh())
         ->print_quantity->toBe(2)
-        ->current_step->toBe(SessionStep::Generate);
+        ->current_step->toBe(SessionStep::Generate)
+        ->final_amount->toBe('52500.00');
+});
+
+it('keeps the base transaction amount when quantity is one', function () {
+    $session = seedKiosk(['current_step' => SessionStep::Quantity]);
+    Payment::factory()->create(['session_id' => $session->id, 'purpose' => 'base']);
+
+    $this->withSession(['kiosk_session_id' => $session->id])
+        ->post('/kiosk/quantity', ['quantity' => 1])
+        ->assertRedirect('/kiosk/confirm');
+
+    expect($session->fresh())
+        ->final_amount->toBe('35000.00')
+        ->extra_amount->toBe('0.00');
 });
 
 it('POST /kiosk/complete generates composite + GIF for a paid photo session', function () {

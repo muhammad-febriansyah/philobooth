@@ -13,6 +13,10 @@ class PrintJob extends Model
 
     protected $guarded = ['id'];
 
+    protected $attributes = [
+        'artifact_disk' => 'public',
+    ];
+
     protected $casts = [
         'status' => PrintJobStatus::class,
         'quantity' => 'integer',

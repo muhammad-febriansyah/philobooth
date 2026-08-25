@@ -1,14 +1,17 @@
 <?php
 
 use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Enums\SessionStatus;
 use App\Enums\UserRole;
 use App\Models\Branch;
+use App\Models\Payment;
 use App\Models\PhotoSession;
 use App\Models\User;
+use Database\Seeders\RoleSeeder;
 
 beforeEach(function () {
-    $this->seed(\Database\Seeders\RoleSeeder::class);
+    $this->seed(RoleSeeder::class);
 
     $this->admin = User::factory()->create();
     $this->admin->assignRole(UserRole::Admin->value);
@@ -118,4 +121,63 @@ test('admin can export pdf', function () {
     $response->assertHeader('content-type', 'application/pdf');
 
     expect($response->getContent())->toStartWith('%PDF-');
+});
+
+test('admin sees unresolved payment reconciliation details', function () {
+    $session = PhotoSession::factory()->create([
+        'branch_id' => $this->branch->id,
+        'session_code' => 'PB-RECON-001',
+    ]);
+    Payment::factory()->create([
+        'session_id' => $session->id,
+        'status' => PaymentStatus::Expired,
+        'amount' => 25000,
+        'pakasir_order_id' => 'ORDER-RECON-001',
+        'requires_reconciliation' => true,
+        'reconciliation_reason' => 'duplicate_provider_settlement',
+        'raw_response' => [
+            '_philobooth_provider_paid_at' => '2026-08-25T19:30:00+07:00',
+        ],
+    ]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.transaksi.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('reconciliations', 1)
+            ->where('reconciliations.0.session_code', 'PB-RECON-001')
+            ->where('reconciliations.0.order_id', 'ORDER-RECON-001')
+            ->where('reconciliations.0.reason', 'duplicate_provider_settlement')
+            ->where('reconciliations.0.amount', 25000)
+        );
+});
+
+test('operator can resolve reconciliation only for their own branch', function () {
+    $ownPayment = Payment::factory()->create([
+        'session_id' => PhotoSession::factory()->create(['branch_id' => $this->branch->id]),
+        'requires_reconciliation' => true,
+        'reconciliation_reason' => 'stale_billing_revision',
+    ]);
+    $otherPayment = Payment::factory()->create([
+        'session_id' => PhotoSession::factory()->create(['branch_id' => Branch::factory()]),
+        'requires_reconciliation' => true,
+        'reconciliation_reason' => 'terminal_session_settlement',
+    ]);
+
+    $this->actingAs($this->cabangUser)
+        ->patch(route('admin.transaksi.reconciliations.resolve', $otherPayment))
+        ->assertForbidden();
+
+    $this->actingAs($this->cabangUser)
+        ->patch(route('admin.transaksi.reconciliations.resolve', $ownPayment))
+        ->assertRedirect()
+        ->assertSessionHas('success');
+
+    expect($ownPayment->fresh()->reconciliation_resolved_at)->not->toBeNull()
+        ->and($ownPayment->fresh()->reconciliation_resolved_by)->toBe($this->cabangUser->id)
+        ->and($otherPayment->fresh()->reconciliation_resolved_at)->toBeNull();
+
+    $this->actingAs($this->cabangUser)
+        ->get(route('admin.transaksi.index'))
+        ->assertInertia(fn ($page) => $page->has('reconciliations', 0));
 });

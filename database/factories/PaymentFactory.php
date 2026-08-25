@@ -18,6 +18,7 @@ class PaymentFactory extends Factory
     {
         return [
             'session_id' => PhotoSession::factory(),
+            'purpose' => 'base',
             'method' => PaymentMethod::QrisDoku,
             'amount' => 50000,
             'doku_invoice_number' => 'DK-'.strtoupper(Str::random(10)),

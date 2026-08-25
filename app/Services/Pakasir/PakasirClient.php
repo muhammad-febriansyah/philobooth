@@ -3,6 +3,7 @@
 namespace App\Services\Pakasir;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -47,18 +48,24 @@ class PakasirClient
      */
     public function createQrisPayment(string $orderId, int $amount): array
     {
-        $response = Http::acceptJson()
-            ->timeout(15)
-            ->post($this->baseUrl.'/api/transactioncreate/qris', [
-                'project' => $this->slug,
-                'order_id' => $orderId,
-                'amount' => $amount,
-                'api_key' => $this->apiKey,
-            ]);
+        try {
+            $response = Http::acceptJson()
+                ->connectTimeout(5)
+                ->timeout(15)
+                ->post($this->baseUrl.'/api/transactioncreate/qris', [
+                    'project' => $this->slug,
+                    'order_id' => $orderId,
+                    'amount' => $amount,
+                    'api_key' => $this->apiKey,
+                ]);
+        } catch (ConnectionException $exception) {
+            throw new PakasirException('Pakasir QRIS create connection failed.', previous: $exception);
+        }
 
         if (! $response->successful()) {
             throw new PakasirException(
                 'Pakasir QRIS create failed: '.$response->status().' '.$response->body(),
+                providerStatus: $response->status(),
             );
         }
 
@@ -105,18 +112,24 @@ class PakasirClient
      */
     public function verifyTransaction(string $orderId, int $amount): array
     {
-        $response = Http::acceptJson()
-            ->timeout(15)
-            ->get($this->baseUrl.'/api/transactiondetail', [
-                'project' => $this->slug,
-                'amount' => $amount,
-                'order_id' => $orderId,
-                'api_key' => $this->apiKey,
-            ]);
+        try {
+            $response = Http::acceptJson()
+                ->connectTimeout(5)
+                ->timeout(15)
+                ->get($this->baseUrl.'/api/transactiondetail', [
+                    'project' => $this->slug,
+                    'amount' => $amount,
+                    'order_id' => $orderId,
+                    'api_key' => $this->apiKey,
+                ]);
+        } catch (ConnectionException $exception) {
+            throw new PakasirException('Pakasir transaction inquiry connection failed.', previous: $exception);
+        }
 
         if (! $response->successful()) {
             throw new PakasirException(
                 'Pakasir transaction detail failed: '.$response->status().' '.$response->body(),
+                providerStatus: $response->status(),
             );
         }
 

@@ -76,13 +76,32 @@ describe('createHttpAgent', () => {
         vi.unstubAllGlobals();
     });
 
-    it('isAvailable true when /health ok', async () => {
+    it('isAvailable true when /health reports a connected camera', async () => {
         vi.stubGlobal(
             'fetch',
-            vi.fn(async () => new Response(null, { status: 200 })),
+            vi.fn(
+                async () =>
+                    new Response(JSON.stringify({ cameraConnected: true }), {
+                        status: 200,
+                    }),
+            ),
         );
 
         await expect(createHttpAgent().isAvailable()).resolves.toBe(true);
+    });
+
+    it('isAvailable false when agent is up without a camera', async () => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(
+                async () =>
+                    new Response(JSON.stringify({ cameraConnected: false }), {
+                        status: 200,
+                    }),
+            ),
+        );
+
+        await expect(createHttpAgent().isAvailable()).resolves.toBe(false);
     });
 
     it('isAvailable false when fetch throws', async () => {
@@ -107,6 +126,7 @@ describe('createHttpAgent', () => {
                             cameraConnected: true,
                             cameraModel: 'Canon EOS 750D',
                             backend: 'digicam',
+                            error: null,
                         }),
                         { status: 200 },
                     ),
@@ -119,6 +139,7 @@ describe('createHttpAgent', () => {
         expect(status.cameraConnected).toBe(true);
         expect(status.cameraModel).toBe('Canon EOS 750D');
         expect(status.backend).toBe('digicam');
+        expect(status.error).toBeNull();
     });
 
     it('getStatus reports agent up but no camera', async () => {
@@ -132,6 +153,7 @@ describe('createHttpAgent', () => {
                             cameraConnected: false,
                             cameraModel: null,
                             backend: 'digicam',
+                            error: 'Driver kamera gagal dimuat',
                         }),
                         { status: 200 },
                     ),
@@ -143,6 +165,7 @@ describe('createHttpAgent', () => {
         expect(status.agentReachable).toBe(true);
         expect(status.cameraConnected).toBe(false);
         expect(status.cameraModel).toBeNull();
+        expect(status.error).toBe('Driver kamera gagal dimuat');
     });
 
     it('getStatus reports agent unreachable when fetch throws', async () => {
@@ -226,7 +249,10 @@ describe('createAgent (env selection)', () => {
     it('uses http when VITE_DSLR_AGENT_MODE=http', async () => {
         vi.stubEnv('VITE_DSLR_AGENT_MODE', 'http');
         const fetchMock = vi.fn(
-            async () => new Response(null, { status: 200 }),
+            async () =>
+                new Response(JSON.stringify({ cameraConnected: true }), {
+                    status: 200,
+                }),
         );
         vi.stubGlobal('fetch', fetchMock);
 

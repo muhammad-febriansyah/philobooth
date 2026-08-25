@@ -4,14 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
-use App\Enums\SessionStatus;
-use App\Enums\SessionStep;
 use App\Models\Payment;
+use App\Services\Booth\QrisPaymentService;
+use App\Services\Booth\SettlePakasirPaymentService;
 use App\Services\Pakasir\PakasirClient;
 use App\Services\Pakasir\PakasirException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -27,8 +26,12 @@ use Illuminate\Support\Facades\Log;
  */
 class PakasirNotifyController extends Controller
 {
-    public function __invoke(Request $request, PakasirClient $pakasir): JsonResponse
-    {
+    public function __invoke(
+        Request $request,
+        PakasirClient $pakasir,
+        QrisPaymentService $payments,
+        SettlePakasirPaymentService $settlements,
+    ): JsonResponse {
         if (! $pakasir->isConfigured()) {
             Log::warning('Pakasir notify hit but client not configured');
 
@@ -38,7 +41,7 @@ class PakasirNotifyController extends Controller
         $payload = $request->json()->all();
         $orderId = $payload['order_id'] ?? null;
 
-        if (! $orderId) {
+        if (! is_string($orderId) || $orderId === '' || strlen($orderId) > 64) {
             return response()->json(['message' => 'missing order_id'], 422);
         }
 
@@ -56,6 +59,29 @@ class PakasirNotifyController extends Controller
         // Idempotent — a duplicate webhook for an already-paid order is a no-op.
         if ($payment->status === PaymentStatus::Success) {
             return response()->json(['message' => 'ok']);
+        }
+
+        if (! in_array($payment->status, [PaymentStatus::Pending, PaymentStatus::Expired], true)) {
+            return response()->json(['message' => 'payment is no longer pending'], 409);
+        }
+
+        if ($payment->status === PaymentStatus::Pending) {
+            try {
+                $localState = $payments->reconcileStale($payment->session, $payment, $pakasir);
+            } catch (PakasirException $exception) {
+                Log::error('Pakasir stale payment inquiry failed', [
+                    'order_id' => $orderId,
+                    'error' => $exception->getMessage(),
+                ]);
+
+                return response()->json(['message' => 'verify failed'], 502);
+            }
+            if ($localState === PaymentStatus::Success) {
+                return response()->json(['message' => 'ok']);
+            }
+            if ($localState === PaymentStatus::Expired) {
+                return response()->json(['message' => 'payment is expired'], 409);
+            }
         }
 
         // Verify against the authenticated API using OUR amount, not the body's.
@@ -81,23 +107,7 @@ class PakasirNotifyController extends Controller
             return response()->json(['message' => 'not completed'], 409);
         }
 
-        DB::transaction(function () use ($payment, $verified) {
-            $payment->update([
-                'status' => PaymentStatus::Success,
-                'paid_at' => now(),
-                'raw_response' => $verified['raw'],
-            ]);
-
-            $session = $payment->session;
-
-            if ($session && $session->status !== SessionStatus::Paid) {
-                $session->update([
-                    'status' => SessionStatus::Paid,
-                    'current_step' => SessionStep::Frame,
-                    'paid_at' => now(),
-                ]);
-            }
-        });
+        $settlements->settle($payment, $verified['raw']);
 
         return response()->json(['message' => 'ok']);
     }

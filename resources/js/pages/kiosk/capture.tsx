@@ -177,6 +177,7 @@ export default function KioskCapture({ frame }: Props) {
                 cameraConnected: false,
                 cameraModel: null,
                 backend: null,
+                error: null,
             });
         }
     }
@@ -511,15 +512,16 @@ export default function KioskCapture({ frame }: Props) {
 
             // Burst → many frames played fast; stills → few frames held longer.
             const isBurst = frames.length >= 8;
-            const mainSlot = frame?.slots?.[0] ?? null;
             const { blob, ext } = await encodePhotosToVideo(frames, {
                 boomerang: true,
                 frameDurationMs: isBurst ? 60 : 500,
                 frameOverlay:
-                    frame?.image_size && frame.thumbnail_url && mainSlot
+                    frame?.image_size &&
+                    frame.thumbnail_url &&
+                    frame.slots.length > 0
                         ? {
                               imageSize: frame.image_size,
-                              slotRect: mainSlot,
+                              slotRects: frame.slots,
                               thumbnailUrl: frame.thumbnail_url,
                           }
                         : undefined,
@@ -1658,7 +1660,9 @@ function DslrStatusBanner({
                       border: 'rgba(245,158,11,0.35)',
                       icon: 'alert' as const,
                       title: 'Kamera tidak terdeteksi',
-                      detail: 'Nyalakan kamera, pastikan mode PTP, colok kabel USB langsung ke komputer, dan tutup aplikasi bawaan kamera (mis. EOS Utility).',
+                      detail:
+                          status.error ??
+                          'Nyalakan kamera, pastikan mode PTP, colok kabel USB langsung ke komputer, dan tutup aplikasi bawaan kamera (mis. EOS Utility).',
                   }
                 : {
                       tone: '#166534',

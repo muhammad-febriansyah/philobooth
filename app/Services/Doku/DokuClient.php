@@ -198,6 +198,6 @@ class DokuClient
             'Request-Timestamp' => $timestamp,
             'Signature' => $signature,
             'Accept' => 'application/json',
-        ])->timeout(15);
+        ])->connectTimeout(5)->timeout(15);
     }
 }

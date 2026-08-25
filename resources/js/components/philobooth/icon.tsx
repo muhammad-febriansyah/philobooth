@@ -43,6 +43,7 @@ export type IconName =
     | 'wifi'
     | 'package'
     | 'calendar'
+    | 'clock'
     | 'more-h'
     | 'more-v'
     | 'shapes'
@@ -310,6 +311,12 @@ const PATHS: Record<IconName, ReactNode> = {
             <line x1="16" y1="2" x2="16" y2="6" />
             <line x1="8" y1="2" x2="8" y2="6" />
             <line x1="3" y1="10" x2="21" y2="10" />
+        </>
+    ),
+    clock: (
+        <>
+            <circle cx="12" cy="12" r="9" />
+            <polyline points="12 7 12 12 15 14" />
         </>
     ),
     'more-h': (

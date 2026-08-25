@@ -51,6 +51,8 @@ export type DslrStatus = {
     cameraModel: string | null;
     /** Backend driving the agent: 'mock' | 'digicam' | null when unreachable. */
     backend: string | null;
+    /** Actionable backend startup error reported by the Windows app. */
+    error: string | null;
 };
 
 export interface DslrAgent {
@@ -117,6 +119,7 @@ export function createMockAgent(
                 cameraConnected: true,
                 cameraModel: 'Kamera Mock (dev)',
                 backend: 'mock',
+                error: null,
             };
         },
         async getSettings() {
@@ -149,16 +152,28 @@ export function createHttpAgent(baseUrl = AGENT_BASE_URL): DslrAgent {
     return {
         async isAvailable() {
             try {
-                const res = await fetch(`${baseUrl}/health`);
+                const res = await fetch(`${baseUrl}/health`, {
+                    signal: AbortSignal.timeout(5_000),
+                });
 
-                return res.ok;
+                if (!res.ok) {
+                    return false;
+                }
+
+                const body = (await res.json()) as {
+                    cameraConnected?: boolean;
+                };
+
+                return body.cameraConnected === true;
             } catch {
                 return false;
             }
         },
         async getStatus() {
             try {
-                const res = await fetch(`${baseUrl}/health`);
+                const res = await fetch(`${baseUrl}/health`, {
+                    signal: AbortSignal.timeout(5_000),
+                });
 
                 if (!res.ok) {
                     return {
@@ -166,6 +181,7 @@ export function createHttpAgent(baseUrl = AGENT_BASE_URL): DslrAgent {
                         cameraConnected: false,
                         cameraModel: null,
                         backend: null,
+                        error: null,
                     };
                 }
 
@@ -173,6 +189,7 @@ export function createHttpAgent(baseUrl = AGENT_BASE_URL): DslrAgent {
                     cameraConnected?: boolean;
                     cameraModel?: string | null;
                     backend?: string | null;
+                    error?: string | null;
                 };
 
                 return {
@@ -180,6 +197,7 @@ export function createHttpAgent(baseUrl = AGENT_BASE_URL): DslrAgent {
                     cameraConnected: body.cameraConnected ?? false,
                     cameraModel: body.cameraModel ?? null,
                     backend: body.backend ?? null,
+                    error: body.error ?? null,
                 };
             } catch {
                 // Connection refused / DNS / network — agent process is down.
@@ -188,11 +206,14 @@ export function createHttpAgent(baseUrl = AGENT_BASE_URL): DslrAgent {
                     cameraConnected: false,
                     cameraModel: null,
                     backend: null,
+                    error: null,
                 };
             }
         },
         async getSettings() {
-            const res = await fetch(`${baseUrl}/settings`);
+            const res = await fetch(`${baseUrl}/settings`, {
+                signal: AbortSignal.timeout(5_000),
+            });
 
             if (!res.ok) {
                 throw new Error('Failed to read DSLR settings');
@@ -205,6 +226,7 @@ export function createHttpAgent(baseUrl = AGENT_BASE_URL): DslrAgent {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ key, value }),
+                signal: AbortSignal.timeout(5_000),
             });
 
             if (!res.ok) {
@@ -212,7 +234,10 @@ export function createHttpAgent(baseUrl = AGENT_BASE_URL): DslrAgent {
             }
         },
         async capture(filename) {
-            const res = await fetch(`${baseUrl}/capture`, { method: 'POST' });
+            const res = await fetch(`${baseUrl}/capture`, {
+                method: 'POST',
+                signal: AbortSignal.timeout(35_000),
+            });
 
             if (!res.ok) {
                 throw new Error('Capture failed');

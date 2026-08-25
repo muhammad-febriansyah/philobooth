@@ -14,13 +14,24 @@ class Payment extends Model
 
     protected $guarded = ['id'];
 
+    protected $attributes = [
+        'purpose' => 'base',
+        'billing_revision' => 1,
+        'attempt' => 1,
+        'requires_reconciliation' => false,
+    ];
+
     protected $casts = [
         'method' => PaymentMethod::class,
         'status' => PaymentStatus::class,
         'amount' => 'decimal:2',
+        'billing_revision' => 'integer',
+        'attempt' => 'integer',
         'paid_at' => 'datetime',
         'expired_at' => 'datetime',
         'raw_response' => 'array',
+        'requires_reconciliation' => 'boolean',
+        'reconciliation_resolved_at' => 'datetime',
     ];
 
     public function session(): BelongsTo

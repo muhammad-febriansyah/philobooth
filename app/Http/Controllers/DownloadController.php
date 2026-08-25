@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PhotoSession;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -60,14 +61,15 @@ class DownloadController extends Controller
         }
 
         $kind = $request->string('kind', 'composite')->toString();
+        $inline = $request->boolean('inline');
 
         $session->increment('download_count');
 
         return match ($kind) {
-            'gif' => $this->downloadGif($session),
-            'video' => $this->downloadVideo($session),
-            'photo' => $this->downloadPhoto($session, (int) $request->integer('slot')),
-            default => $this->downloadComposite($session),
+            'gif' => $this->downloadGif($session, $inline),
+            'video' => $this->downloadVideo($session, $inline),
+            'photo' => $this->downloadPhoto($session, (int) $request->integer('slot'), $inline),
+            default => $this->downloadComposite($session, $inline),
         };
     }
 
@@ -83,7 +85,7 @@ class DownloadController extends Controller
         }
 
         $session->loadMissing('photos');
-        $disk = Storage::disk('public');
+        $disk = $this->artifactDisk($session);
 
         $tmp = tempnam(sys_get_temp_dir(), 'pb-zip-');
         $zip = new ZipArchive;
@@ -134,14 +136,14 @@ class DownloadController extends Controller
      */
     private function buildItems(PhotoSession $session): array
     {
-        $disk = Storage::disk('public');
+        $disk = $this->artifactDisk($session);
         $items = [];
 
         if ($session->final_image_path && $disk->exists($session->final_image_path)) {
             $items[] = [
                 'kind' => 'composite',
                 'label' => 'Foto Strip',
-                'url' => Storage::url($session->final_image_path),
+                'url' => route('download.file', $session->download_token).'?kind=composite&inline=1',
                 'download' => route('download.file', $session->download_token).'?kind=composite',
             ];
         }
@@ -150,7 +152,7 @@ class DownloadController extends Controller
             $items[] = [
                 'kind' => 'video',
                 'label' => 'Boomerang',
-                'url' => Storage::url($session->video_path),
+                'url' => route('download.file', $session->download_token).'?kind=video&inline=1',
                 'download' => route('download.file', $session->download_token).'?kind=video',
             ];
         }
@@ -159,7 +161,7 @@ class DownloadController extends Controller
             $items[] = [
                 'kind' => 'gif',
                 'label' => 'Stop Motion',
-                'url' => Storage::url($session->gif_path),
+                'url' => route('download.file', $session->download_token).'?kind=gif&inline=1',
                 'download' => route('download.file', $session->download_token).'?kind=gif',
             ];
         }
@@ -175,7 +177,7 @@ class DownloadController extends Controller
                 'kind' => 'photo',
                 'label' => 'Foto '.$photo->slot_number,
                 'slot_number' => (int) $photo->slot_number,
-                'url' => Storage::url($path),
+                'url' => route('download.file', $session->download_token).'?kind=photo&slot='.$photo->slot_number.'&inline=1',
                 'download' => route('download.file', $session->download_token).'?kind=photo&slot='.$photo->slot_number,
             ];
         }
@@ -183,51 +185,38 @@ class DownloadController extends Controller
         return $items;
     }
 
-    private function downloadComposite(PhotoSession $session): BinaryFileResponse
+    private function downloadComposite(PhotoSession $session, bool $inline = false): BinaryFileResponse
     {
-        if (! $session->final_image_path || ! Storage::disk('public')->exists($session->final_image_path)) {
+        $disk = $this->artifactDisk($session);
+        if (! $session->final_image_path || ! $disk->exists($session->final_image_path)) {
             abort(404, 'Foto strip belum tersedia.');
         }
 
-        $absolute = Storage::disk('public')->path($session->final_image_path);
+        $absolute = $disk->path($session->final_image_path);
 
-        return response()->download(
-            $absolute,
-            $session->session_code.'.png',
-            [
-                'Content-Type' => 'image/png',
-                'Content-Length' => filesize($absolute),
-                'Cache-Control' => 'no-store, no-cache, must-revalidate',
-            ],
-        );
+        return $this->serve($absolute, $session->session_code.'.png', 'image/png', $inline);
     }
 
-    private function downloadGif(PhotoSession $session): BinaryFileResponse
+    private function downloadGif(PhotoSession $session, bool $inline = false): BinaryFileResponse
     {
-        if (! $session->gif_path || ! Storage::disk('public')->exists($session->gif_path)) {
+        $disk = $this->artifactDisk($session);
+        if (! $session->gif_path || ! $disk->exists($session->gif_path)) {
             abort(404, 'Video stop motion belum tersedia.');
         }
 
-        $absolute = Storage::disk('public')->path($session->gif_path);
+        $absolute = $disk->path($session->gif_path);
 
-        return response()->download(
-            $absolute,
-            $session->session_code.'.gif',
-            [
-                'Content-Type' => 'image/gif',
-                'Content-Length' => filesize($absolute),
-                'Cache-Control' => 'no-store, no-cache, must-revalidate',
-            ],
-        );
+        return $this->serve($absolute, $session->session_code.'.gif', 'image/gif', $inline);
     }
 
-    private function downloadVideo(PhotoSession $session): BinaryFileResponse
+    private function downloadVideo(PhotoSession $session, bool $inline = false): BinaryFileResponse
     {
-        if (! $session->video_path || ! Storage::disk('public')->exists($session->video_path)) {
+        $disk = $this->artifactDisk($session);
+        if (! $session->video_path || ! $disk->exists($session->video_path)) {
             abort(404, 'Video belum tersedia.');
         }
 
-        $absolute = Storage::disk('public')->path($session->video_path);
+        $absolute = $disk->path($session->video_path);
         $ext = strtolower(pathinfo($session->video_path, PATHINFO_EXTENSION) ?: 'webm');
         $mime = match ($ext) {
             'mp4' => 'video/mp4',
@@ -235,18 +224,10 @@ class DownloadController extends Controller
             default => 'video/webm',
         };
 
-        return response()->download(
-            $absolute,
-            $session->session_code.'.'.$ext,
-            [
-                'Content-Type' => $mime,
-                'Content-Length' => filesize($absolute),
-                'Cache-Control' => 'no-store, no-cache, must-revalidate',
-            ],
-        );
+        return $this->serve($absolute, $session->session_code.'.'.$ext, $mime, $inline);
     }
 
-    private function downloadPhoto(PhotoSession $session, int $slot): BinaryFileResponse
+    private function downloadPhoto(PhotoSession $session, int $slot, bool $inline = false): BinaryFileResponse
     {
         $photo = $session->photos()->where('slot_number', $slot)->first();
 
@@ -256,11 +237,12 @@ class DownloadController extends Controller
 
         $path = $photo->edited_path ?: $photo->original_path;
 
-        if (! $path || ! Storage::disk('public')->exists($path)) {
+        $disk = $this->artifactDisk($session);
+        if (! $path || ! $disk->exists($path)) {
             abort(404, 'File foto tidak ditemukan.');
         }
 
-        $absolute = Storage::disk('public')->path($path);
+        $absolute = $disk->path($path);
         $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION) ?: 'jpg');
         $mime = match ($ext) {
             'png' => 'image/png',
@@ -268,15 +250,25 @@ class DownloadController extends Controller
             default => 'image/jpeg',
         };
 
-        return response()->download(
-            $absolute,
-            $session->session_code.'-foto-'.$slot.'.'.$ext,
-            [
-                'Content-Type' => $mime,
-                'Content-Length' => filesize($absolute),
-                'Cache-Control' => 'no-store, no-cache, must-revalidate',
-            ],
-        );
+        return $this->serve($absolute, $session->session_code.'-foto-'.$slot.'.'.$ext, $mime, $inline);
+    }
+
+    private function artifactDisk(PhotoSession $session): FilesystemAdapter
+    {
+        return Storage::disk($session->artifact_disk ?: 'public');
+    }
+
+    private function serve(string $absolute, string $filename, string $mime, bool $inline): BinaryFileResponse
+    {
+        $headers = [
+            'Content-Type' => $mime,
+            'Content-Length' => filesize($absolute),
+            'Cache-Control' => 'private, no-store, no-cache, must-revalidate',
+        ];
+
+        return $inline
+            ? response()->file($absolute, $headers)
+            : response()->download($absolute, $filename, $headers);
     }
 
     private function resolveSession(string $token): ?PhotoSession

@@ -7,6 +7,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\SessionStatus;
 use App\Enums\SessionStep;
 use App\Enums\SessionType;
+use App\Exceptions\PaymentInProgressException;
 use App\Http\Controllers\Controller;
 use App\Mail\PhotoReadyMail;
 use App\Models\AppSetting;
@@ -15,9 +16,13 @@ use App\Models\Filter;
 use App\Models\Frame;
 use App\Models\Payment;
 use App\Models\PhotoSession;
+use App\Models\PricingConfig;
 use App\Models\Printer;
 use App\Models\SessionPhoto;
 use App\Models\Voucher;
+use App\Services\Booth\QrisPaymentService;
+use App\Services\Booth\SetExtraPrintQuantityService;
+use App\Services\Booth\SettlePakasirPaymentService;
 use App\Services\Doku\DokuClient;
 use App\Services\Doku\DokuException;
 use App\Services\FrameBuilder\CompositeGenerator;
@@ -41,6 +46,12 @@ use Illuminate\Support\Str;
  */
 class SessionController extends Controller
 {
+    public function __construct(
+        private readonly QrisPaymentService $qrisPayments,
+        private readonly SettlePakasirPaymentService $pakasirSettlements,
+        private readonly SetExtraPrintQuantityService $printQuantities,
+    ) {}
+
     private const SESSION_KEY = 'kiosk_session_id';
 
     public function start(Request $request): RedirectResponse
@@ -85,6 +96,13 @@ class SessionController extends Controller
     {
         $session = $this->currentSession($request);
 
+        if ($session->payments()
+            ->where('purpose', 'base')
+            ->where('status', PaymentStatus::Success)
+            ->exists()) {
+            return redirect('/kiosk/validate');
+        }
+
         $method = $request->string('method')->toString();
         $methodEnum = match ($method) {
             'qris', 'qris_pakasir', 'qris_doku' => PaymentMethod::QrisPakasir,
@@ -99,54 +117,49 @@ class SessionController extends Controller
             'current_step' => SessionStep::Payment,
         ]);
 
+        if ($methodEnum !== PaymentMethod::QrisPakasir) {
+            $session->payments()
+                ->where('purpose', 'base')
+                ->where('status', PaymentStatus::Pending)
+                ->update(['status' => PaymentStatus::Expired]);
+        }
+
         if ($methodEnum === PaymentMethod::Voucher) {
             return redirect('/kiosk/voucher');
         }
 
         if ($methodEnum === PaymentMethod::QrisPakasir && $pakasir->isConfigured()) {
-            $this->ensurePakasirQrisPayment($session, $pakasir);
+            try {
+                $this->ensurePakasirQrisPayment($session, $pakasir);
+            } catch (PakasirException|PaymentInProgressException) {
+                $session->update([
+                    'status' => SessionStatus::Started,
+                    'current_step' => SessionStep::Payment,
+                ]);
+
+                return back()->withErrors([
+                    'method' => 'QRIS sedang tidak tersedia. Silakan coba lagi.',
+                ]);
+            }
         }
 
         return redirect('/kiosk/qris');
     }
 
-    private function ensurePakasirQrisPayment(PhotoSession $session, PakasirClient $pakasir): void
-    {
-        $pendingPayment = $session->payments()
-            ->where('method', PaymentMethod::QrisPakasir)
-            ->where('status', PaymentStatus::Pending)
-            ->latest('id')
-            ->first();
-
-        if ($pendingPayment && $pendingPayment->expired_at && now()->lt($pendingPayment->expired_at)) {
-            return;
-        }
-
-        // Pakasir order_id must be unique per project; keep it alnum + traceable
-        // back to the session code.
-        $orderId = str_replace('-', '', $session->session_code).Str::upper(Str::random(4));
-
-        try {
-            $result = $pakasir->createQrisPayment($orderId, (int) $session->final_amount);
-        } catch (PakasirException $e) {
-            Log::error('Pakasir createQrisPayment failed', [
-                'session' => $session->session_code,
-                'error' => $e->getMessage(),
-            ]);
-
-            return;
-        }
-
-        Payment::create([
-            'session_id' => $session->id,
-            'method' => PaymentMethod::QrisPakasir,
-            'amount' => $session->final_amount,
-            'pakasir_order_id' => $result['order_id'],
-            'qris_string' => $result['qris_string'],
-            'status' => PaymentStatus::Pending,
-            'expired_at' => $result['expired_at'],
-            'raw_response' => $result['raw'],
-        ]);
+    private function ensurePakasirQrisPayment(
+        PhotoSession $session,
+        PakasirClient $pakasir,
+        string $source = 'base',
+        ?string $returnStatus = null,
+        ?string $returnStep = null,
+    ): void {
+        $this->qrisPayments->create(
+            $session,
+            $source === 'extra_pay' ? 'extra_print' : 'base',
+            $pakasir,
+            $returnStatus,
+            $returnStep,
+        );
     }
 
     private function ensureDokuQrisPayment(PhotoSession $session, DokuClient $doku): void
@@ -262,47 +275,76 @@ class SessionController extends Controller
             return back()->withErrors(['code' => 'Voucher ini tidak berlaku di cabang ini.']);
         }
 
-        DB::transaction(function () use ($session, $voucher) {
+        $applied = DB::transaction(function () use ($session, $voucher) {
+            $lockedSession = PhotoSession::withoutGlobalScopes()
+                ->lockForUpdate()
+                ->findOrFail($session->id);
+
+            if ($lockedSession->paid_at !== null) {
+                return false;
+            }
+
+            $lockedVoucher = Voucher::withoutGlobalScopes()
+                ->whereKey($voucher->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $lockedVoucher || ! $lockedVoucher->is_active || $lockedVoucher->used_count >= $lockedVoucher->max_uses) {
+                return false;
+            }
+
             Payment::create([
-                'session_id' => $session->id,
+                'session_id' => $lockedSession->id,
                 'method' => PaymentMethod::Voucher,
-                'amount' => $session->final_amount,
-                'doku_invoice_number' => 'VCH-'.$voucher->code.'-'.Str::upper(Str::random(6)),
+                'amount' => $lockedSession->final_amount,
+                'doku_invoice_number' => 'VCH-'.$lockedVoucher->code.'-'.Str::upper(Str::random(6)),
                 'status' => PaymentStatus::Success,
                 'paid_at' => now(),
                 'raw_response' => [
                     'source' => 'voucher',
-                    'voucher_id' => $voucher->id,
-                    'voucher_code' => $voucher->code,
+                    'voucher_id' => $lockedVoucher->id,
+                    'voucher_code' => $lockedVoucher->code,
                 ],
             ]);
 
-            $voucher->update([
-                'used_count' => $voucher->used_count + 1,
+            $lockedVoucher->update([
+                'used_count' => $lockedVoucher->used_count + 1,
                 'used_at' => now(),
-                'used_by_session_id' => $session->id,
+                'used_by_session_id' => $lockedSession->id,
             ]);
 
-            $session->update([
-                'voucher_id' => $voucher->id,
+            $lockedSession->update([
+                'voucher_id' => $lockedVoucher->id,
                 'payment_method' => PaymentMethod::Voucher,
                 'status' => SessionStatus::Paid,
                 'current_step' => SessionStep::Frame,
-                'discount_amount' => $session->final_amount,
+                'discount_amount' => $lockedSession->final_amount,
                 'final_amount' => 0,
                 'paid_at' => now(),
             ]);
+
+            return true;
         });
+
+        if (! $applied) {
+            return back()->withErrors(['code' => 'Voucher sudah digunakan atau sesi sudah dibayar.']);
+        }
 
         return redirect('/kiosk/validate')->with('success', 'Voucher berhasil diterapkan.');
     }
 
     public function selectFrame(Request $request): RedirectResponse
     {
-        $session = $this->currentSession($request);
+        $session = $this->requirePaidSession($request);
 
         $frameId = (int) $request->integer('frame_id');
-        $frame = Frame::with('photoSlots')->findOrFail($frameId);
+        $frame = Frame::with('photoSlots')
+            ->where('is_active', true)
+            ->where(function ($query) use ($session) {
+                $query->whereNull('branch_id')
+                    ->orWhere('branch_id', $session->branch_id);
+            })
+            ->findOrFail($frameId);
 
         // Kalau ganti frame ditengah sesi, foto lama jadi tidak valid (slot count beda).
         // Drop semuanya supaya tidak ada mismatch saat composite.
@@ -334,7 +376,7 @@ class SessionController extends Controller
      */
     public function uploadVideo(Request $request): RedirectResponse|Response
     {
-        $session = $this->currentSession($request);
+        $session = $this->requirePaidSession($request);
 
         if (! $session->frame_id) {
             return back()->withErrors(['frame' => 'Pilih frame dulu sebelum rekam.']);
@@ -380,7 +422,7 @@ class SessionController extends Controller
 
     public function uploadPhotos(Request $request): RedirectResponse
     {
-        $session = $this->currentSession($request);
+        $session = $this->requirePaidSession($request);
 
         if (! $session->frame_id) {
             return back()->withErrors(['frame' => 'Pilih frame dulu sebelum upload.']);
@@ -438,7 +480,7 @@ class SessionController extends Controller
 
     public function selectFilter(Request $request): RedirectResponse
     {
-        $session = $this->currentSession($request);
+        $session = $this->requirePaidSession($request);
 
         // filter_id bisa null (Original) atau string slug (vivid, warm, dst.) — disimpan as-is.
         // Filter aktualnya diterapkan via CSS di client; nanti bisa di-extend ke server-side.
@@ -485,30 +527,25 @@ class SessionController extends Controller
 
     public function setQuantity(Request $request): RedirectResponse
     {
-        $session = $this->currentSession($request);
+        $session = $this->requirePaidSession($request);
 
-        $qty = max(1, (int) $request->integer('quantity'));
-        $freeQty = 1;
-        $extras = max(0, $qty - $freeQty);
-
-        $basePrice = (float) $session->total_amount;
-        $extraPerPrint = $basePrice * 0.5;
-        $extraTotal = $extras * $extraPerPrint;
-
-        // Kalau voucher sudah lunasi base (final_amount=0), customer cuma bayar lembar tambahan.
-        $voucherCoversBase = (float) $session->discount_amount >= $basePrice;
-        $newFinal = $voucherCoversBase
-            ? $extraTotal
-            : $basePrice + $extraTotal;
-
-        $session->update([
-            'print_quantity' => $qty,
-            'final_amount' => $newFinal,
-            'current_step' => SessionStep::Generate,
+        $maxPrints = $this->resolveMaxPrints($session);
+        $request->validate([
+            'quantity' => ['required', 'integer', 'min:1', 'max:'.$maxPrints],
         ]);
 
-        // Kalau ada selisih (extra lembar di luar voucher cover), customer harus bayar dulu.
-        if ($newFinal > 0 && $voucherCoversBase) {
+        try {
+            $billing = $this->printQuantities->update(
+                $session,
+                (int) $request->integer('quantity'),
+                SessionStep::Generate,
+            );
+        } catch (PaymentInProgressException $exception) {
+            return back()->withErrors(['quantity' => $exception->getMessage()]);
+        }
+
+        // Additional copies require a second, separately verified payment.
+        if ($billing['requires_payment']) {
             return redirect('/kiosk/extra-pay');
         }
 
@@ -521,7 +558,20 @@ class SessionController extends Controller
      */
     public function payExtra(Request $request): RedirectResponse
     {
-        $session = $this->currentSession($request);
+        $session = $this->requirePaidSession($request);
+
+        if ((float) $session->extra_amount <= 0) {
+            return redirect('/kiosk/confirm');
+        }
+
+        if ($session->payments()
+            ->where('purpose', 'extra_print')
+            ->where('billing_revision', $session->billing_revision)
+            ->where('amount', $session->extra_amount)
+            ->where('status', PaymentStatus::Success)
+            ->exists()) {
+            return redirect('/kiosk/confirm');
+        }
 
         $method = $request->string('method')->toString();
         $methodEnum = match ($method) {
@@ -531,27 +581,77 @@ class SessionController extends Controller
             default => PaymentMethod::QrisPakasir,
         };
 
-        DB::transaction(function () use ($session, $methodEnum) {
-            Payment::create([
-                'session_id' => $session->id,
-                'method' => $methodEnum,
-                'amount' => $session->final_amount,
-                'pakasir_order_id' => 'EXT-'.Str::upper(Str::random(10)),
-                'status' => PaymentStatus::Success,
-                'paid_at' => now(),
-                'raw_response' => [
-                    'source' => 'extra_pay',
-                    'reason' => 'additional prints beyond voucher cover',
-                ],
-            ]);
+        if ($methodEnum !== PaymentMethod::QrisPakasir) {
+            if (app()->isProduction()) {
+                return back()->withErrors([
+                    'method' => 'Pembayaran tambahan saat ini hanya tersedia melalui QRIS.',
+                ]);
+            }
 
-            // Setelah dibayar, final_amount jadi 0 (semua paid)
+            DB::transaction(function () use ($session, $methodEnum) {
+                Payment::create([
+                    'session_id' => $session->id,
+                    'purpose' => 'extra_print',
+                    'billing_revision' => $session->billing_revision,
+                    'settlement_key' => "session:{$session->id}:extra_print:{$session->billing_revision}",
+                    'method' => $methodEnum,
+                    'amount' => $session->extra_amount,
+                    'status' => PaymentStatus::Success,
+                    'paid_at' => now(),
+                    'raw_response' => ['source' => 'extra_pay_mock'],
+                ]);
+
+                $session->update([
+                    'final_amount' => $this->transactionTotal($session),
+                ]);
+            });
+
+            return redirect('/kiosk/confirm');
+        }
+
+        $pakasir = app(PakasirClient::class);
+
+        if (! $pakasir->isConfigured()) {
+            return back()->withErrors([
+                'method' => 'Payment gateway belum tersedia. Silakan hubungi operator.',
+            ]);
+        }
+
+        $returnStatus = $session->status?->value;
+        $returnStep = $session->current_step?->value;
+
+        $session->payments()
+            ->where('method', PaymentMethod::QrisPakasir)
+            ->where('purpose', 'base')
+            ->where('status', PaymentStatus::Pending)
+            ->update(['status' => PaymentStatus::Expired]);
+
+        $session->update([
+            'payment_method' => PaymentMethod::QrisPakasir,
+            'status' => SessionStatus::PaymentPending,
+            'current_step' => SessionStep::Payment,
+        ]);
+
+        try {
+            $this->ensurePakasirQrisPayment(
+                $session,
+                $pakasir,
+                'extra_pay',
+                $returnStatus,
+                $returnStep,
+            );
+        } catch (PakasirException|PaymentInProgressException) {
             $session->update([
-                'final_amount' => 0,
+                'status' => $returnStatus ?? SessionStatus::Editing->value,
+                'current_step' => $returnStep ?? SessionStep::Generate->value,
             ]);
-        });
 
-        return redirect('/kiosk/confirm');
+            return back()->withErrors([
+                'method' => 'QRIS sedang tidak tersedia. Silakan coba lagi.',
+            ]);
+        }
+
+        return redirect('/kiosk/qris');
     }
 
     public function complete(
@@ -560,7 +660,7 @@ class SessionController extends Controller
         QrCodeService $qr,
         StopMotionGifService $gif,
     ): RedirectResponse {
-        $session = $this->currentSession($request);
+        $session = $this->requirePaidSession($request);
 
         // Validasi: frame + foto sesuai jumlah slot harus ada
         $session->loadMissing(['frame.photoSlots', 'photos']);
@@ -720,17 +820,21 @@ class SessionController extends Controller
         }
 
         $session->loadMissing(['frame:id,name,photo_slots,thumbnail_path', 'paperSize:id,code']);
+        $activePurpose = $session->payments()
+            ->where('method', PaymentMethod::QrisPakasir)
+            ->where('status', PaymentStatus::Pending)
+            ->latest('id')
+            ->value('purpose');
 
-        // Polling fallback: kalau session belum paid + ada pending QRIS payment,
-        // verifikasi langsung ke Pakasir (webhook bisa saja gagal/terlambat).
-        if (
-            $session->status !== SessionStatus::Paid
-            && $session->paid_at === null
-            && $pakasir->isConfigured()
-        ) {
+        // Polling fallback: setiap pending QRIS aktif diverifikasi ke Pakasir.
+        if ($session->payments()->where('method', PaymentMethod::QrisPakasir)
+            ->where('status', PaymentStatus::Pending)->exists()
+            && $pakasir->isConfigured()) {
             $this->reconcilePakasirPayment($session, $pakasir);
             $session->refresh();
         }
+
+        $paymentPurpose = $activePurpose ?? $session->payments()->latest('id')->value('purpose');
 
         return response()->json([
             'session' => [
@@ -740,7 +844,12 @@ class SessionController extends Controller
                 'frame' => $session->frame
                     ? ['id' => $session->frame->id, 'name' => $session->frame->name, 'slots' => (int) $session->frame->photo_slots]
                     : null,
-                'paid' => $session->status === SessionStatus::Paid || $session->paid_at !== null,
+                'paid' => $session->status !== SessionStatus::PaymentPending
+                    && $session->status !== SessionStatus::Started
+                    && $session->status !== SessionStatus::Expired
+                    && $session->status !== SessionStatus::Cancelled
+                    && $session->paid_at !== null,
+                'payment_purpose' => $paymentPurpose,
                 'final_amount' => (float) $session->final_amount,
             ],
         ]);
@@ -748,9 +857,11 @@ class SessionController extends Controller
 
     private function reconcilePakasirPayment(PhotoSession $session, PakasirClient $pakasir): void
     {
+        $purpose = (float) $session->extra_amount > 0 ? 'extra_print' : 'base';
         $payment = $session->payments()
             ->where('method', PaymentMethod::QrisPakasir)
             ->where('status', PaymentStatus::Pending)
+            ->where('purpose', $purpose)
             ->latest('id')
             ->first();
 
@@ -759,6 +870,10 @@ class SessionController extends Controller
         }
 
         try {
+            $state = $this->qrisPayments->reconcileStale($session, $payment, $pakasir);
+            if ($state !== PaymentStatus::Pending) {
+                return;
+            }
             $verified = $pakasir->verifyTransaction($payment->pakasir_order_id, (int) $payment->amount);
         } catch (PakasirException $e) {
             Log::warning('Pakasir verify failed on poll', [
@@ -770,19 +885,7 @@ class SessionController extends Controller
         }
 
         if ($verified['status'] === 'completed' && $verified['amount'] === (int) $payment->amount) {
-            DB::transaction(function () use ($session, $payment, $verified) {
-                $payment->update([
-                    'status' => PaymentStatus::Success,
-                    'paid_at' => now(),
-                    'raw_response' => $verified['raw'],
-                ]);
-
-                $session->update([
-                    'status' => SessionStatus::Paid,
-                    'current_step' => SessionStep::Frame,
-                    'paid_at' => now(),
-                ]);
-            });
+            $this->pakasirSettlements->settle($payment, $verified['raw']);
         }
     }
 
@@ -837,6 +940,58 @@ class SessionController extends Controller
         }
 
         return $session;
+    }
+
+    /**
+     * Business actions after payment must be authorized by persisted server
+     * state, never by the current page or a client-provided flag.
+     */
+    private function requirePaidSession(Request $request): PhotoSession
+    {
+        $session = $this->currentSession($request);
+
+        abort_unless(
+            $session->paid_at !== null
+                && $session->status !== SessionStatus::Started
+                && $session->status !== SessionStatus::PaymentPending
+                && $session->status !== SessionStatus::Expired
+                && $session->status !== SessionStatus::Cancelled
+                && (
+                    $session->status === SessionStatus::Paid
+                    || $session->payments()
+                        ->where('purpose', 'base')
+                        ->where('status', PaymentStatus::Success)
+                        ->exists()
+                ),
+            403,
+            'Pembayaran belum tervalidasi.',
+        );
+
+        return $session;
+    }
+
+    private function transactionTotal(PhotoSession $session): float
+    {
+        return max(
+            0,
+            (float) $session->total_amount
+                - (float) $session->discount_amount
+                + (float) $session->extra_amount,
+        );
+    }
+
+    private function resolveMaxPrints(PhotoSession $session): int
+    {
+        $pricing = PricingConfig::withoutGlobalScopes()
+            ->where('branch_id', $session->branch_id)
+            ->where('paper_size_id', $session->paper_size_id)
+            ->where('is_active', true)
+            ->first();
+
+        return max(
+            1,
+            (int) ($pricing?->max_prints ?? AppSetting::get('max_prints', 10)),
+        );
     }
 
     private function currentSessionOrNull(Request $request): ?PhotoSession

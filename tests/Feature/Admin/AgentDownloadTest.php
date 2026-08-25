@@ -23,6 +23,15 @@ function fakeWindowsExecutable(string $sectionContents = 'PHILOBOOTH'): string
     return $dosHeader."PE\0\0".$coffHeader.$optionalHeader.$sectionHeader.$sectionContents;
 }
 
+function putTrustedInstaller(string $contents): void
+{
+    Storage::disk('local')->put(AgentController::INSTALLER_PATH, $contents);
+    Storage::disk('local')->put(AgentController::INSTALLER_MANIFEST_PATH, json_encode([
+        'size' => strlen($contents),
+        'sha256' => hash('sha256', $contents),
+    ], JSON_THROW_ON_ERROR));
+}
+
 beforeEach(function () {
     $this->seed(RoleSeeder::class);
 
@@ -32,12 +41,39 @@ beforeEach(function () {
 
 it('downloads the installer when present', function () {
     Storage::fake('local');
-    Storage::disk('local')->put(AgentController::INSTALLER_PATH, 'MZ-FAKE-INSTALLER');
+    $installer = fakeWindowsExecutable().str_repeat('installer-overlay', 20);
+    putTrustedInstaller($installer);
 
     $this->actingAs($this->admin)
         ->get('/admin/agent-download')
         ->assertOk()
+        ->assertHeader('Cache-Control', 'max-age=0, no-store, private')
+        ->assertHeader('X-Checksum-SHA256', hash('sha256', $installer))
         ->assertDownload(AgentController::DOWNLOAD_FILENAME);
+});
+
+it('refuses an installer without trusted metadata', function () {
+    Storage::fake('local');
+    Storage::disk('local')->put(AgentController::INSTALLER_PATH, fakeWindowsExecutable());
+
+    $this->actingAs($this->admin)
+        ->get('/admin/agent-download')
+        ->assertRedirect()
+        ->assertSessionHasErrors('agent');
+});
+
+it('refuses an installer changed after publication', function () {
+    Storage::fake('local');
+    putTrustedInstaller(fakeWindowsExecutable());
+    Storage::disk('local')->put(
+        AgentController::INSTALLER_PATH,
+        fakeWindowsExecutable().'tampered',
+    );
+
+    $this->actingAs($this->admin)
+        ->get('/admin/agent-download')
+        ->assertRedirect()
+        ->assertSessionHasErrors('agent');
 });
 
 it('redirects back with an error when the installer is missing', function () {
@@ -51,6 +87,24 @@ it('redirects back with an error when the installer is missing', function () {
 
 it('blocks guests from downloading the installer', function () {
     $this->get('/admin/agent-download')->assertRedirect(route('login'));
+});
+
+it('allows a branch user to download a trusted installer', function () {
+    Storage::fake('local');
+    putTrustedInstaller(fakeWindowsExecutable());
+    $branchUser = User::factory()->create();
+    $branchUser->assignRole(UserRole::Cabang->value);
+
+    $this->actingAs($branchUser)
+        ->get('/admin/agent-download')
+        ->assertOk()
+        ->assertDownload(AgentController::DOWNLOAD_FILENAME);
+});
+
+it('blocks authenticated users without an allowed role', function () {
+    $this->actingAs(User::factory()->create())
+        ->get('/admin/agent-download')
+        ->assertForbidden();
 });
 
 it('serves the payload from the web root, outside the storage symlink', function () {
@@ -106,7 +160,16 @@ it('publishes the installer only when its trusted hash matches', function () {
     ])->assertSuccessful();
 
     Storage::disk('local')->assertExists(AgentController::INSTALLER_PATH);
+    Storage::disk('local')->assertExists(AgentController::INSTALLER_MANIFEST_PATH);
     expect(Storage::disk('local')->get(AgentController::INSTALLER_PATH))->toBe($executable);
+    expect(json_decode(
+        Storage::disk('local')->get(AgentController::INSTALLER_MANIFEST_PATH),
+        true,
+        flags: JSON_THROW_ON_ERROR,
+    ))->toBe([
+        'size' => strlen($executable),
+        'sha256' => hash('sha256', $executable),
+    ]);
 
     File::delete($source);
 });
@@ -125,6 +188,18 @@ it('refuses to publish an installer without its trusted build hash', function ()
     Storage::disk('local')->assertMissing(AgentController::INSTALLER_PATH);
 
     File::delete($source);
+});
+
+it('requires an explicit publish mode before writing files', function () {
+    Storage::fake('local');
+    Storage::fake('agent');
+
+    $this->artisan('agent:publish')
+        ->expectsOutputToContain('Choose exactly one publish mode')
+        ->assertFailed();
+
+    Storage::disk('local')->assertMissing(AgentController::INSTALLER_PATH);
+    Storage::disk('agent')->assertMissing(AgentController::PAYLOAD_PATH);
 });
 
 it('refuses to publish a truncated file that is not a windows executable', function () {

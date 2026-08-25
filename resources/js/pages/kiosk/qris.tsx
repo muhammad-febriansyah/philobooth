@@ -78,7 +78,11 @@ export default function KioskQRIS({ session, qris, allowMock = false }: Props) {
 
                 if (data?.session?.paid) {
                     clearInterval(interval);
-                    router.visit('/kiosk/validate');
+                    router.visit(
+                        data.session.payment_purpose === 'extra_print'
+                            ? '/kiosk/confirm'
+                            : '/kiosk/validate',
+                    );
                 }
             } catch {
                 // silent — polling akan retry

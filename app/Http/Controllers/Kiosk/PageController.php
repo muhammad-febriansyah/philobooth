@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Kiosk;
 
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Enums\SessionStatus;
 use App\Http\Controllers\Controller;
 use App\Models\AppSetting;
 use App\Models\Branch;
 use App\Models\Frame;
 use App\Models\PhotoSession;
+use App\Models\PricingConfig;
 use App\Services\FrameBuilder\CompositeGenerator;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
@@ -87,8 +89,11 @@ class PageController extends Controller
             ];
         }
 
+        $sessionProps = $this->sessionProps($session);
+        $sessionProps['final_amount'] = (float) ($payment?->amount ?? $session->final_amount);
+
         return Inertia::render('kiosk/qris', [
-            'session' => $this->sessionProps($session),
+            'session' => $sessionProps,
             'qris' => $qrisData,
             'allowMock' => ! app()->isProduction(),
         ]);
@@ -296,16 +301,17 @@ class PageController extends Controller
     {
         $session = $this->requireSession($request, 'qty');
         $session->loadMissing('paperSize');
+        $pricing = $this->pricingFor($session);
 
         return Inertia::render('kiosk/qty', [
             'session' => $this->sessionProps($session),
             'composite_url' => $this->buildCompositeUrl($session, $composer),
             'frame' => $this->frameProps($session->frame),
             'pricing' => [
-                'base_price' => (float) AppSetting::get('base_price', $session->total_amount),
+                'base_price' => $pricing['base_price'],
                 'free_quantity' => 1,
-                'extra_per_print' => (float) AppSetting::get('extra_print_price', 5000),
-                'max_prints' => (int) AppSetting::get('max_prints', 10),
+                'extra_per_print' => $pricing['extra_per_print'],
+                'max_prints' => $pricing['max_prints'],
             ],
         ]);
     }
@@ -484,12 +490,29 @@ class PageController extends Controller
             'frame_id' => $session->frame_id,
             'filter_id' => $session->filter_id,
             'payment_method' => $session->payment_method?->value,
-            'paid' => $session->paid_at !== null,
+            'paid' => $session->paid_at !== null && $session->status !== SessionStatus::PaymentPending,
             'total_amount' => (float) $session->total_amount,
             'discount_amount' => (float) $session->discount_amount,
             'final_amount' => (float) $session->final_amount,
+            'extra_amount' => (float) $session->extra_amount,
             'print_quantity' => (int) $session->print_quantity,
             'session_type' => $session->session_type?->value,
+        ];
+    }
+
+    /** @return array{base_price: float, extra_per_print: float, max_prints: int} */
+    private function pricingFor(PhotoSession $session): array
+    {
+        $pricing = PricingConfig::withoutGlobalScopes()
+            ->where('branch_id', $session->branch_id)
+            ->where('paper_size_id', $session->paper_size_id)
+            ->where('is_active', true)
+            ->first();
+
+        return [
+            'base_price' => (float) ($pricing?->base_price ?? AppSetting::get('base_price', $session->total_amount)),
+            'extra_per_print' => (float) AppSetting::get('extra_print_price', 5000),
+            'max_prints' => max(1, (int) ($pricing?->max_prints ?? AppSetting::get('max_prints', 10))),
         ];
     }
 }
