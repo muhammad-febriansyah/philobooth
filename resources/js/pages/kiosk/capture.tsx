@@ -1651,7 +1651,7 @@ function DslrStatusBanner({
                     border: 'rgba(239,68,68,0.35)',
                     icon: 'alert' as const,
                     title: 'Aplikasi kamera belum jalan',
-                    detail: 'Buka aplikasi Philobooth Camera di komputer booth, lalu coba lagi. Foto tetap bisa pakai Webcam.',
+                    detail: 'Buka aplikasi Philobooth Booth di komputer booth, lalu coba lagi. Foto tetap bisa pakai Webcam.',
                 }
               : !status.cameraConnected
                 ? {

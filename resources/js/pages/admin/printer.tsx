@@ -980,7 +980,7 @@ function SystemPrinterField({
         } catch {
             setFound(null);
             setAgentError(
-                'Agent tidak terhubung. Buka halaman ini di PC booth dan pastikan aplikasi Philobooth Camera berjalan.',
+                'Agent tidak terhubung. Buka halaman ini di PC booth dan pastikan aplikasi Philobooth Booth berjalan.',
             );
         } finally {
             setDetecting(false);

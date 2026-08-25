@@ -108,8 +108,8 @@ it('blocks authenticated users without an allowed role', function () {
 });
 
 it('serves the payload from the web root, outside the storage symlink', function () {
-    expect(AgentController::payloadPath())->toBe(public_path('agent/philobooth-dslr-agent.exe'))
-        ->and(AgentController::payloadUrl())->toEndWith('/agent/philobooth-dslr-agent.exe');
+    expect(AgentController::payloadPath())->toBe(public_path('agent/philobooth-booth.exe'))
+        ->and(AgentController::payloadUrl())->toEndWith('/agent/philobooth-booth.exe');
 });
 
 it('publishes the payload to the public disk and reports its hash', function () {

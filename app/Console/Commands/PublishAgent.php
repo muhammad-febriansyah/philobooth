@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
- * Puts a freshly built kiosk agent in place for operators to download.
+ * Puts a freshly built Philobooth Booth app in place for operators to download.
  *
  * The payload (the large single-file exe) goes under `public/` so the web server
  * serves it statically, and the installer goes on the private `local` disk so
@@ -33,11 +33,11 @@ class PublishAgent extends Command
         {--payload-sha256= : Expected SHA-256 from the trusted build manifest}
         {--installer-sha256= : Expected SHA-256 from the trusted build manifest}';
 
-    protected $description = 'Publish the built kiosk camera agent for operators to download';
+    protected $description = 'Publish the built Philobooth Booth app for operators to download';
 
-    private const DEFAULT_PAYLOAD_FILE = 'dslr-agent/bin/Release/net8.0-windows/win-x64/publish/philobooth-dslr-agent.exe';
+    private const DEFAULT_PAYLOAD_FILE = 'dslr-agent/bin/Release/net8.0-windows/win-x64/publish/philobooth-booth.exe';
 
-    private const DEFAULT_INSTALLER_FILE = 'dslr-agent/installer/Output/philobooth-camera-setup.exe';
+    private const DEFAULT_INSTALLER_FILE = 'dslr-agent/installer/Output/philobooth-booth-setup.exe';
 
     public function handle(): int
     {
@@ -94,9 +94,10 @@ class PublishAgent extends Command
         $this->newLine();
         $this->line('Compile the installer with:');
         $this->line(sprintf(
-            '  ISCC installer\philobooth-agent.iss /DPayloadUrl="%s" /DPayloadSha256="%s"',
+            '  ISCC installer\philobooth-agent.iss /DPayloadUrl="%s" /DPayloadSha256="%s" /DPayloadSize=%d',
             $url,
-            $sourceHash
+            $sourceHash,
+            filesize($source),
         ));
         $this->newLine();
 
@@ -110,7 +111,7 @@ class PublishAgent extends Command
 
         if ($expectedHash === null) {
             $this->components->error(
-                'The --installer-sha256 value from philobooth-camera-checksums.txt is required.'
+                'The --installer-sha256 value from philobooth-booth-checksums.txt is required.'
             );
 
             return self::FAILURE;

@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<title>Panduan Deploy — Philobooth Camera Agent</title>
+<title>Panduan Deploy — Philobooth Booth</title>
 <style>
     @page { size: A4; margin: 18mm 16mm; }
     * { box-sizing: border-box; }
@@ -66,21 +66,20 @@
     <div class="cover">
         <div class="eyebrow">Philobooth · Dokumentasi Teknis</div>
         <h1>Panduan Deploy &amp; Instalasi</h1>
-        <div class="sub">Philobooth Camera Agent — kontrol DSLR &amp; printer untuk booth</div>
+        <div class="sub">Philobooth Booth — WebView kiosk, DSLR, dan printer dalam satu aplikasi</div>
         <div class="meta">Versi 1.0 · Untuk developer/deployer &amp; operator booth · philobooth.id</div>
     </div>
 
     <h2><span class="n">0</span> Cara kerja singkat</h2>
-    <p>Philobooth berbasis web. Browser tidak bisa mengakses kamera USB atau printer secara langsung,
-    jadi ada satu program kecil (<b>agent</b>) yang diinstall di PC booth. Web memerintah agent lewat
-    <code>http://localhost:5000</code>; agent yang mengendalikan kamera &amp; printer.</p>
+    <p>Philobooth berbasis web. Aplikasi Windows membuka UI production melalui WebView2 dan menjalankan
+    bridge lokal di <code>http://localhost:5000</code> untuk mengendalikan kamera &amp; printer.</p>
 
     <div class="diagram">philobooth.id  (web, sudah production)
    ├─ Dashboard admin  →  config kamera &amp; printer, tombol Download aplikasi
-   └─ Kiosk UI (browser booth)
+   └─ Kiosk UI (WebView2 di aplikasi booth)
             │  HTTP localhost:5000
             ▼
-     philobooth-dslr-agent.exe  (di PC booth)
+     philobooth-booth.exe  (di PC booth)
             ├─ Kamera  →  Canon/Nikon (PTP/USB)
             ├─ Printer →  Windows print spooler
             └─ Tanpa kamera → fallback webcam</div>
@@ -104,7 +103,7 @@
     <p>Perlu <b>.NET 8 SDK</b>. Target default sudah <code>net8.0-windows</code>:</p>
     <pre>cd dslr-agent
 dotnet publish -c Release
-<span class="c"># -> bin\Release\net8.0-windows\win-x64\publish\philobooth-dslr-agent.exe</span></pre>
+<span class="c"># -> bin\Release\net8.0-windows\win-x64\publish\philobooth-booth.exe</span></pre>
     <p>Hasilnya <b>single-file self-contained</b> (~181 MB) — jalan tanpa perlu install .NET di PC booth.</p>
 
     <h3>A.2 — Cross-build dari macOS / Linux (opsional)</h3>
@@ -133,10 +132,10 @@ dotnet publish -c Release -p:TargetFramework=net8.0-windows --no-restore</pre>
         <li>Compile skrip yang sudah disediakan:</li>
     </ol>
     <pre>ISCC installer\philobooth-agent.iss \
-  /DPayloadUrl="https://.../philobooth-dslr-agent.exe" \
+  /DPayloadUrl="https://.../philobooth-booth.exe" \
   /DPayloadSha256="&lt;64 karakter SHA-256&gt;" \
   /DPayloadSize=&lt;ukuran payload dalam byte&gt;
-<span class="c"># -> installer\Output\philobooth-camera-setup.exe</span></pre>
+<span class="c"># -> installer\Output\philobooth-booth-setup.exe</span></pre>
     <p>Installer ini menggunakan downloader bawaan Inno Setup, memverifikasi ukuran dan SHA-256
     payload, membuat shortcut Start Menu, menyediakan <b>auto-start saat Windows menyala</b>
     (opsional, ada centangnya), menutup agent lama saat update, dan menjalankan agent setelah install.</p>
@@ -146,12 +145,12 @@ dotnet publish -c Release -p:TargetFramework=net8.0-windows --no-restore</pre>
     <h2><span class="n">C</span> Deploy ke server (supaya tombol dashboard nyala)</h2>
     <p>Dashboard hanya boleh menyajikan installer kecil, bukan agent mentah ~180 MB. Jalankan
         workflow GitHub Actions <code>agent-installer</code>, download artifact installer beserta
-        <code>philobooth-camera-checksums.txt</code>, lalu publish dengan checksum tepercaya:</p>
+        <code>philobooth-booth-checksums.txt</code>, lalu publish dengan checksum tepercaya:</p>
     <pre>php artisan agent:publish --installer \
-  --installer-file=philobooth-camera-setup.exe \
+  --installer-file=philobooth-booth-setup.exe \
   --installer-sha256=&lt;installer_sha256 dari manifest&gt;</pre>
     <p>File tervalidasi akan dipasang secara atomik ke:</p>
-    <pre>storage/app/private/agent/philobooth-camera-setup.exe</pre>
+    <pre>storage/app/private/agent/philobooth-booth-setup.exe</pre>
     <div class="callout">
         Root disk <code>local</code> di Laravel 11+ adalah <code>storage/app/private</code>
         (bukan <code>storage/app</code>). Selama file belum ada, tombol tampil
@@ -164,17 +163,17 @@ dotnet publish -c Release -p:TargetFramework=net8.0-windows --no-restore</pre>
     <h2><span class="n">D</span> Install di PC booth (operator)</h2>
     <ol>
         <li>Buka <b>philobooth.id</b> → login → Dashboard → klik <b>Download aplikasi</b>
-            (atau jalankan <code>philobooth-camera-setup.exe</code> langsung).</li>
-        <li>Jalankan / install (next-next-finish). Agent muncul sebagai <b>ikon di tray</b> dekat jam —
-            tidak ada jendela hitam.</li>
+            (atau jalankan <code>philobooth-booth-setup.exe</code> langsung).</li>
+        <li>Jalankan / install (next-next-finish). Menu booth terbuka layar penuh dan ikon kontrol
+            tersedia di tray dekat jam.</li>
         <li>Colok <b>DSLR</b> ke PC pakai kabel USB (langsung, bukan lewat hub). Set kamera ke mode
             <b>PTP</b>, nyalakan, posisi mode foto.</li>
         <li>Colok <b>printer</b>, pastikan sudah terpasang di Windows.</li>
-        <li>Buka kiosk → pilih mode <b>DSLR</b>. Indikator harus <b>hijau: “Kamera terhubung”</b>.</li>
+        <li>Di aplikasi booth, pilih mode <b>DSLR</b>. Indikator harus <b>hijau: “Kamera terhubung”</b>.</li>
     </ol>
     <div class="callout">
-        Web di <code>https</code> memanggil <code>http://localhost:5000</code>. Chrome akan meminta izin
-        “Local Network” <b>sekali</b> — klik <b>Izinkan</b>. Agent sudah mengirim header yang diperlukan.
+        WebView2 di <code>https</code> memanggil <code>http://localhost:5000</code>. Bridge lokal sudah
+        membatasi origin ke domain Philobooth dan mengirim header private-network yang diperlukan.
     </div>
 </section>
 
@@ -220,7 +219,7 @@ dotnet publish -c Release -p:TargetFramework=net8.0-windows --no-restore</pre>
             <td>Kamera belum mode PTP; kabel USB hanya untuk charge (ganti kabel data); lewat hub
             (colok langsung); atau <b>EOS Utility</b> mengunci kamera (tutup total).</td></tr>
         <tr><td>Web tidak bisa panggil localhost</td>
-            <td>Chrome belum diizinkan “Local Network”. Muat ulang, klik Izinkan. Pastikan agent versi
+            <td>WebView2 belum bisa menjangkau bridge lokal. Muat ulang aplikasi. Pastikan versi
             terbaru (header Private Network Access sudah ada).</td></tr>
         <tr><td>Canon terdeteksi di Explorer tapi app tidak lihat</td>
             <td>Kamera Canon generasi baru (R-series) butuh <b>EDSDK</b> (Bagian H). Canon lama biasanya
@@ -246,7 +245,7 @@ dotnet publish -c Release -p:TargetFramework=net8.0-windows --no-restore</pre>
     </ol>
     <p>Kode <code>EdsdkCameraService</code> sudah disiapkan (di-gate off secara default). Tetap wajib
     diverifikasi di Windows + kamera Canon asli (tabel nilai ISO/shutter/aperture, alur capture).</p>
-    <div class="foot">Philobooth Camera Agent — dokumentasi ini menyertai repo di folder
+    <div class="foot">Philobooth Booth — dokumentasi ini menyertai repo di folder
         <code>dslr-agent/</code>. Untuk detail HTTP API &amp; opsi build, lihat <code>dslr-agent/README.md</code>.</div>
 </section>
 

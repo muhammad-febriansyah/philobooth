@@ -1,6 +1,6 @@
 name: agent-installer
 
-# Builds the kiosk camera agent and its installer on a Windows runner, because
+# Builds the complete kiosk WebView + camera/printer app and its installer,
 # both the .NET Windows target and Inno Setup need Windows. Run it by hand from
 # the Actions tab.
 #
@@ -12,8 +12,8 @@ name: agent-installer
 #
 # Afterwards, publish the installer so the dashboard button serves it:
 #   php artisan agent:publish --installer \
-#     --installer-file=philobooth-camera-setup.exe \
-#     --installer-sha256=<value from philobooth-camera-checksums.txt>
+#     --installer-file=philobooth-booth-setup.exe \
+#     --installer-sha256=<value from philobooth-booth-checksums.txt>
 
 on:
   workflow_dispatch:
@@ -70,14 +70,28 @@ jobs:
         working-directory: dslr-agent
         run: dotnet publish -c Release -f net8.0-windows -r win-x64 --self-contained true
 
+      - name: Download and verify WebView2 Runtime bootstrapper
+        shell: pwsh
+        run: |
+          $bootstrapper = 'dslr-agent/installer/MicrosoftEdgeWebView2Setup.exe'
+          Invoke-WebRequest `
+            -Uri 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' `
+            -OutFile $bootstrapper `
+            -MaximumRedirection 10
+
+          $signature = Get-AuthenticodeSignature $bootstrapper
+          if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'Microsoft Corporation') {
+            throw "Invalid WebView2 bootstrapper signature: $($signature.Status) $($signature.SignerCertificate.Subject)"
+          }
+
       - name: Smoke test the published Windows app
         shell: pwsh
         env:
           Camera__Mode: Mock
         run: |
-          $exe = Resolve-Path 'dslr-agent/bin/Release/net8.0-windows/win-x64/publish/philobooth-dslr-agent.exe'
+          $exe = Resolve-Path 'dslr-agent/bin/Release/net8.0-windows/win-x64/publish/philobooth-booth.exe'
           $capture = Join-Path $env:RUNNER_TEMP 'philobooth-agent-smoke.jpg'
-          $process = Start-Process -FilePath $exe -PassThru
+          $process = Start-Process -FilePath $exe -ArgumentList '--headless' -PassThru
 
           try {
             $health = $null
@@ -127,6 +141,11 @@ jobs:
             }
 
             Invoke-RestMethod -Uri 'http://localhost:5000/printers' -TimeoutSec 5 | Out-Null
+
+            $appInfo = Invoke-RestMethod -Uri 'http://localhost:5000/app-info' -TimeoutSec 5
+            if ($appInfo.ui -ne 'webview2' -or $appInfo.boothUrl -ne 'https://philobooth.id/kiosk/welcome') {
+              throw "Unexpected booth app info: $($appInfo | ConvertTo-Json -Compress)"
+            }
           } finally {
             if (-not $process.HasExited) {
               Stop-Process -Id $process.Id -Force
@@ -141,10 +160,10 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          $exe = 'dslr-agent/bin/Release/net8.0-windows/win-x64/publish/philobooth-dslr-agent.exe'
+          $exe = 'dslr-agent/bin/Release/net8.0-windows/win-x64/publish/philobooth-booth.exe'
           $hash = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLower()
           $tag = "agent-v$env:VERSION"
-          $url = "${{ github.server_url }}/${{ github.repository }}/releases/download/$tag/philobooth-dslr-agent.exe"
+          $url = "${{ github.server_url }}/${{ github.repository }}/releases/download/$tag/philobooth-booth.exe"
           $size = (Get-Item $exe).Length
           $sizeMb = [math]::Round($size / 1MB, 1)
 
@@ -174,7 +193,7 @@ jobs:
             "/DPayloadSize=$env:PAYLOAD_SIZE" `
             "/DAppVersion=$env:APP_VERSION"
           if ($LASTEXITCODE -ne 0) { throw 'ISCC failed' }
-          $setup = 'installer\Output\philobooth-camera-setup.exe'
+          $setup = 'installer\Output\philobooth-booth-setup.exe'
           $sizeMb = [math]::Round((Get-Item $setup).Length / 1MB, 1)
           "Installer: $sizeMb MB" >> $env:GITHUB_STEP_SUMMARY
 
@@ -183,25 +202,25 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          $payload = 'dslr-agent/bin/Release/net8.0-windows/win-x64/publish/philobooth-dslr-agent.exe'
-          $installer = 'dslr-agent/installer/Output/philobooth-camera-setup.exe'
+          $payload = 'dslr-agent/bin/Release/net8.0-windows/win-x64/publish/philobooth-booth.exe'
+          $installer = 'dslr-agent/installer/Output/philobooth-booth-setup.exe'
           $payloadHash = (Get-FileHash $payload -Algorithm SHA256).Hash.ToLower()
           $installerHash = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLower()
           $manifest = @(
             "version=$env:VERSION"
-            "payload_file=philobooth-dslr-agent.exe"
+            "payload_file=philobooth-booth.exe"
             "payload_size=$((Get-Item $payload).Length)"
             "payload_sha256=$payloadHash"
-            "installer_file=philobooth-camera-setup.exe"
+            "installer_file=philobooth-booth-setup.exe"
             "installer_size=$((Get-Item $installer).Length)"
             "installer_sha256=$installerHash"
           )
-          $manifest | Set-Content -Encoding ascii philobooth-camera-checksums.txt
+          $manifest | Set-Content -Encoding ascii philobooth-booth-checksums.txt
           "Installer SHA-256: ``$installerHash``" >> $env:GITHUB_STEP_SUMMARY
 
           New-Item -ItemType Directory -Force dist | Out-Null
-          Copy-Item $installer dist/philobooth-camera-setup.exe
-          Copy-Item philobooth-camera-checksums.txt dist/philobooth-camera-checksums.txt
+          Copy-Item $installer dist/philobooth-booth-setup.exe
+          Copy-Item philobooth-booth-checksums.txt dist/philobooth-booth-checksums.txt
 
       # Both files go on the release: the payload because the installer fetches
       # it from there, the installer so it can be downloaded without digging
@@ -210,18 +229,20 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.payload.outputs.tag }}
-          name: Philobooth Camera ${{ inputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: Philobooth Booth ${{ inputs.version }}
           body: |
-            Aplikasi kamera untuk PC booth (Windows 10/11, 64-bit).
+            Aplikasi booth lengkap untuk Windows 10/11 64-bit: WebView kiosk,
+            kamera DSLR, dan printer lokal.
 
-            Operator cukup mengunduh `philobooth-camera-setup.exe` — installer
+            Operator cukup mengunduh `philobooth-booth-setup.exe` — installer
             akan mengunduh sisanya sendiri.
 
             SHA-256 payload: `${{ steps.payload.outputs.sha256 }}`
           files: |
-            dslr-agent/bin/Release/net8.0-windows/win-x64/publish/philobooth-dslr-agent.exe
-            dslr-agent/installer/Output/philobooth-camera-setup.exe
-            philobooth-camera-checksums.txt
+            dslr-agent/bin/Release/net8.0-windows/win-x64/publish/philobooth-booth.exe
+            dslr-agent/installer/Output/philobooth-booth-setup.exe
+            philobooth-booth-checksums.txt
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4

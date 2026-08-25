@@ -1,18 +1,18 @@
-# Philobooth DSLR Agent
+# Philobooth Booth for Windows
 
-Headless local HTTP service that lets the kiosk browser control a tethered
-DSLR. The browser cannot touch a USB camera directly, so this agent runs on the
-kiosk machine, drives the camera, and exposes a small HTTP API the kiosk
-frontend calls (`resources/js/lib/dslr-agent.ts`).
+Windows desktop booth application. It opens the customer menu in an embedded
+WebView2 at `https://philobooth.id/kiosk/welcome`, controls the tethered DSLR,
+and prints through the local Windows printer service. Operators launch one app;
+the local HTTP bridge runs behind the embedded booth UI.
 
 ```
-[React kiosk] --HTTP localhost:5000--> [this agent] --PTP/USB--> [DSLR]
+[WebView2: philobooth.id] --HTTP localhost:5000--> [local bridge] --> [DSLR/printer]
 ```
 
 ## Platforms
 
-- **Windows (production kiosk):** real DSLR control + printing + a system-tray
-  icon. Two camera engines:
+- **Windows (production kiosk):** full-screen WebView2 booth + real DSLR control
+  + printing + a system-tray icon. Two camera engines:
   - `CameraControl.Devices` (digiCamControl) — default. Nikon well supported,
     Canon partial, Sony limited.
   - Canon **EDSDK** — best Canon support, opt-in build. See `edsdk/README.md`.
@@ -36,10 +36,10 @@ Windows:
 
 ```bash
 dotnet publish -c Release
-# -> bin/Release/net8.0-windows/win-x64/publish/philobooth-dslr-agent.exe
+# -> bin/Release/net8.0-windows/win-x64/publish/philobooth-booth.exe
 ```
 
-The exe runs as a tray app (no console window) and shows an icon near the clock.
+The exe opens the booth menu full screen and also shows an icon near the clock.
 For Canon EDSDK support add `-p:IncludeEdsdk=true` (see `edsdk/README.md`).
 
 ### Cross-build the exe from macOS/Linux
@@ -65,8 +65,8 @@ agent executable. Run the `agent-installer` GitHub Actions workflow with a new
 SemVer version, then download both files from its `installer` artifact:
 
 ```
-philobooth-camera-setup.exe
-philobooth-camera-checksums.txt
+philobooth-booth-setup.exe
+philobooth-booth-checksums.txt
 ```
 
 Read `installer_sha256` from the checksum file and publish the installer on the
@@ -74,12 +74,12 @@ Laravel server:
 
 ```bash
 php artisan agent:publish --installer \
-  --installer-file=philobooth-camera-setup.exe \
+  --installer-file=philobooth-booth-setup.exe \
   --installer-sha256=<installer_sha256>
 ```
 
 The command verifies the Windows executable and trusted checksum, copies it
-atomically to `storage/app/private/agent/philobooth-camera-setup.exe`, and only
+atomically to `storage/app/private/agent/philobooth-booth-setup.exe`, and only
 then makes the dashboard button available.
 
 ### Installer (operator-friendly)
@@ -92,13 +92,17 @@ payload URL, hash, and byte size:
 
 ```bash
 dotnet publish -c Release
-ISCC installer\philobooth-agent.iss /DPayloadUrl="https://.../philobooth-dslr-agent.exe" /DPayloadSha256="<64 hex characters>" /DPayloadSize=<size in bytes>
-# -> installer\Output\philobooth-camera-setup.exe
+ISCC installer\philobooth-agent.iss /DPayloadUrl="https://.../philobooth-booth.exe" /DPayloadSha256="<64 hex characters>" /DPayloadSize=<size in bytes>
+# -> installer\Output\philobooth-booth-setup.exe
 ```
 
 Plug in the DSLR (set to PTP mode), run the installer, then open the kiosk.
 
 ## Config
+
+`appsettings.json` → `Booth:Url` controls the embedded page and defaults to
+`https://philobooth.id/kiosk/welcome`. `Booth:AllowedOrigins` controls which web
+origins may call the protected localhost bridge.
 
 `appsettings.json` → `Camera:Mode`:
 

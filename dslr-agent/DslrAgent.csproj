@@ -4,7 +4,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>DslrAgent</RootNamespace>
-    <AssemblyName>philobooth-dslr-agent</AssemblyName>
+    <AssemblyName>philobooth-booth</AssemblyName>
     <InvariantGlobalization>true</InvariantGlobalization>
 
     <!-- Default target: the real Windows kiosk build (net8.0-windows) on
@@ -21,7 +21,7 @@
   <!-- Windows kiosk target: real DSLR engine, printing (System.Drawing), and the
        system-tray icon. Keyed on the TFM (not the build OS) so it can be
        cross-built anywhere. Produces a single self-contained
-       philobooth-dslr-agent.exe. -->
+       philobooth-booth.exe. -->
   <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
     <UseWindowsForms>true</UseWindowsForms>
     <OutputType>WinExe</OutputType>
@@ -39,6 +39,7 @@
        Windows-only, drives cameras over PTP/USB. -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
     <PackageReference Include="CameraControl.Devices" Version="2.0.73-beta" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4129.50" />
   </ItemGroup>
 
   <!-- Optional Canon EDSDK backend (best Canon support). Off by default so the

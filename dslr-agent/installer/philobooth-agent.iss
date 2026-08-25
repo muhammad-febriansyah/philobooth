@@ -1,4 +1,4 @@
-; Inno Setup script for the Philobooth Camera agent.
+; Inno Setup script for the Philobooth Booth desktop application.
 ;
 ; This produces a small "stub" installer (a few MB) rather than one that carries
 ; the ~180 MB agent exe inside it. The operator downloads the small file — which
@@ -23,10 +23,10 @@
 ;   php artisan agent:publish --payload   (from the Laravel app; prints URL + hash)
 ;   ISCC installer\philobooth-agent.iss /DPayloadUrl="https://..." /DPayloadSha256="..." /DPayloadSize=123456789
 ;
-; Produces installer\Output\philobooth-camera-setup.exe.
+; Produces installer\Output\philobooth-booth-setup.exe.
 
-#define AppName "Philobooth Camera"
-#define AppExe "philobooth-dslr-agent.exe"
+#define AppName "Philobooth Booth"
+#define AppExe "philobooth-booth.exe"
 
 ; Overridable at compile time via ISCC's /DAppVersion=...
 #ifndef AppVersion
@@ -76,7 +76,7 @@ VersionInfoVersion={#AppVersion}
 DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
-OutputBaseFilename=philobooth-camera-setup
+OutputBaseFilename=philobooth-booth-setup
 Compression=lzma2
 SolidCompression=yes
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -96,9 +96,16 @@ Name: "autostart"; Description: "Jalankan otomatis saat Windows menyala"; GroupD
 ; expected size and SHA-256, then atomically activates the final filename. On a
 ; failed connection the standard installer UI offers Retry or Cancel.
 Source: "{#PayloadUrl}"; DestDir: "{app}"; DestName: "{#AppExe}"; Hash: "{#PayloadSha256}"; ExternalSize: {#PayloadSize}; Flags: external download ignoreversion
-; EDSDK / native DLLs that sit next to the exe (only when present). Small enough
-; to carry inside the installer.
+; WebView2 loader and optional camera native DLLs sit beside the single-file exe.
 Source: "{#PublishDir}\*.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+; Keep the production URL configurable without requiring a rebuild.
+Source: "{#PublishDir}\appsettings.json"; DestDir: "{app}"; Flags: onlyifdoesntexist
+; Official Microsoft bootstrapper is downloaded and Authenticode-verified by CI.
+Source: "MicrosoftEdgeWebView2Setup.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall
+
+[InstallDelete]
+; Remove the payload name used by camera-only releases with the same AppId.
+Type: files; Name: "{app}\philobooth-dslr-agent.exe"
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"
@@ -107,4 +114,5 @@ Name: "{group}\Uninstall {#AppName}"; Filename: "{uninstallexe}"
 Name: "{autostartup}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: autostart
 
 [Run]
+Filename: "{tmp}\MicrosoftEdgeWebView2Setup.exe"; Parameters: "/silent /install"; StatusMsg: "Memasang komponen tampilan Microsoft WebView2..."; Flags: runhidden waituntilterminated
 Filename: "{app}\{#AppExe}"; Description: "Jalankan {#AppName} sekarang"; Flags: nowait postinstall skipifsilent

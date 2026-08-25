@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * Serves the kiosk camera agent for operators to install on the booth PC.
+ * Serves the complete kiosk app for operators to install on the booth PC.
  *
  * The download is split in two so a booth's flaky connection can't produce a
  * half-written exe (Windows reports a truncated PE as "This app can't run on
@@ -32,16 +32,16 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 class AgentController extends Controller
 {
     /** Path on the private `local` disk where the built installer is placed. */
-    public const INSTALLER_PATH = 'agent/philobooth-camera-setup.exe';
+    public const INSTALLER_PATH = 'agent/philobooth-booth-setup.exe';
 
     /** Trusted size and SHA-256 written by `agent:publish`. */
-    public const INSTALLER_MANIFEST_PATH = 'agent/philobooth-camera-setup.json';
+    public const INSTALLER_MANIFEST_PATH = 'agent/philobooth-booth-setup.json';
 
     /** Filename of the large agent payload on the public `agent` disk. */
-    public const PAYLOAD_PATH = 'philobooth-dslr-agent.exe';
+    public const PAYLOAD_PATH = 'philobooth-booth.exe';
 
     /** Filename the operator sees in their browser's download list. */
-    public const DOWNLOAD_FILENAME = 'philobooth-camera-setup.exe';
+    public const DOWNLOAD_FILENAME = 'philobooth-booth-setup.exe';
 
     public function download(): BinaryFileResponse|RedirectResponse
     {

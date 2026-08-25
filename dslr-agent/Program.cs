@@ -1,6 +1,35 @@
 using DslrAgent.Models;
 using DslrAgent.Services;
 
+// Resolve appsettings.json beside the installed executable even when Windows
+// launches the booth from a shortcut with a different working directory.
+Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+
+#if WINDOWS
+var headless = args.Any(argument =>
+    string.Equals(argument, "--headless", StringComparison.OrdinalIgnoreCase));
+Mutex? instanceMutex = null;
+
+if (!headless)
+{
+    instanceMutex = new Mutex(
+        initiallyOwned: true,
+        name: @"Local\PhiloboothBooth",
+        createdNew: out var isFirstInstance);
+
+    if (!isFirstInstance)
+    {
+        System.Windows.Forms.MessageBox.Show(
+            "Philobooth Booth sudah berjalan. Buka melalui ikon di dekat jam Windows.",
+            "Philobooth Booth",
+            System.Windows.Forms.MessageBoxButtons.OK,
+            System.Windows.Forms.MessageBoxIcon.Information);
+        instanceMutex.Dispose();
+        return;
+    }
+}
+#endif
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Listen on the port the kiosk frontend expects (VITE_DSLR_AGENT_URL).
@@ -8,10 +37,23 @@ builder.WebHost.UseUrls("http://localhost:5000");
 
 // The kiosk runs in a browser on a different origin, so it needs CORS to call
 // this local agent. Dev allows any origin; tighten to the kiosk URL in prod.
+var allowedOrigins = builder.Configuration
+    .GetSection("Booth:AllowedOrigins")
+    .GetChildren()
+    .Select(item => item.Value)
+    .Where(value => !string.IsNullOrWhiteSpace(value))
+    .Cast<string>()
+    .ToArray();
+
+if (allowedOrigins.Length == 0)
+{
+    allowedOrigins = ["https://philobooth.id", "http://localhost:8000"];
+}
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod());
 });
 
 // Pick the camera backend. Default: real DSLR on Windows, mock everywhere else.
@@ -79,6 +121,14 @@ app.MapGet("/health", (ICameraService cam) =>
         backend = cam.Backend,
         error = cam.Error,
     }));
+
+app.MapGet("/app-info", () => Results.Ok(new
+{
+    name = "Philobooth Booth",
+    ui = "webview2",
+    boothUrl = builder.Configuration["Booth:Url"]
+        ?? "https://philobooth.id/kiosk/welcome",
+}));
 
 app.MapGet("/settings", (ICameraService cam) =>
 {
@@ -162,7 +212,17 @@ app.MapPost("/print", async (HttpRequest req, IPrinterService printer) =>
 });
 
 #if WINDOWS
-DslrAgent.Tray.Start(app);
+if (!headless)
+{
+    DslrAgent.Tray.Start(
+        app,
+        builder.Configuration["Booth:Url"]
+            ?? "https://philobooth.id/kiosk/welcome");
+}
 #endif
 
 app.Run();
+
+#if WINDOWS
+instanceMutex?.Dispose();
+#endif
