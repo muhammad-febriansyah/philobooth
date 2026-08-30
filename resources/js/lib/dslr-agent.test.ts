@@ -62,6 +62,13 @@ describe('createMockAgent', () => {
         expect(status.cameraConnected).toBe(true);
         expect(status.backend).toBe('mock');
     });
+
+    it('reports connected after a connect request', async () => {
+        await expect(createMockAgent(fakeGrab).connect()).resolves.toMatchObject({
+            cameraConnected: true,
+            backend: 'mock',
+        });
+    });
 });
 
 describe('createHttpAgent', () => {
@@ -166,6 +173,32 @@ describe('createHttpAgent', () => {
         expect(status.cameraConnected).toBe(false);
         expect(status.cameraModel).toBeNull();
         expect(status.error).toBe('Driver kamera gagal dimuat');
+    });
+
+    it('connects through the local camera endpoint', async () => {
+        const fetchMock = vi.fn(
+            async () =>
+                new Response(
+                    JSON.stringify({
+                        ok: true,
+                        cameraConnected: true,
+                        cameraModel: 'Canon EOS 750D',
+                        backend: 'digicam',
+                        error: null,
+                    }),
+                    { status: 200 },
+                ),
+        );
+        vi.stubGlobal('fetch', fetchMock);
+
+        const status = await createHttpAgent().connect();
+
+        expect(fetchMock).toHaveBeenCalledWith(
+            'http://localhost:5000/camera/connect',
+            expect.objectContaining({ method: 'POST' }),
+        );
+        expect(status.cameraConnected).toBe(true);
+        expect(status.cameraModel).toBe('Canon EOS 750D');
     });
 
     it('getStatus reports agent unreachable when fetch throws', async () => {

@@ -22,6 +22,8 @@ public sealed class MockCameraService : ICameraService
 
     public string Backend => "mock";
 
+    public bool Connect() => true;
+
     public Settings GetSettings()
     {
         return new Settings(

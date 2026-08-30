@@ -12,9 +12,9 @@ namespace DslrAgent.Services;
 /// </summary>
 public sealed class DigiCamCameraService : ICameraService, IDisposable
 {
-    private readonly CameraDeviceManager? _manager;
+    private CameraDeviceManager? _manager;
     private readonly ILogger<DigiCamCameraService> _logger;
-    private readonly string? _initializationError;
+    private string? _initializationError;
 
     public DigiCamCameraService(ILogger<DigiCamCameraService> logger)
     {
@@ -22,9 +22,7 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
 
         try
         {
-            _manager = new CameraDeviceManager();
-            // Detect already-connected cameras + hotplug.
-            _manager.ConnectToCamera();
+            Connect();
         }
         catch (Exception exception)
         {
@@ -49,6 +47,27 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
     public string Backend => "digicam";
 
     public string? Error => _initializationError;
+
+    public bool Connect()
+    {
+        try
+        {
+            _manager?.CloseAll();
+            _manager = new CameraDeviceManager();
+            _manager.ConnectToCamera();
+            _initializationError = null;
+
+            return IsAvailable;
+        }
+        catch (Exception exception)
+        {
+            _initializationError =
+                "Driver kamera gagal dimuat. Tutup EOS Utility/aplikasi kamera lain, cabut-pasang USB, lalu buka ulang Philobooth Camera.";
+            _logger.LogError(exception, "Failed to connect to the camera");
+
+            return false;
+        }
+    }
 
     public Settings GetSettings()
     {

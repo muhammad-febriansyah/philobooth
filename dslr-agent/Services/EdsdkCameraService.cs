@@ -91,7 +91,7 @@ public sealed class EdsdkCameraService : ICameraService, IDisposable
         if (EDSDK.EdsInitializeSDK() == EDSDK.EDS_ERR_OK)
         {
             _sdkInitialized = true;
-            Connect();
+            ConnectCamera();
         }
         else
         {
@@ -100,6 +100,28 @@ public sealed class EdsdkCameraService : ICameraService, IDisposable
     }
 
     public bool IsAvailable => _camera != IntPtr.Zero;
+
+    public bool Connect()
+    {
+        lock (_gate)
+        {
+            if (!_sdkInitialized)
+            {
+                return false;
+            }
+
+            if (_camera != IntPtr.Zero)
+            {
+                EDSDK.EdsCloseSession(_camera);
+                EDSDK.EdsRelease(_camera);
+                _camera = IntPtr.Zero;
+            }
+
+            ConnectCamera();
+
+            return IsAvailable;
+        }
+    }
 
     public string Backend => "edsdk";
 
@@ -118,7 +140,7 @@ public sealed class EdsdkCameraService : ICameraService, IDisposable
         }
     }
 
-    private void Connect()
+    private void ConnectCamera()
     {
         if (EDSDK.EdsGetCameraList(out var list) != EDSDK.EDS_ERR_OK)
         {

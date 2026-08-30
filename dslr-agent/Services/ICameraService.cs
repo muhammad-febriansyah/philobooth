@@ -33,6 +33,8 @@ public interface ICameraService
     /// </summary>
     string? Error => null;
 
+    bool Connect();
+
     /// <summary>Read current settings + allowed values from the camera.</summary>
     Settings GetSettings();
 

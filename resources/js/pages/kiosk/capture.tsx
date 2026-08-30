@@ -182,6 +182,28 @@ export default function KioskCapture({ frame }: Props) {
         }
     }
 
+    async function connectDslr() {
+        if (!dslrAgentRef.current) {
+            return;
+        }
+
+        setDslrBusy(true);
+
+        try {
+            const status = await dslrAgentRef.current.connect();
+            setDslrStatus(status);
+
+            if (status.cameraConnected) {
+                setDslrSettings(await dslrAgentRef.current.getSettings());
+            }
+        } catch (err) {
+            console.warn('DSLR connection failed:', err);
+            await refreshDslrStatus();
+        } finally {
+            setDslrBusy(false);
+        }
+    }
+
     async function selectCameraSource(source: 'webcam' | 'dslr') {
         setCameraSource(source);
 
@@ -1092,7 +1114,8 @@ export default function KioskCapture({ frame }: Props) {
                         {cameraSource === 'dslr' && (
                             <DslrStatusBanner
                                 status={dslrStatus}
-                                onRetry={refreshDslrStatus}
+                                onConnect={connectDslr}
+                                busy={dslrBusy}
                             />
                         )}
 
@@ -1628,10 +1651,12 @@ function FramePreview({
 
 function DslrStatusBanner({
     status,
-    onRetry,
+    onConnect,
+    busy = false,
 }: {
     status: DslrStatus | null;
-    onRetry: () => void;
+    onConnect: () => void;
+    busy?: boolean;
 }) {
     // Three states operators actually need to tell apart.
     const view =
@@ -1708,7 +1733,8 @@ function DslrStatusBanner({
             {showRetry && (
                 <button
                     type="button"
-                    onClick={onRetry}
+                    onClick={onConnect}
+                    disabled={busy}
                     style={{
                         flexShrink: 0,
                         padding: '6px 12px',
@@ -1718,10 +1744,15 @@ function DslrStatusBanner({
                         color: view.tone,
                         fontSize: 12.5,
                         fontWeight: 700,
-                        cursor: 'pointer',
+                        cursor: busy ? 'wait' : 'pointer',
+                        opacity: busy ? 0.65 : 1,
                     }}
                 >
-                    Coba lagi
+                    {busy
+                        ? 'Menghubungkan…'
+                        : status?.agentReachable
+                          ? 'Hubungkan DSLR'
+                          : 'Coba lagi'}
                 </button>
             )}
         </div>

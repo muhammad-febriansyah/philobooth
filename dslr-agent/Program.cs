@@ -122,6 +122,20 @@ app.MapGet("/health", (ICameraService cam) =>
         error = cam.Error,
     }));
 
+app.MapPost("/camera/connect", (ICameraService cam) =>
+{
+    cam.Connect();
+
+    return Results.Ok(new
+    {
+        ok = true,
+        cameraConnected = cam.IsAvailable,
+        cameraModel = cam.Model,
+        backend = cam.Backend,
+        error = cam.Error,
+    });
+});
+
 app.MapGet("/app-info", () => Results.Ok(new
 {
     name = "Philobooth Booth",

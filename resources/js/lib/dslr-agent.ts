@@ -60,6 +60,8 @@ export interface DslrAgent {
     isAvailable(): Promise<boolean>;
     /** Detailed health snapshot for the kiosk status indicator. */
     getStatus(): Promise<DslrStatus>;
+    /** Ask the local agent to scan USB for a newly connected DSLR. */
+    connect(): Promise<DslrStatus>;
     /** Read current settings + allowed values from the connected camera. */
     getSettings(): Promise<DslrSettings>;
     /** Push a new value for one exposure parameter to the camera. */
@@ -121,6 +123,11 @@ export function createMockAgent(
                 backend: 'mock',
                 error: null,
             };
+        },
+        async connect() {
+            await delay(150);
+
+            return this.getStatus();
         },
         async getSettings() {
             await delay(200);
@@ -208,6 +215,22 @@ export function createHttpAgent(baseUrl = AGENT_BASE_URL): DslrAgent {
                     backend: null,
                     error: null,
                 };
+            }
+        },
+        async connect() {
+            try {
+                const res = await fetch(`${baseUrl}/camera/connect`, {
+                    method: 'POST',
+                    signal: AbortSignal.timeout(10_000),
+                });
+
+                if (!res.ok) {
+                    throw new Error('Failed to connect DSLR');
+                }
+
+                return (await res.json()) as DslrStatus;
+            } catch {
+                return this.getStatus();
             }
         },
         async getSettings() {
