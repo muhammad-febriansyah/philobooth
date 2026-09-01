@@ -19,6 +19,7 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
     private readonly ILogger<DigiCamCameraService> _logger;
     private string? _initializationError;
     private string? _liveViewError;
+    private byte[]? _lastLiveViewImage;
     private bool _liveViewStarted;
 
     public DigiCamCameraService(ILogger<DigiCamCameraService> logger)
@@ -186,7 +187,10 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
 
             _liveViewError = null;
 
-            return output.ToArray();
+            var jpeg = output.ToArray();
+            _lastLiveViewImage = jpeg;
+
+            return jpeg;
         }
         catch (Exception exception)
         {
@@ -239,6 +243,7 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
         CameraDeviceManager? manager = null;
         var restartLiveView = false;
         var handlerSubscribed = false;
+        byte[]? liveViewFallback = null;
         var tcs = new TaskCompletionSource<CaptureResult>(
             TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -267,6 +272,7 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
                 ?? throw new InvalidOperationException(
                     _initializationError ?? "Camera backend is unavailable");
             restartLiveView = _liveViewStarted;
+            liveViewFallback = _lastLiveViewImage?.ToArray();
             manager.PhotoCaptured += Handler;
             handlerSubscribed = true;
 
@@ -285,8 +291,24 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
 
             using (ct.Register(() => tcs.TrySetCanceled(ct)))
             {
-                return await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30), ct);
+                return await tcs.Task.WaitAsync(TimeSpan.FromSeconds(8), ct);
             }
+        }
+        catch (Exception exception) when (
+            !ct.IsCancellationRequested &&
+            liveViewFallback is { Length: > 0 })
+        {
+            // Some older Canon bodies fire the shutter but never deliver the
+            // host-transfer callback through this legacy EDSDK wrapper. The
+            // live-view frame still comes from the DSLR, so use the latest
+            // frame rather than leaving the template slot empty.
+            _logger.LogWarning(
+                exception,
+                "Full-resolution DSLR transfer failed; using the latest live-view frame");
+
+            return new CaptureResult(
+                liveViewFallback,
+                $"capture-preview-{DateTime.Now:yyyyMMdd-HHmmss}.jpg");
         }
         finally
         {
