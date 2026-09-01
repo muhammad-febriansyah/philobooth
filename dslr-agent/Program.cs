@@ -136,6 +136,25 @@ app.MapPost("/camera/connect", (ICameraService cam) =>
     });
 });
 
+app.MapPost("/live-view/start", (ICameraService cam) =>
+    Results.Ok(new { started = cam.StartLiveView() }));
+
+app.MapPost("/live-view/stop", (ICameraService cam) =>
+{
+    cam.StopLiveView();
+
+    return Results.Ok(new { stopped = true });
+});
+
+app.MapGet("/live-view", (ICameraService cam) =>
+{
+    var image = cam.GetLiveViewImage();
+
+    return image is null
+        ? Results.NoContent()
+        : Results.File(image, "image/jpeg");
+});
+
 app.MapGet("/app-info", () => Results.Ok(new
 {
     name = "Philobooth",

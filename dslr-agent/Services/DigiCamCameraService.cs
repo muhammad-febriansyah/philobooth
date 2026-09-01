@@ -2,6 +2,8 @@
 using CameraControl.Devices;
 using CameraControl.Devices.Classes;
 using DslrAgent.Models;
+using System.Drawing;
+using System.Drawing.Imaging;
 
 namespace DslrAgent.Services;
 
@@ -15,6 +17,7 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
     private CameraDeviceManager? _manager;
     private readonly ILogger<DigiCamCameraService> _logger;
     private string? _initializationError;
+    private bool _liveViewStarted;
 
     public DigiCamCameraService(ILogger<DigiCamCameraService> logger)
     {
@@ -71,6 +74,69 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
 
             return false;
         }
+    }
+
+    public bool StartLiveView()
+    {
+        try
+        {
+            Camera.StartLiveView();
+            _liveViewStarted = true;
+
+            return true;
+        }
+        catch (Exception exception)
+        {
+            _logger.LogWarning(exception, "Failed to start DSLR live view");
+
+            return false;
+        }
+    }
+
+    public void StopLiveView()
+    {
+        if (!_liveViewStarted || !IsAvailable)
+        {
+            return;
+        }
+
+        try
+        {
+            Camera.StopLiveView();
+        }
+        catch (Exception exception)
+        {
+            _logger.LogDebug(exception, "Failed to stop DSLR live view");
+        }
+        finally
+        {
+            _liveViewStarted = false;
+        }
+    }
+
+    public byte[]? GetLiveViewImage()
+    {
+        if (!_liveViewStarted || !IsAvailable)
+        {
+            return null;
+        }
+
+        var liveView = Camera.GetLiveViewImage();
+
+        if (liveView?.ImageData is not { Length: > 0 } imageData)
+        {
+            return null;
+        }
+
+        using var input = new MemoryStream(
+            imageData,
+            liveView.ImageDataPosition,
+            imageData.Length - liveView.ImageDataPosition);
+        using var bitmap = new Bitmap(input);
+        using var output = new MemoryStream();
+        bitmap.Save(output, ImageFormat.Jpeg);
+
+        return output.ToArray();
     }
 
     public Settings GetSettings()
@@ -153,6 +219,7 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
 
     public void Dispose()
     {
+        StopLiveView();
         _manager?.CloseAll();
     }
 }

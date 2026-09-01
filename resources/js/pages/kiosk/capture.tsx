@@ -74,6 +74,7 @@ export default function KioskCapture({ frame }: Props) {
     const [dslrSettings, setDslrSettings] = useState<DslrSettings | null>(null);
     const [dslrBusy, setDslrBusy] = useState(false);
     const [dslrStatus, setDslrStatus] = useState<DslrStatus | null>(null);
+    const [dslrLiveViewUrl, setDslrLiveViewUrl] = useState<string | null>(null);
     const [preparingVideo, setPreparingVideo] = useState(false);
 
     const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -96,6 +97,10 @@ export default function KioskCapture({ frame }: Props) {
 
         return () => document.removeEventListener('fullscreenchange', sync);
     }, []);
+
+    // Auto-enter fullscreen as soon as the camera is live — see effect near
+    // `captureReady` below.
+    const autoFsTriedRef = useRef(false);
 
     function toggleCameraFs() {
         if (document.fullscreenElement === cameraBoxRef.current) {
@@ -221,6 +226,8 @@ export default function KioskCapture({ frame }: Props) {
         setCameraSource(source);
 
         if (source === 'webcam') {
+            await dslrAgentRef.current?.stopLiveView();
+            setDslrLiveViewUrl(null);
             stopCamera();
             await startCamera();
         } else {
@@ -231,12 +238,17 @@ export default function KioskCapture({ frame }: Props) {
         if (source === 'dslr' && dslrAgentRef.current) {
             const status = await refreshDslrStatus();
 
-            if (status?.cameraConnected && !dslrSettings) {
+            if (status?.cameraConnected) {
                 setDslrBusy(true);
 
                 try {
-                    const settings = await dslrAgentRef.current.getSettings();
-                    setDslrSettings(settings);
+                    await dslrAgentRef.current.startLiveView();
+
+                    if (!dslrSettings) {
+                        const settings =
+                            await dslrAgentRef.current.getSettings();
+                        setDslrSettings(settings);
+                    }
                 } catch (err) {
                     console.warn('DSLR settings unavailable:', err);
                 } finally {
@@ -257,6 +269,53 @@ export default function KioskCapture({ frame }: Props) {
 
         return () => clearInterval(id);
     }, [cameraSource]);
+
+    // Poll Canon's live-view JPEG while DSLR mode is active.
+    useEffect(() => {
+        if (
+            cameraSource !== 'dslr' ||
+            dslrStatus?.cameraConnected !== true ||
+            !dslrAgentRef.current
+        ) {
+            return;
+        }
+
+        let cancelled = false;
+        let previousUrl: string | null = null;
+
+        const poll = async () => {
+            try {
+                const nextUrl = await dslrAgentRef.current?.getLiveViewFrame();
+
+                if (cancelled || !nextUrl) {
+                    return;
+                }
+
+                if (previousUrl) {
+                    URL.revokeObjectURL(previousUrl);
+                }
+
+                previousUrl = nextUrl;
+                setDslrLiveViewUrl(nextUrl);
+            } catch {
+                // Keep the last good frame while the camera is busy.
+            }
+        };
+
+        poll();
+        const id = setInterval(poll, 250);
+
+        return () => {
+            cancelled = true;
+            clearInterval(id);
+
+            if (previousUrl) {
+                URL.revokeObjectURL(previousUrl);
+            }
+
+            setDslrLiveViewUrl(null);
+        };
+    }, [cameraSource, dslrStatus?.cameraConnected]);
 
     async function changeDslrSetting(key: DslrSettingKey, value: string) {
         if (!dslrAgentRef.current || !dslrSettings) {
@@ -289,6 +348,20 @@ export default function KioskCapture({ frame }: Props) {
         cameraSource === 'dslr'
             ? dslrStatus?.cameraConnected === true && dslrSettings !== null
             : cameraState === 'ready';
+
+    // Auto-enter fullscreen the moment the camera goes live, so the operator
+    // lands straight in the immersive view instead of the small preview.
+    // Browsers only grant this with a live user gesture — if the click that
+    // navigated here already expired, this silently no-ops and the manual
+    // fullscreen button (top-right of the camera box) stays as a fallback.
+    useEffect(() => {
+        if (autoFsTriedRef.current || !captureReady) {
+            return;
+        }
+
+        autoFsTriedRef.current = true;
+        cameraBoxRef.current?.requestFullscreen().catch(() => {});
+    }, [captureReady]);
 
     // --- Capture logic ---
     function startCountdown() {
@@ -450,6 +523,44 @@ export default function KioskCapture({ frame }: Props) {
         setActiveSlot(idx);
     }
 
+    /** Retake the most recently captured photo (last filled slot). */
+    function retakeLast() {
+        const lastFilledIdx = slots.reduce(
+            (acc, s, i) => (s ? i : acc),
+            -1,
+        );
+
+        if (lastFilledIdx === -1 || countdown !== null || processing) {
+            return;
+        }
+
+        retakeSlot(lastFilledIdx);
+    }
+
+    async function goBackToFrameSelect() {
+        if (filledCount > 0) {
+            const ok = await confirmDialog({
+                title: 'Ganti frame?',
+                description:
+                    'Foto yang sudah kamu ambil akan dihapus saat kamu pilih frame baru.',
+                confirmText: 'Ya, ganti frame',
+                cancelText: 'Batal',
+                tone: 'warning',
+                icon: 'frame',
+            });
+
+            if (!ok) {
+                return;
+            }
+        }
+
+        if (document.fullscreenElement) {
+            document.exitFullscreen().catch(() => {});
+        }
+
+        router.visit('/kiosk/frame-select');
+    }
+
     function uploadFallback(e: React.ChangeEvent<HTMLInputElement>) {
         const files = Array.from(e.target.files ?? []).slice(0, totalSlots);
         const next: Slot[] = Array(totalSlots).fill(null);
@@ -594,6 +705,7 @@ export default function KioskCapture({ frame }: Props) {
 
     const filledCount = slots.filter(Boolean).length;
     const allFilled = filledCount === totalSlots && totalSlots > 0;
+    const canRetakeLast = filledCount > 0 && countdown === null && !processing;
 
     // Warn before refresh/close when there are unsaved photos in memory.
     useEffect(() => {
@@ -706,7 +818,19 @@ export default function KioskCapture({ frame }: Props) {
                                 }}
                             />
 
-                            {cameraSource === 'dslr' && (
+                            {cameraSource === 'dslr' && dslrLiveViewUrl && (
+                                <img
+                                    src={dslrLiveViewUrl}
+                                    alt="Live view DSLR"
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover',
+                                    }}
+                                />
+                            )}
+
+                            {cameraSource === 'dslr' && !dslrLiveViewUrl && (
                                 <CenterOverlay>
                                     <Icon name="image" size={42} color="#fff" />
                                     <div
@@ -1043,70 +1167,138 @@ export default function KioskCapture({ frame }: Props) {
                                             />
                                         ))}
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={
-                                            allFilled ? submit : startCountdown
-                                        }
-                                        disabled={
-                                            processing ||
-                                            (allFilled
-                                                ? false
-                                                : !captureReady ||
-                                                  countdown !== null)
-                                        }
+
+                                    <div
                                         style={{
-                                            pointerEvents: 'auto',
-                                            display: 'inline-flex',
+                                            display: 'flex',
                                             alignItems: 'center',
-                                            justifyContent: 'center',
                                             gap: 10,
-                                            padding: '18px 40px',
-                                            borderRadius: 999,
-                                            border: 'none',
-                                            background: allFilled
-                                                ? '#22C55E'
-                                                : 'var(--pb-primary)',
-                                            color: allFilled
-                                                ? '#fff'
-                                                : '#0A0A0A',
-                                            fontSize: 18,
-                                            fontWeight: 800,
-                                            cursor: processing
-                                                ? 'wait'
-                                                : allFilled
-                                                  ? 'pointer'
-                                                  : captureReady &&
-                                                      countdown === null
-                                                    ? 'pointer'
-                                                    : 'not-allowed',
-                                            opacity: processing
-                                                ? 0.7
-                                                : allFilled ||
-                                                    (captureReady &&
-                                                        countdown === null)
-                                                  ? 1
-                                                  : 0.55,
-                                            boxShadow:
-                                                '0 12px 32px rgba(0,0,0,0.45)',
+                                            pointerEvents: 'auto',
                                         }}
                                     >
-                                        <Icon
-                                            name={
+                                        <button
+                                            type="button"
+                                            onClick={goBackToFrameSelect}
+                                            style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: 8,
+                                                padding: '16px 22px',
+                                                borderRadius: 999,
+                                                border: '1.5px solid rgba(255,255,255,0.3)',
+                                                background: 'rgba(10,10,10,0.5)',
+                                                backdropFilter: 'blur(6px)',
+                                                color: '#fff',
+                                                fontSize: 15,
+                                                fontWeight: 700,
+                                                cursor: 'pointer',
+                                            }}
+                                        >
+                                            <Icon
+                                                name="chevron-left"
+                                                size={18}
+                                            />
+                                            Kembali
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={retakeLast}
+                                            disabled={!canRetakeLast}
+                                            title="Ambil ulang foto terakhir"
+                                            style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: 8,
+                                                padding: '16px 22px',
+                                                borderRadius: 999,
+                                                border: '1.5px solid rgba(255,255,255,0.3)',
+                                                background: 'rgba(10,10,10,0.5)',
+                                                backdropFilter: 'blur(6px)',
+                                                color: '#fff',
+                                                fontSize: 15,
+                                                fontWeight: 700,
+                                                cursor: canRetakeLast
+                                                    ? 'pointer'
+                                                    : 'not-allowed',
+                                                opacity: canRetakeLast
+                                                    ? 1
+                                                    : 0.4,
+                                            }}
+                                        >
+                                            <Icon name="refresh" size={18} />
+                                            Retake
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={
                                                 allFilled
-                                                    ? 'arrow-right'
-                                                    : 'camera'
+                                                    ? submit
+                                                    : startCountdown
                                             }
-                                            size={22}
-                                        />
-                                        {allFilled
-                                            ? processing
-                                                ? 'Mengupload…'
-                                                : 'Lanjut ke preview'
-                                            : countdown !== null
-                                              ? `Bersiap… ${countdown}`
-                                              : `Ambil foto slot ${activeSlot + 1}/${totalSlots}`}
-                                    </button>
+                                            disabled={
+                                                processing ||
+                                                (allFilled
+                                                    ? false
+                                                    : !captureReady ||
+                                                      countdown !== null)
+                                            }
+                                            style={{
+                                                pointerEvents: 'auto',
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: 10,
+                                                padding: '18px 40px',
+                                                borderRadius: 999,
+                                                border: 'none',
+                                                background: allFilled
+                                                    ? '#22C55E'
+                                                    : 'var(--pb-primary)',
+                                                color: allFilled
+                                                    ? '#fff'
+                                                    : '#0A0A0A',
+                                                fontSize: 18,
+                                                fontWeight: 800,
+                                                cursor: processing
+                                                    ? 'wait'
+                                                    : allFilled
+                                                      ? 'pointer'
+                                                      : captureReady &&
+                                                          countdown === null
+                                                        ? 'pointer'
+                                                        : 'not-allowed',
+                                                opacity: processing
+                                                    ? 0.7
+                                                    : allFilled ||
+                                                        (captureReady &&
+                                                            countdown === null)
+                                                      ? 1
+                                                      : 0.55,
+                                                boxShadow:
+                                                    '0 12px 32px rgba(0,0,0,0.45)',
+                                            }}
+                                        >
+                                            <Icon
+                                                name={
+                                                    allFilled
+                                                        ? 'arrow-right'
+                                                        : 'camera'
+                                                }
+                                                size={22}
+                                            />
+                                            {allFilled
+                                                ? processing
+                                                    ? 'Mengupload…'
+                                                    : 'Lanjutkan'
+                                                : countdown !== null
+                                                  ? `Bersiap… ${countdown}`
+                                                  : `Ambil foto slot ${activeSlot + 1}/${totalSlots}`}
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -1329,6 +1521,33 @@ export default function KioskCapture({ frame }: Props) {
                                       : `Ambil foto slot ${activeSlot + 1}`}
                             </button>
 
+                            <button
+                                type="button"
+                                onClick={retakeLast}
+                                disabled={!canRetakeLast}
+                                title="Ambil ulang foto terakhir"
+                                style={{
+                                    padding: '18px 22px',
+                                    background: '#fff',
+                                    color: 'var(--pb-ink)',
+                                    border: '1.5px solid var(--pb-border)',
+                                    borderRadius: 16,
+                                    fontSize: 15,
+                                    fontWeight: 700,
+                                    cursor: canRetakeLast
+                                        ? 'pointer'
+                                        : 'not-allowed',
+                                    opacity: canRetakeLast ? 1 : 0.45,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 8,
+                                }}
+                            >
+                                <Icon name="refresh" size={18} />
+                                Retake
+                            </button>
+
                             <label
                                 style={{
                                     display: 'inline-flex',
@@ -1515,25 +1734,7 @@ export default function KioskCapture({ frame }: Props) {
                                 : ''
                     }
                     nextIcon="arrow-right"
-                    onBack={async () => {
-                        if (filledCount > 0) {
-                            const ok = await confirmDialog({
-                                title: 'Ganti frame?',
-                                description:
-                                    'Foto yang sudah kamu ambil akan dihapus saat kamu pilih frame baru.',
-                                confirmText: 'Ya, ganti frame',
-                                cancelText: 'Batal',
-                                tone: 'warning',
-                                icon: 'frame',
-                            });
-
-                            if (!ok) {
-                                return;
-                            }
-                        }
-
-                        router.visit('/kiosk/frame-select');
-                    }}
+                    onBack={goBackToFrameSelect}
                     onNext={
                         allFilled && !processing && !preparingVideo
                             ? submit
@@ -1754,7 +1955,7 @@ function DslrStatusBanner({
                     border: 'rgba(239,68,68,0.35)',
                     icon: 'alert' as const,
                     title: 'Aplikasi kamera belum jalan',
-                    detail: 'Buka aplikasi Philobooth Booth di komputer booth, lalu coba lagi. Foto tetap bisa pakai Webcam.',
+                    detail: 'Buka aplikasi Philobooth di komputer booth, lalu coba lagi. Foto tetap bisa pakai Webcam.',
                 }
               : !status.cameraConnected
                 ? {

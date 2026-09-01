@@ -35,6 +35,12 @@ public interface ICameraService
 
     bool Connect();
 
+    bool StartLiveView();
+
+    void StopLiveView();
+
+    byte[]? GetLiveViewImage();
+
     /// <summary>Read current settings + allowed values from the camera.</summary>
     Settings GetSettings();
 

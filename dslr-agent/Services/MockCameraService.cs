@@ -24,6 +24,12 @@ public sealed class MockCameraService : ICameraService
 
     public bool Connect() => true;
 
+    public bool StartLiveView() => false;
+
+    public void StopLiveView() { }
+
+    public byte[]? GetLiveViewImage() => null;
+
     public Settings GetSettings()
     {
         return new Settings(

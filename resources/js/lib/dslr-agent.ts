@@ -66,6 +66,12 @@ export interface DslrAgent {
     getSettings(): Promise<DslrSettings>;
     /** Push a new value for one exposure parameter to the camera. */
     setSetting(key: DslrSettingKey, value: string): Promise<void>;
+    /** Start the Canon live-view stream. */
+    startLiveView(): Promise<boolean>;
+    /** Stop the Canon live-view stream. */
+    stopLiveView(): Promise<void>;
+    /** Fetch the newest live-view JPEG as an object URL. */
+    getLiveViewFrame(): Promise<string | null>;
     /** Trigger the shutter and download the resulting full-res photo. */
     capture(filename: string): Promise<DslrCaptureResult>;
 }
@@ -165,6 +171,13 @@ export function createMockAgent(
             if (state[key].options.includes(value)) {
                 state[key].current = value;
             }
+        },
+        async startLiveView() {
+            return false;
+        },
+        async stopLiveView() {},
+        async getLiveViewFrame() {
+            return null;
         },
         async capture(filename) {
             // Simulate shutter + transfer latency of a real DSLR.
@@ -280,6 +293,41 @@ export function createHttpAgent(baseUrl = AGENT_BASE_URL): DslrAgent {
             if (!res.ok) {
                 throw await agentHttpError(res, `Failed to set ${key}`);
             }
+        },
+        async startLiveView() {
+            const res = await fetch(`${baseUrl}/live-view/start`, {
+                method: 'POST',
+                signal: AbortSignal.timeout(10_000),
+            });
+
+            if (!res.ok) {
+                throw await agentHttpError(res, 'Failed to start DSLR live view');
+            }
+
+            const body = (await res.json()) as { started?: boolean };
+
+            return body.started === true;
+        },
+        async stopLiveView() {
+            await fetch(`${baseUrl}/live-view/stop`, {
+                method: 'POST',
+                signal: AbortSignal.timeout(5_000),
+            });
+        },
+        async getLiveViewFrame() {
+            const res = await fetch(`${baseUrl}/live-view?t=${Date.now()}`, {
+                signal: AbortSignal.timeout(5_000),
+            });
+
+            if (res.status === 204) {
+                return null;
+            }
+
+            if (!res.ok) {
+                throw await agentHttpError(res, 'Failed to read DSLR live view');
+            }
+
+            return URL.createObjectURL(await res.blob());
         },
         async capture(filename) {
             const res = await fetch(`${baseUrl}/capture`, {
