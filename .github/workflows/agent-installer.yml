@@ -70,6 +70,19 @@ jobs:
         working-directory: dslr-agent
         run: dotnet publish -c Release -f net8.0-windows -r win-x64 --self-contained true
 
+      - name: Stage native Canon camera runtime
+        shell: pwsh
+        run: |
+          $package = Join-Path $env:USERPROFILE '.nuget\packages\cameracontrol.devices\2.0.73-beta\content'
+          $publish = 'dslr-agent/bin/Release/net8.0-windows/win-x64/publish'
+          foreach ($file in @('EDSDK.dll', 'EdsImage.dll')) {
+            $source = Join-Path $package $file
+            if (-not (Test-Path $source)) {
+              throw "CameraControl package runtime is missing: $source"
+            }
+            Copy-Item $source $publish -Force
+          }
+
       - name: Verify native Canon camera runtime
         shell: pwsh
         run: |

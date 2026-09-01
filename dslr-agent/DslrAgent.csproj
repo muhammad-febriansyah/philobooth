@@ -40,19 +40,23 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
     <PackageReference Include="CameraControl.Devices" Version="2.0.73-beta" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4129.50" />
-    <!-- CameraControl's Canon backend loads these native SDK files at runtime.
-         PackageReference does not copy the package's legacy content/ folder,
-         so publish them explicitly and let the installer place them beside the
-         single-file executable. Without them Canon cameras are never listed. -->
-    <None Include="$(NuGetPackageRoot)cameracontrol.devices/2.0.73-beta/content/EDSDK.dll"
-          Link="EDSDK.dll"
-          CopyToOutputDirectory="PreserveNewest"
-          CopyToPublishDirectory="PreserveNewest" />
-    <None Include="$(NuGetPackageRoot)cameracontrol.devices/2.0.73-beta/content/EdsImage.dll"
-          Link="EdsImage.dll"
-          CopyToOutputDirectory="PreserveNewest"
-          CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- CameraControl's Canon backend loads these native SDK files at runtime.
+       PackageReference ignores the package's legacy content/ folder and a
+       single-file publish also drops ordinary None items. Force-copy them only
+       after publish has produced its final directory. -->
+  <Target Name="CopyCameraControlNativeRuntime"
+          AfterTargets="Publish"
+          Condition="'$(TargetFramework)' == 'net8.0-windows'">
+    <ItemGroup>
+      <CameraControlNativeRuntime Include="$(NuGetPackageRoot)cameracontrol.devices/2.0.73-beta/content/EDSDK.dll" />
+      <CameraControlNativeRuntime Include="$(NuGetPackageRoot)cameracontrol.devices/2.0.73-beta/content/EdsImage.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(CameraControlNativeRuntime)"
+          DestinationFolder="$(PublishDir)"
+          SkipUnchangedFiles="true" />
+  </Target>
 
   <!-- Optional Canon EDSDK backend (best Canon support). Off by default so the
        standard build needs no proprietary SDK. To enable: drop Canon's
