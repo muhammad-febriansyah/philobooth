@@ -120,6 +120,8 @@ app.MapGet("/health", (ICameraService cam) =>
         cameraModel = cam.Model,
         backend = cam.Backend,
         error = cam.Error,
+        liveViewStarted = cam.LiveViewStarted,
+        liveViewError = cam.LiveViewError,
     }));
 
 app.MapPost("/camera/connect", (ICameraService cam) =>
@@ -137,7 +139,15 @@ app.MapPost("/camera/connect", (ICameraService cam) =>
 });
 
 app.MapPost("/live-view/start", (ICameraService cam) =>
-    Results.Ok(new { started = cam.StartLiveView() }));
+{
+    var started = cam.StartLiveView();
+
+    return Results.Ok(new
+    {
+        started,
+        error = cam.LiveViewError,
+    });
+});
 
 app.MapPost("/live-view/stop", (ICameraService cam) =>
 {

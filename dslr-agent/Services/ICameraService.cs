@@ -33,6 +33,11 @@ public interface ICameraService
     /// </summary>
     string? Error => null;
 
+    /// <summary>Last live-view error, or <c>null</c> when live view is healthy.</summary>
+    string? LiveViewError => null;
+
+    bool LiveViewStarted => false;
+
     bool Connect();
 
     bool StartLiveView();

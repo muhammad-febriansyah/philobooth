@@ -53,6 +53,8 @@ export type DslrStatus = {
     backend: string | null;
     /** Actionable backend startup error reported by the Windows app. */
     error: string | null;
+    /** Last live-view error reported by the Windows app. */
+    liveViewError?: string | null;
 };
 
 export interface DslrAgent {
@@ -235,6 +237,7 @@ export function createHttpAgent(baseUrl = AGENT_BASE_URL): DslrAgent {
                     cameraModel?: string | null;
                     backend?: string | null;
                     error?: string | null;
+                    liveViewError?: string | null;
                 };
 
                 return {
@@ -243,6 +246,7 @@ export function createHttpAgent(baseUrl = AGENT_BASE_URL): DslrAgent {
                     cameraModel: body.cameraModel ?? null,
                     backend: body.backend ?? null,
                     error: body.error ?? null,
+                    liveViewError: body.liveViewError ?? null,
                 };
             } catch {
                 // Connection refused / DNS / network — agent process is down.
@@ -304,9 +308,18 @@ export function createHttpAgent(baseUrl = AGENT_BASE_URL): DslrAgent {
                 throw await agentHttpError(res, 'Failed to start DSLR live view');
             }
 
-            const body = (await res.json()) as { started?: boolean };
+            const body = (await res.json()) as {
+                started?: boolean;
+                error?: string | null;
+            };
 
-            return body.started === true;
+            if (body.started !== true) {
+                throw new Error(
+                    body.error ?? 'Live view DSLR gagal dimulai',
+                );
+            }
+
+            return true;
         },
         async stopLiveView() {
             await fetch(`${baseUrl}/live-view/stop`, {

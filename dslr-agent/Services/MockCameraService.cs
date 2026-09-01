@@ -22,6 +22,10 @@ public sealed class MockCameraService : ICameraService
 
     public string Backend => "mock";
 
+    public string? LiveViewError => null;
+
+    public bool LiveViewStarted => false;
+
     public bool Connect() => true;
 
     public bool StartLiveView() => false;

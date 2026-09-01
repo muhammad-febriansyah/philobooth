@@ -17,6 +17,7 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
     private CameraDeviceManager? _manager;
     private readonly ILogger<DigiCamCameraService> _logger;
     private string? _initializationError;
+    private string? _liveViewError;
     private bool _liveViewStarted;
 
     public DigiCamCameraService(ILogger<DigiCamCameraService> logger)
@@ -52,6 +53,10 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
 
     public string? Error => _initializationError;
 
+    public string? LiveViewError => _liveViewError;
+
+    public bool LiveViewStarted => _liveViewStarted;
+
     public bool Connect()
     {
         try
@@ -80,13 +85,18 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
     {
         try
         {
+            StopLiveView();
             Camera.StartLiveView();
             _liveViewStarted = true;
+            _liveViewError = null;
 
             return true;
         }
         catch (Exception exception)
         {
+            _liveViewStarted = false;
+            _liveViewError =
+                $"Live view gagal dimulai: {exception.Message}. Putar mode kamera ke M/P/Av/Tv, aktifkan Live View, lalu tutup EOS Utility.";
             _logger.LogWarning(exception, "Failed to start DSLR live view");
 
             return false;
@@ -121,22 +131,35 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
             return null;
         }
 
-        var liveView = Camera.GetLiveViewImage();
-
-        if (liveView?.ImageData is not { Length: > 0 } imageData)
+        try
         {
+            var liveView = Camera.GetLiveViewImage();
+
+            if (liveView?.ImageData is not { Length: > 0 } imageData)
+            {
+                return null;
+            }
+
+            using var input = new MemoryStream(
+                imageData,
+                liveView.ImageDataPosition,
+                imageData.Length - liveView.ImageDataPosition);
+            using var bitmap = new Bitmap(input);
+            using var output = new MemoryStream();
+            bitmap.Save(output, ImageFormat.Jpeg);
+
+            _liveViewError = null;
+
+            return output.ToArray();
+        }
+        catch (Exception exception)
+        {
+            _liveViewError =
+                $"Frame live view gagal dibaca: {exception.Message}. Pastikan Live View aktif di kamera.";
+            _logger.LogDebug(exception, "Failed to read DSLR live-view frame");
+
             return null;
         }
-
-        using var input = new MemoryStream(
-            imageData,
-            liveView.ImageDataPosition,
-            imageData.Length - liveView.ImageDataPosition);
-        using var bitmap = new Bitmap(input);
-        using var output = new MemoryStream();
-        bitmap.Save(output, ImageFormat.Jpeg);
-
-        return output.ToArray();
     }
 
     public Settings GetSettings()

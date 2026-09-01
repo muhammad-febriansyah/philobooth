@@ -75,6 +75,9 @@ export default function KioskCapture({ frame }: Props) {
     const [dslrBusy, setDslrBusy] = useState(false);
     const [dslrStatus, setDslrStatus] = useState<DslrStatus | null>(null);
     const [dslrLiveViewUrl, setDslrLiveViewUrl] = useState<string | null>(null);
+    const [dslrLiveViewError, setDslrLiveViewError] = useState<string | null>(
+        null,
+    );
     const [preparingVideo, setPreparingVideo] = useState(false);
 
     const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -228,6 +231,7 @@ export default function KioskCapture({ frame }: Props) {
         if (source === 'webcam') {
             await dslrAgentRef.current?.stopLiveView();
             setDslrLiveViewUrl(null);
+            setDslrLiveViewError(null);
             stopCamera();
             await startCamera();
         } else {
@@ -242,6 +246,7 @@ export default function KioskCapture({ frame }: Props) {
                 setDslrBusy(true);
 
                 try {
+                    setDslrLiveViewError(null);
                     await dslrAgentRef.current.startLiveView();
 
                     if (!dslrSettings) {
@@ -250,7 +255,10 @@ export default function KioskCapture({ frame }: Props) {
                         setDslrSettings(settings);
                     }
                 } catch (err) {
-                    console.warn('DSLR settings unavailable:', err);
+                    const message =
+                        err instanceof Error ? err.message : 'Live view gagal';
+                    setDslrLiveViewError(message);
+                    console.warn('DSLR live view unavailable:', err);
                 } finally {
                     setDslrBusy(false);
                 }
@@ -851,6 +859,20 @@ export default function KioskCapture({ frame }: Props) {
                                     >
                                         Foto akan diambil langsung dari Canon
                                     </div>
+                                    {dslrLiveViewError && (
+                                        <div
+                                            style={{
+                                                maxWidth: 380,
+                                                color: '#fecaca',
+                                                fontSize: 12,
+                                                lineHeight: 1.45,
+                                                marginTop: 10,
+                                                textAlign: 'center',
+                                            }}
+                                        >
+                                            {dslrLiveViewError}
+                                        </div>
+                                    )}
                                 </CenterOverlay>
                             )}
 
