@@ -21,13 +21,14 @@ internal static class Tray
 
             using var icon = new NotifyIcon
             {
-                Icon = SystemIcons.Application,
+                Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath)
+                    ?? SystemIcons.Application,
                 Visible = true,
-                Text = "Philobooth Booth",
+                Text = "Philobooth",
             };
 
             var menu = new ContextMenuStrip();
-            var header = menu.Items.Add("Philobooth Booth");
+            var header = menu.Items.Add("Philobooth");
             header.Enabled = false;
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Buka Booth", null, (_, _) => booth.ShowBooth());
@@ -45,7 +46,7 @@ internal static class Tray
 
             icon.ShowBalloonTip(
                 3000,
-                "Philobooth Booth",
+                "Philobooth",
                 "Aplikasi booth, kamera, dan printer siap dipakai.",
                 ToolTipIcon.Info);
 

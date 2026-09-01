@@ -16,7 +16,7 @@
 ;
 ; Produces installer\Output\philobooth-booth-setup.exe.
 
-#define AppName "Philobooth Booth"
+#define AppName "Philobooth"
 #define AppExe "philobooth-booth.exe"
 
 ; Overridable at compile time via ISCC's /DAppVersion=...
@@ -39,6 +39,7 @@ DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 OutputBaseFilename=philobooth-booth-setup
+SetupIconFile=..\..\public\favicon.ico
 Compression=lzma2
 SolidCompression=yes
 ArchitecturesInstallIn64BitMode=x64compatible

@@ -20,8 +20,8 @@ if (!headless)
     if (!isFirstInstance)
     {
         System.Windows.Forms.MessageBox.Show(
-            "Philobooth Booth sudah berjalan. Buka melalui ikon di dekat jam Windows.",
-            "Philobooth Booth",
+            "Philobooth sudah berjalan. Buka melalui ikon di dekat jam Windows.",
+            "Philobooth",
             System.Windows.Forms.MessageBoxButtons.OK,
             System.Windows.Forms.MessageBoxIcon.Information);
         instanceMutex.Dispose();
@@ -138,7 +138,7 @@ app.MapPost("/camera/connect", (ICameraService cam) =>
 
 app.MapGet("/app-info", () => Results.Ok(new
 {
-    name = "Philobooth Booth",
+    name = "Philobooth",
     ui = "webview2",
     boothUrl = builder.Configuration["Booth:Url"]
         ?? "https://philobooth.id/kiosk/welcome",

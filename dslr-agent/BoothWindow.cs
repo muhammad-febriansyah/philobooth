@@ -25,8 +25,8 @@ internal sealed class BoothWindow : Form
     {
         boothUri = ValidateBoothUri(boothUrl);
 
-        Text = "Philobooth Booth";
-        Name = "PhiloboothBooth";
+        Text = "Philobooth";
+        Name = "Philobooth";
         StartPosition = FormStartPosition.CenterScreen;
         WindowState = FormWindowState.Maximized;
         FormBorderStyle = FormBorderStyle.None;
