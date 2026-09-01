@@ -98,8 +98,11 @@ Name: "autostart"; Description: "Jalankan otomatis saat Windows menyala"; GroupD
 Source: "{#PayloadUrl}"; DestDir: "{app}"; DestName: "{#AppExe}"; Hash: "{#PayloadSha256}"; ExternalSize: {#PayloadSize}; Flags: external download ignoreversion
 ; WebView2 loader and optional camera native DLLs sit beside the single-file exe.
 Source: "{#PublishDir}\*.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-; Keep the production URL configurable without requiring a rebuild.
-Source: "{#PublishDir}\appsettings.json"; DestDir: "{app}"; Flags: onlyifdoesntexist
+; Refresh production defaults on every upgrade. Older camera-only installers
+; could leave Camera.Mode=Mock behind, which makes a real DSLR invisible even
+; though the new executable is installed correctly. CI can still override this
+; with Camera__Mode=Mock during its isolated smoke test.
+Source: "{#PublishDir}\appsettings.json"; DestDir: "{app}"; Flags: ignoreversion
 ; Official Microsoft bootstrapper is downloaded and Authenticode-verified by CI.
 Source: "MicrosoftEdgeWebView2Setup.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall
 

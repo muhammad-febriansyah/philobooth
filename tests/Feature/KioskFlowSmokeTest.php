@@ -14,6 +14,8 @@ use App\Models\PaperSize;
 use App\Models\Payment;
 use App\Models\PhotoSession;
 use App\Models\PricingConfig;
+use App\Models\Printer;
+use App\Models\PrinterLog;
 use App\Models\SessionPhoto;
 use App\Models\Voucher;
 use App\Models\VoucherBatch;
@@ -96,6 +98,34 @@ it('GET /kiosk/thanks renders without session', function () {
     $this->get('/kiosk/thanks')
         ->assertOk()
         ->assertInertia(fn ($p) => $p->component('kiosk/thanks'));
+});
+
+it('GET /kiosk/printing exposes only the assigned local printer contract', function () {
+    $session = seedKiosk([
+        'status' => SessionStatus::Printing,
+        'current_step' => SessionStep::Print,
+        'print_quantity' => 2,
+        'final_image_path' => 'kiosk/result.jpg',
+    ]);
+    Storage::disk('public')->put('kiosk/result.jpg', 'jpeg');
+    $printer = Printer::factory()->create([
+        'branch_id' => $session->branch_id,
+        'name' => 'Printer Booth',
+        'system_printer_name' => 'DNP DS620',
+        'is_default' => true,
+    ]);
+    $session->update(['printer_id' => $printer->id]);
+
+    $this->withSession(['kiosk_session_id' => $session->id])
+        ->get('/kiosk/printing')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('kiosk/printing')
+            ->where('printer.name', 'Printer Booth')
+            ->where('printer.system_name', 'DNP DS620')
+            ->where('copies', 2)
+            ->where('image_url', Storage::disk('public')->url('kiosk/result.jpg'))
+            ->missing('printer.ip_address'));
 });
 
 it('GET /kiosk/* pages render when session is active', function () {
@@ -445,6 +475,12 @@ it('keeps the base transaction amount when quantity is one', function () {
 
 it('POST /kiosk/complete generates composite + GIF for a paid photo session', function () {
     $session = seedKiosk(['current_step' => SessionStep::Generate, 'print_quantity' => 1]);
+    $printer = Printer::factory()->create([
+        'branch_id' => $session->branch_id,
+        'system_printer_name' => 'DNP DS620',
+        'is_default' => true,
+        'settings' => ['paper_capacity' => 200, 'paper_consumed' => 4],
+    ]);
 
     // Real frame PNG thumbnail large enough to cover both slots.
     ob_start();
@@ -472,15 +508,66 @@ it('POST /kiosk/complete generates composite + GIF for a paid photo session', fu
 
     $this->withSession(['kiosk_session_id' => $session->id])
         ->post('/kiosk/complete')
-        ->assertRedirect('/kiosk/download');
+        ->assertRedirect('/kiosk/printing');
 
     $fresh = $session->fresh();
 
-    expect($fresh->status)->toBe(SessionStatus::Completed)
+    expect($fresh->status)->toBe(SessionStatus::Printing)
+        ->and($fresh->current_step)->toBe(SessionStep::Print)
+        ->and($fresh->completed_at)->toBeNull()
+        ->and($fresh->printer_id)->toBe($printer->id)
         ->and($fresh->final_image_path)->not->toBeNull()
         ->and($fresh->gif_path)->not->toBeNull();
 
-    expect(Storage::disk('public')->exists($fresh->gif_path))->toBeTrue();
+    expect(Storage::disk('public')->exists($fresh->gif_path))->toBeTrue()
+        ->and($printer->fresh()->settings['paper_consumed'])->toBe(4);
+
+    $this->withSession(['kiosk_session_id' => $session->id])
+        ->post('/kiosk/printing/complete')
+        ->assertRedirect('/kiosk/download');
+
+    expect($session->fresh()->status)->toBe(SessionStatus::Completed)
+        ->and($session->fresh()->current_step)->toBe(SessionStep::Done)
+        ->and($session->fresh()->completed_at)->not->toBeNull()
+        ->and($printer->fresh()->settings['paper_consumed'])->toBe(5)
+        ->and(PrinterLog::where('printer_id', $printer->id)->count())->toBe(1);
+
+    $this->withSession(['kiosk_session_id' => $session->id])
+        ->post('/kiosk/printing/complete')
+        ->assertRedirect('/kiosk/download');
+
+    expect($printer->fresh()->settings['paper_consumed'])->toBe(5)
+        ->and(PrinterLog::where('printer_id', $printer->id)->count())->toBe(1);
+});
+
+it('POST /kiosk/complete stops before rendering when no Windows printer is configured', function () {
+    $session = seedKiosk(['current_step' => SessionStep::Generate, 'print_quantity' => 1]);
+
+    ob_start();
+    imagepng(imagecreatetruecolor(600, 300));
+    Storage::disk('public')->put('frames/test-frame.png', ob_get_clean());
+    $session->frame->update(['thumbnail_path' => 'frames/test-frame.png']);
+
+    foreach ([1, 2] as $slot) {
+        ob_start();
+        imagejpeg(imagecreatetruecolor(200, 100));
+        $path = "kiosk/{$session->session_code}/photo-{$slot}.jpg";
+        Storage::disk('public')->put($path, ob_get_clean());
+        SessionPhoto::create([
+            'session_id' => $session->id,
+            'slot_number' => $slot,
+            'original_path' => $path,
+            'is_selected' => true,
+            'captured_at' => now(),
+        ]);
+    }
+
+    $this->withSession(['kiosk_session_id' => $session->id])
+        ->post('/kiosk/complete')
+        ->assertRedirect('/kiosk/confirm')
+        ->assertSessionHasErrors('printer');
+
+    expect($session->fresh()->status)->not->toBe(SessionStatus::Completed);
 });
 
 it('POST /kiosk/cancel marks session cancelled and clears state', function () {

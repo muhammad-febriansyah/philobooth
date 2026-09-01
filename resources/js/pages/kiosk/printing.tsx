@@ -1,15 +1,124 @@
-import { Head } from '@inertiajs/react';
-import { Icon } from '@/components/philobooth/icon';
+import { Head, router } from '@inertiajs/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { finishPrinting } from '@/actions/App/Http/Controllers/Kiosk/SessionController';
 import { KioskHeader } from '@/components/philobooth/kiosk-chrome';
+import { createPrintAgent } from '@/lib/print-agent';
 
-const STEPS: Array<{ l: string; done?: boolean; active?: boolean }> = [
-    { l: 'Render frame', done: true },
-    { l: 'Kirim ke printer', done: true },
-    { l: 'Cetak lembar 1', active: true },
-    { l: 'Cetak lembar 2' },
-];
+type PrintingProps = {
+    image_url: string | null;
+    printer: {
+        name: string;
+        system_name: string | null;
+        status: string | null;
+    } | null;
+    paper: { code: string; name: string } | null;
+    copies: number;
+};
 
-export default function KioskPrinting() {
+type PrintState = 'checking' | 'printing' | 'finishing' | 'failed';
+
+function errorMessage(error: unknown): string {
+    return error instanceof Error
+        ? error.message
+        : 'Printer gagal merespons. Periksa koneksi USB dan coba lagi.';
+}
+
+export default function KioskPrinting({
+    image_url: imageUrl,
+    printer,
+    paper,
+    copies,
+}: PrintingProps) {
+    const [state, setState] = useState<PrintState>('checking');
+    const [error, setError] = useState<string | null>(null);
+    const running = useRef(false);
+
+    const print = useCallback(async () => {
+        if (running.current) {
+            return;
+        }
+
+        running.current = true;
+        setError(null);
+        setState('checking');
+
+        try {
+            if (!imageUrl) {
+                throw new Error('File hasil foto belum tersedia.');
+            }
+
+            if (!printer?.system_name) {
+                throw new Error(
+                    'Printer Windows belum dipilih. Atur printer dari halaman Admin > Printer.',
+                );
+            }
+
+            const agent = createPrintAgent();
+            const listing = await agent.listPrinters();
+            const installedPrinter = listing.printers.find(
+                ({ name }) => name === printer.system_name,
+            );
+
+            if (!installedPrinter) {
+                throw new Error(
+                    `Printer “${printer.system_name}” tidak ditemukan di Windows. Pastikan printer USB menyala lalu deteksi ulang dari Admin > Printer.`,
+                );
+            }
+
+            const imageResponse = await fetch(imageUrl, {
+                signal: AbortSignal.timeout(30_000),
+            });
+
+            if (!imageResponse.ok) {
+                throw new Error('File hasil foto gagal diunduh untuk dicetak.');
+            }
+
+            setState('printing');
+            await agent.printImage(await imageResponse.blob(), {
+                printer: installedPrinter.name,
+                copies: Math.max(1, copies),
+            });
+
+            setState('finishing');
+            router.post(finishPrinting.url(), undefined, {
+                preserveScroll: true,
+                onError: () => {
+                    running.current = false;
+                    setState('failed');
+                    setError(
+                        'Foto sudah dikirim ke printer, tetapi status sesi gagal disimpan. Tekan lanjutkan tanpa mencetak ulang.',
+                    );
+                },
+            });
+        } catch (caughtError) {
+            running.current = false;
+            setState('failed');
+            setError(errorMessage(caughtError));
+        }
+    }, [copies, imageUrl, printer]);
+
+    useEffect(() => {
+        const timeout = window.setTimeout(() => void print(), 0);
+
+        return () => window.clearTimeout(timeout);
+    }, [print]);
+
+    const continueWithoutReprint = () => {
+        running.current = true;
+        setError(null);
+        setState('finishing');
+        router.post(finishPrinting.url());
+    };
+
+    const isFailed = state === 'failed';
+    const title = isFailed
+        ? 'Cetak belum berhasil'
+        : state === 'finishing'
+          ? 'Cetak selesai'
+          : state === 'printing'
+            ? 'Sedang mencetak…'
+            : 'Menghubungkan printer…';
+
     return (
         <>
             <Head title="Mencetak — Philobooth" />
@@ -23,25 +132,10 @@ export default function KioskPrinting() {
                     background:
                         'radial-gradient(at 50% 30%, #1f1f1f 0%, #050505 80%)',
                     color: '#fff',
-                    position: 'relative',
                     overflow: 'hidden',
                 }}
             >
                 <KioskHeader step={0} dark />
-                <div
-                    style={{
-                        position: 'absolute',
-                        left: '50%',
-                        top: '55%',
-                        transform: 'translate(-50%, -50%)',
-                        width: 800,
-                        height: 800,
-                        borderRadius: '50%',
-                        background:
-                            'radial-gradient(rgba(245,250,12,0.18) 0%, transparent 60%)',
-                        pointerEvents: 'none',
-                    }}
-                />
                 <main
                     style={{
                         flex: 1,
@@ -49,266 +143,128 @@ export default function KioskPrinting() {
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        padding: '0 56px',
-                        position: 'relative',
-                        zIndex: 1,
+                        padding: '40px 56px',
+                        textAlign: 'center',
                     }}
                 >
-                    <div style={{ position: 'relative', marginBottom: 64 }}>
-                        <svg width="320" height="200" viewBox="0 0 320 200">
-                            <g style={{ transform: 'translateY(-12px)' }}>
-                                <rect
-                                    x="120"
-                                    y="-180"
-                                    width="80"
-                                    height="200"
-                                    rx="4"
-                                    fill="#fff"
-                                />
-                                <rect
-                                    x="130"
-                                    y="-170"
-                                    width="60"
-                                    height="40"
-                                    rx="2"
-                                    fill="#FFE9C7"
-                                />
-                                <rect
-                                    x="130"
-                                    y="-120"
-                                    width="60"
-                                    height="40"
-                                    rx="2"
-                                    fill="#E7D6FF"
-                                />
-                                <rect
-                                    x="130"
-                                    y="-70"
-                                    width="60"
-                                    height="40"
-                                    rx="2"
-                                    fill="#D2F4E5"
-                                />
-                                <rect
-                                    x="130"
-                                    y="-20"
-                                    width="60"
-                                    height="40"
-                                    rx="2"
-                                    fill="#FFD4DE"
-                                />
-                            </g>
-                            <rect
-                                x="40"
-                                y="80"
-                                width="240"
-                                height="100"
-                                rx="14"
-                                fill="#fff"
-                                stroke="#0A0A0A"
-                                strokeWidth="3"
-                            />
-                            <rect
-                                x="100"
-                                y="80"
-                                width="120"
-                                height="14"
-                                rx="1"
-                                fill="#0A0A0A"
-                            />
-                            <rect
-                                x="116"
-                                y="80"
-                                width="88"
-                                height="6"
-                                rx="1"
-                                fill="#F5FA0C"
-                            />
-                            <circle cx="60" cy="120" r="8" fill="#F5FA0C" />
-                            <circle cx="60" cy="120" r="3" fill="#0A0A0A" />
-                            <rect
-                                x="80"
-                                y="140"
-                                width="160"
-                                height="24"
-                                rx="4"
-                                fill="#FAFAFA"
-                            />
-                            <text
-                                x="160"
-                                y="158"
-                                textAnchor="middle"
-                                fontFamily="Poppins, sans-serif"
-                                fontWeight="700"
-                                fontSize="13"
-                                fill="#0A0A0A"
-                            >
-                                DNP DS620A
-                            </text>
-                        </svg>
-                        <div
-                            className="pb-pulse"
-                            style={{
-                                position: 'absolute',
-                                left: '50%',
-                                bottom: -32,
-                                transform: 'translateX(-50%)',
-                                width: 240,
-                                height: 24,
-                                borderRadius: 12,
-                                background:
-                                    'radial-gradient(ellipse, rgba(245,250,12,0.45) 0%, transparent 70%)',
-                            }}
-                        />
+                    <div
+                        className={isFailed ? undefined : 'pb-pulse'}
+                        style={{
+                            width: 116,
+                            height: 116,
+                            borderRadius: '50%',
+                            display: 'grid',
+                            placeItems: 'center',
+                            marginBottom: 36,
+                            background: isFailed
+                                ? 'rgba(255,89,89,.14)'
+                                : 'rgba(245,250,12,.14)',
+                            border: `2px solid ${isFailed ? '#ff5959' : 'var(--pb-primary)'}`,
+                            fontSize: 48,
+                        }}
+                    >
+                        {isFailed ? '!' : '▣'}
                     </div>
 
-                    <h2
+                    <h1
                         style={{
-                            fontSize: 56,
+                            fontSize: 52,
+                            lineHeight: 1.1,
                             fontWeight: 700,
-                            letterSpacing: -1.4,
-                            margin: '0 0 14px',
-                            textAlign: 'center',
+                            letterSpacing: -1.3,
+                            margin: '0 0 18px',
                         }}
                     >
-                        Sedang mencetak
-                        <span
-                            className="pb-pulse"
-                            style={{ display: 'inline-block' }}
-                        >
-                            …
-                        </span>
-                    </h2>
+                        {title}
+                    </h1>
+
                     <p
                         style={{
-                            fontSize: 19,
-                            color: 'rgba(255,255,255,0.65)',
-                            margin: '0 0 56px',
-                            textAlign: 'center',
-                            maxWidth: 540,
+                            maxWidth: 720,
+                            color: isFailed
+                                ? '#ffb3b3'
+                                : 'rgba(255,255,255,.68)',
+                            fontSize: 18,
+                            lineHeight: 1.65,
+                            margin: '0 0 32px',
                         }}
                     >
-                        Foto kamu lagi diolah. Ini biasanya butuh sekitar 45–60
-                        detik.
+                        {error ??
+                            `${copies} lembar ${paper?.name ?? 'foto'} dikirim ke ${printer?.name ?? 'printer booth'}. Jangan cabut kabel USB saat proses berjalan.`}
                     </p>
 
-                    <div
-                        style={{
-                            width: 'min(600px, 80%)',
-                            marginBottom: 28,
-                        }}
-                    >
+                    {isFailed ? (
                         <div
                             style={{
                                 display: 'flex',
-                                justifyContent: 'space-between',
-                                marginBottom: 10,
-                                fontSize: 14,
-                                fontWeight: 600,
+                                gap: 14,
+                                justifyContent: 'center',
+                                flexWrap: 'wrap',
                             }}
                         >
-                            <span style={{ color: 'var(--pb-primary)' }}>
-                                Mencetak lembar 1 dari 2
-                            </span>
-                            <span>62%</span>
+                            <button
+                                type="button"
+                                onClick={() => void print()}
+                                style={{
+                                    border: 0,
+                                    borderRadius: 999,
+                                    padding: '16px 30px',
+                                    background: 'var(--pb-primary)',
+                                    color: '#0a0a0a',
+                                    fontSize: 16,
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                Coba cetak lagi
+                            </button>
+                            {error?.startsWith('Foto sudah dikirim') && (
+                                <button
+                                    type="button"
+                                    onClick={continueWithoutReprint}
+                                    style={{
+                                        border: '1px solid rgba(255,255,255,.28)',
+                                        borderRadius: 999,
+                                        padding: '16px 30px',
+                                        background: 'transparent',
+                                        color: '#fff',
+                                        fontSize: 16,
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    Lanjutkan tanpa cetak ulang
+                                </button>
+                            )}
                         </div>
+                    ) : (
                         <div
                             style={{
-                                height: 12,
-                                background: 'rgba(255,255,255,0.08)',
-                                borderRadius: 6,
+                                width: 'min(560px, 86vw)',
+                                height: 10,
+                                borderRadius: 999,
                                 overflow: 'hidden',
-                                position: 'relative',
+                                background: 'rgba(255,255,255,.1)',
                             }}
                         >
                             <div
+                                className="pb-pulse"
                                 style={{
-                                    width: '62%',
+                                    width:
+                                        state === 'checking'
+                                            ? '30%'
+                                            : state === 'printing'
+                                              ? '75%'
+                                              : '100%',
                                     height: '100%',
-                                    background:
-                                        'linear-gradient(90deg, var(--pb-primary), #FFEA00)',
-                                    borderRadius: 6,
-                                    boxShadow:
-                                        '0 0 24px rgba(245,250,12,0.6)',
+                                    borderRadius: 999,
+                                    background: 'var(--pb-primary)',
+                                    transition: 'width .35s ease',
                                 }}
                             />
                         </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
-                        {STEPS.map((s, i) => (
-                            <div
-                                key={i}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 10,
-                                    fontSize: 14,
-                                    color: s.active
-                                        ? '#fff'
-                                        : s.done
-                                          ? 'rgba(255,255,255,0.7)'
-                                          : 'rgba(255,255,255,0.35)',
-                                    fontWeight: s.active ? 600 : 500,
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        width: 24,
-                                        height: 24,
-                                        borderRadius: '50%',
-                                        background: s.done
-                                            ? 'var(--pb-primary)'
-                                            : s.active
-                                              ? 'transparent'
-                                              : 'rgba(255,255,255,0.08)',
-                                        border: s.active
-                                            ? '2px solid var(--pb-primary)'
-                                            : 'none',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                    }}
-                                >
-                                    {s.done && (
-                                        <Icon
-                                            name="check"
-                                            size={14}
-                                            color="#0A0A0A"
-                                        />
-                                    )}
-                                    {s.active && (
-                                        <div
-                                            className="pb-spin"
-                                            style={{
-                                                width: 12,
-                                                height: 12,
-                                                borderRadius: 6,
-                                                border: '2px solid var(--pb-primary)',
-                                                borderTopColor: 'transparent',
-                                            }}
-                                        />
-                                    )}
-                                </div>
-                                {s.l}
-                            </div>
-                        ))}
-                    </div>
+                    )}
                 </main>
-
-                <footer
-                    style={{
-                        padding: 32,
-                        textAlign: 'center',
-                        color: 'rgba(255,255,255,0.4)',
-                        fontSize: 14,
-                        position: 'relative',
-                        zIndex: 1,
-                    }}
-                >
-                    Jangan tinggalkan booth — ambil foto di slot keluaran
-                    setelah selesai cetak.
-                </footer>
             </div>
         </>
     );

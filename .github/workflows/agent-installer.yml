@@ -70,6 +70,17 @@ jobs:
         working-directory: dslr-agent
         run: dotnet publish -c Release -f net8.0-windows -r win-x64 --self-contained true
 
+      - name: Verify native Canon camera runtime
+        shell: pwsh
+        run: |
+          $publish = 'dslr-agent/bin/Release/net8.0-windows/win-x64/publish'
+          foreach ($file in @('EDSDK.dll', 'EdsImage.dll')) {
+            $path = Join-Path $publish $file
+            if (-not (Test-Path $path)) {
+              throw "Required Canon camera runtime is missing: $path"
+            }
+          }
+
       - name: Download and verify WebView2 Runtime bootstrapper
         shell: pwsh
         run: |

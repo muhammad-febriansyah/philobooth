@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Kiosk;
 
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Enums\PrinterLogEvent;
+use App\Enums\PrinterStatus;
 use App\Enums\SessionStatus;
 use App\Enums\SessionStep;
 use App\Enums\SessionType;
@@ -18,6 +20,7 @@ use App\Models\Payment;
 use App\Models\PhotoSession;
 use App\Models\PricingConfig;
 use App\Models\Printer;
+use App\Models\PrinterLog;
 use App\Models\SessionPhoto;
 use App\Models\Voucher;
 use App\Services\Booth\QrisPaymentService;
@@ -717,13 +720,22 @@ class SessionController extends Controller
         $activePrinter = $isVideo ? null : Printer::withoutGlobalScopes()
             ->where('branch_id', $session->branch_id)
             ->where('is_active', true)
-            ->where('is_default', true)
+            ->orderByDesc('is_default')
+            ->orderBy('id')
             ->first();
 
+        $requiresPrinting = ! $isVideo && $session->print_quantity > 0;
+
+        if ($requiresPrinting && (! $activePrinter || blank($activePrinter->system_printer_name))) {
+            return redirect('/kiosk/confirm')->withErrors([
+                'printer' => 'Printer booth belum dipilih atau belum terhubung ke Windows. Buka Admin > Printer, lalu pilih printer yang terdeteksi.',
+            ]);
+        }
+
         $session->update([
-            'status' => SessionStatus::Completed,
-            'current_step' => SessionStep::Done,
-            'completed_at' => now(),
+            'status' => $requiresPrinting ? SessionStatus::Printing : SessionStatus::Completed,
+            'current_step' => $requiresPrinting ? SessionStep::Print : SessionStep::Done,
+            'completed_at' => $requiresPrinting ? null : now(),
             'final_image_path' => $finalPath,
             'final_image_url' => $finalPath ? Storage::url($finalPath) : null,
             'gif_path' => $gifPath,
@@ -733,31 +745,76 @@ class SessionController extends Controller
             'printer_id' => $activePrinter?->id,
         ]);
 
-        if (! $isVideo && $activePrinter && $session->print_quantity > 0) {
-            $settings = (array) ($activePrinter->settings ?? []);
-            $settings['paper_consumed'] = (int) ($settings['paper_consumed'] ?? 0) + (int) $session->print_quantity;
-
-            if (! isset($settings['paper_capacity'])) {
-                $settings['paper_capacity'] = 200;
-            }
-
-            $activePrinter->update(['settings' => $settings]);
+        if ($requiresPrinting) {
+            return redirect('/kiosk/printing');
         }
 
-        // Kirim email notif kalau customer mengisi email
-        if ($session->customer_email) {
-            try {
-                Mail::to($session->customer_email)
-                    ->send(new PhotoReadyMail($session));
-            } catch (\Throwable $e) {
-                Log::warning('Photo ready email gagal: '.$e->getMessage(), [
-                    'session' => $session->session_code,
-                ]);
-            }
-        }
+        $this->sendPhotoReadyEmail($session);
 
         // JANGAN forget session — biar /kiosk/download bisa render data
         // Session di-clear setelah customer di /kiosk/thanks
+        return redirect('/kiosk/download');
+    }
+
+    public function finishPrinting(Request $request): RedirectResponse
+    {
+        $session = $this->currentSession($request);
+
+        if ($session->status === SessionStatus::Completed) {
+            return redirect('/kiosk/download');
+        }
+
+        abort_unless(
+            $session->status === SessionStatus::Printing
+                && $session->current_step === SessionStep::Print
+                && $session->printer_id !== null,
+            409,
+            'Sesi tidak sedang menunggu hasil cetak.',
+        );
+
+        DB::transaction(function () use ($session): void {
+            $lockedSession = PhotoSession::withoutGlobalScopes()
+                ->lockForUpdate()
+                ->findOrFail($session->id);
+
+            if ($lockedSession->status === SessionStatus::Completed) {
+                return;
+            }
+
+            $printer = Printer::withoutGlobalScopes()
+                ->lockForUpdate()
+                ->findOrFail($lockedSession->printer_id);
+            $settings = (array) ($printer->settings ?? []);
+            $settings['paper_consumed'] = (int) ($settings['paper_consumed'] ?? 0)
+                + max(1, (int) $lockedSession->print_quantity);
+            $settings['paper_capacity'] ??= 200;
+
+            $printer->update([
+                'last_status' => PrinterStatus::Ready,
+                'last_checked_at' => now(),
+                'settings' => $settings,
+            ]);
+
+            $lockedSession->update([
+                'status' => SessionStatus::Completed,
+                'current_step' => SessionStep::Done,
+                'completed_at' => now(),
+            ]);
+
+            PrinterLog::create([
+                'printer_id' => $printer->id,
+                'event' => PrinterLogEvent::PrintSuccess,
+                'message' => 'Print agent lokal menyelesaikan pekerjaan cetak.',
+                'meta' => [
+                    'session_id' => $lockedSession->id,
+                    'copies' => max(1, (int) $lockedSession->print_quantity),
+                ],
+                'created_at' => now(),
+            ]);
+        });
+
+        $this->sendPhotoReadyEmail($session->refresh());
+
         return redirect('/kiosk/download');
     }
 
@@ -940,6 +997,22 @@ class SessionController extends Controller
         }
 
         return $session;
+    }
+
+    private function sendPhotoReadyEmail(PhotoSession $session): void
+    {
+        if (! $session->customer_email) {
+            return;
+        }
+
+        try {
+            Mail::to($session->customer_email)
+                ->send(new PhotoReadyMail($session));
+        } catch (\Throwable $e) {
+            Log::warning('Photo ready email gagal: '.$e->getMessage(), [
+                'session' => $session->session_code,
+            ]);
+        }
     }
 
     /**

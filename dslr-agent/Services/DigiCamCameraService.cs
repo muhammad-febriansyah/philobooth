@@ -33,9 +33,10 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
     }
 
     private ICameraDevice Camera =>
-        _manager?.SelectedCameraDevice
-        ?? throw new InvalidOperationException(
-            _initializationError ?? "Kamera tidak terdeteksi. Pastikan kamera menyala dan USB terhubung.");
+        _manager?.SelectedCameraDevice is { IsConnected: true } camera
+            ? camera
+            : throw new InvalidOperationException(
+                _initializationError ?? "Kamera tidak terdeteksi. Pastikan kamera menyala dan USB terhubung.");
 
     public bool IsAvailable => _manager?.SelectedCameraDevice is { IsConnected: true };
 
@@ -55,14 +56,17 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
             _manager?.CloseAll();
             _manager = new CameraDeviceManager();
             _manager.ConnectToCamera();
-            _initializationError = null;
+
+            _initializationError = IsAvailable
+                ? null
+                : "DSLR belum terdeteksi. Gunakan kabel data USB, nyalakan kamera, pilih mode foto, lalu tutup EOS Utility/digiCamControl.";
 
             return IsAvailable;
         }
         catch (Exception exception)
         {
             _initializationError =
-                "Driver kamera gagal dimuat. Tutup EOS Utility/aplikasi kamera lain, cabut-pasang USB, lalu buka ulang Philobooth Camera.";
+                $"Driver DSLR gagal: {exception.Message}. Tutup EOS Utility/digiCamControl, cabut-pasang kabel data USB, lalu tekan Hubungkan kamera.";
             _logger.LogError(exception, "Failed to connect to the camera");
 
             return false;

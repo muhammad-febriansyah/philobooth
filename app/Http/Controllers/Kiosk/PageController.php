@@ -410,9 +410,28 @@ class PageController extends Controller
     public function printing(Request $request): Response
     {
         $session = $this->requireSession($request, 'printing');
+        $session->loadMissing(['printer', 'paperSize']);
 
         return Inertia::render('kiosk/printing', [
             'session' => $this->sessionProps($session),
+            'image_url' => $session->final_image_path
+                && Storage::disk($session->artifact_disk)->exists($session->final_image_path)
+                    ? Storage::disk($session->artifact_disk)->url($session->final_image_path)
+                    : null,
+            'printer' => $session->printer
+                ? [
+                    'name' => $session->printer->name,
+                    'system_name' => $session->printer->system_printer_name,
+                    'status' => $session->printer->last_status?->value,
+                ]
+                : null,
+            'paper' => $session->paperSize
+                ? [
+                    'code' => $session->paperSize->code,
+                    'name' => $session->paperSize->name,
+                ]
+                : null,
+            'copies' => max(1, (int) $session->print_quantity),
         ]);
     }
 

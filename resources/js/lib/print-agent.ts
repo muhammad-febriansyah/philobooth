@@ -41,6 +41,25 @@ export interface PrintAgent {
     printImage(jpeg: Blob, options?: PrintOptions): Promise<void>;
 }
 
+async function agentError(
+    response: Response,
+    fallback: string,
+): Promise<Error> {
+    const body = await response.text().catch(() => '');
+
+    if (!body) {
+        return new Error(fallback);
+    }
+
+    try {
+        const parsed = JSON.parse(body) as { error?: string; message?: string };
+
+        return new Error(parsed.error ?? parsed.message ?? fallback);
+    } catch {
+        return new Error(body);
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Mock implementation — no hardware required.
 // ---------------------------------------------------------------------------
@@ -69,10 +88,12 @@ export function createMockPrintAgent(): PrintAgent {
 export function createHttpPrintAgent(baseUrl = AGENT_BASE_URL): PrintAgent {
     return {
         async listPrinters() {
-            const res = await fetch(`${baseUrl}/printers`);
+            const res = await fetch(`${baseUrl}/printers`, {
+                signal: AbortSignal.timeout(8_000),
+            });
 
             if (!res.ok) {
-                throw new Error('Failed to list printers');
+                throw await agentError(res, 'Failed to list printers');
             }
 
             const body = (await res.json()) as Partial<PrinterListing>;
@@ -104,11 +125,12 @@ export function createHttpPrintAgent(baseUrl = AGENT_BASE_URL): PrintAgent {
                     method: 'POST',
                     headers: { 'Content-Type': 'image/jpeg' },
                     body: jpeg,
+                    signal: AbortSignal.timeout(120_000),
                 },
             );
 
             if (!res.ok) {
-                throw new Error('Print failed');
+                throw await agentError(res, 'Print failed');
             }
         },
     };

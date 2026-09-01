@@ -164,21 +164,32 @@ export default function KioskCapture({ frame }: Props) {
     }
 
     // --- DSLR agent ---
-    async function refreshDslrStatus() {
+    async function refreshDslrStatus(): Promise<DslrStatus | null> {
         if (!dslrAgentRef.current) {
-            return;
+            return null;
         }
 
         try {
-            setDslrStatus(await dslrAgentRef.current.getStatus());
+            const status = await dslrAgentRef.current.getStatus();
+            setDslrStatus(status);
+
+            if (!status.cameraConnected) {
+                setDslrSettings(null);
+            }
+
+            return status;
         } catch {
-            setDslrStatus({
+            const status: DslrStatus = {
                 agentReachable: false,
                 cameraConnected: false,
                 cameraModel: null,
                 backend: null,
                 error: null,
-            });
+            };
+            setDslrStatus(status);
+            setDslrSettings(null);
+
+            return status;
         }
     }
 
@@ -195,6 +206,8 @@ export default function KioskCapture({ frame }: Props) {
 
             if (status.cameraConnected) {
                 setDslrSettings(await dslrAgentRef.current.getSettings());
+            } else {
+                setDslrSettings(null);
             }
         } catch (err) {
             console.warn('DSLR connection failed:', err);
@@ -208,9 +221,9 @@ export default function KioskCapture({ frame }: Props) {
         setCameraSource(source);
 
         if (source === 'dslr' && dslrAgentRef.current) {
-            refreshDslrStatus();
+            const status = await refreshDslrStatus();
 
-            if (!dslrSettings) {
+            if (status?.cameraConnected && !dslrSettings) {
                 setDslrBusy(true);
 
                 try {
@@ -266,7 +279,7 @@ export default function KioskCapture({ frame }: Props) {
     // agent connected (settings loaded) and does NOT depend on the webcam.
     const captureReady =
         cameraSource === 'dslr'
-            ? dslrSettings !== null
+            ? dslrStatus?.cameraConnected === true && dslrSettings !== null
             : cameraState === 'ready';
 
     // --- Capture logic ---
@@ -400,6 +413,10 @@ export default function KioskCapture({ frame }: Props) {
         } catch (err) {
             console.warn('Capture failed:', err);
             setCountdown(null);
+
+            if (cameraSource === 'dslr') {
+                await refreshDslrStatus();
+            }
         }
     }
 

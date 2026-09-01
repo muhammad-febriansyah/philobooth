@@ -117,6 +117,7 @@ Route::prefix('kiosk')->name('kiosk.')->group(function () {
     Route::post('filter', [KioskSessionController::class, 'selectFilter'])->name('filter.select');
     Route::post('quantity', [KioskSessionController::class, 'setQuantity'])->name('quantity.set');
     Route::post('complete', [KioskSessionController::class, 'complete'])->name('complete');
+    Route::post('printing/complete', [KioskSessionController::class, 'finishPrinting'])->name('printing.complete');
     Route::post('cancel', [KioskSessionController::class, 'cancel'])->name('cancel');
     Route::get('status', [KioskSessionController::class, 'status'])->name('status');
 });

@@ -74,6 +74,31 @@ export interface DslrAgent {
 export const AGENT_BASE_URL =
     import.meta.env.VITE_DSLR_AGENT_URL ?? 'http://localhost:5000';
 
+async function agentHttpError(
+    response: Response,
+    fallback: string,
+): Promise<Error> {
+    const body = await response.text().catch(() => '');
+
+    if (!body) {
+        return new Error(fallback);
+    }
+
+    try {
+        const parsed = JSON.parse(body) as {
+            detail?: string;
+            error?: string;
+            message?: string;
+        };
+
+        return new Error(
+            parsed.error ?? parsed.detail ?? parsed.message ?? fallback,
+        );
+    } catch {
+        return new Error(body);
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Mock implementation — no hardware required.
 // ---------------------------------------------------------------------------
@@ -225,7 +250,7 @@ export function createHttpAgent(baseUrl = AGENT_BASE_URL): DslrAgent {
                 });
 
                 if (!res.ok) {
-                    throw new Error('Failed to connect DSLR');
+                    throw await agentHttpError(res, 'Failed to connect DSLR');
                 }
 
                 return (await res.json()) as DslrStatus;
@@ -239,7 +264,7 @@ export function createHttpAgent(baseUrl = AGENT_BASE_URL): DslrAgent {
             });
 
             if (!res.ok) {
-                throw new Error('Failed to read DSLR settings');
+                throw await agentHttpError(res, 'Failed to read DSLR settings');
             }
 
             return (await res.json()) as DslrSettings;
@@ -253,7 +278,7 @@ export function createHttpAgent(baseUrl = AGENT_BASE_URL): DslrAgent {
             });
 
             if (!res.ok) {
-                throw new Error(`Failed to set ${key}`);
+                throw await agentHttpError(res, `Failed to set ${key}`);
             }
         },
         async capture(filename) {
@@ -263,7 +288,7 @@ export function createHttpAgent(baseUrl = AGENT_BASE_URL): DslrAgent {
             });
 
             if (!res.ok) {
-                throw new Error('Capture failed');
+                throw await agentHttpError(res, 'Capture failed');
             }
 
             const blob = await res.blob();
