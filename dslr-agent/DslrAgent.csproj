@@ -25,7 +25,7 @@
   <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
     <UseWindowsForms>true</UseWindowsForms>
     <OutputType>WinExe</OutputType>
-    <ApplicationIcon>..\..\public\favicon.ico</ApplicationIcon>
+    <ApplicationIcon>..\public\favicon.ico</ApplicationIcon>
     <!-- CameraControl.Devices 2.0.73 ships Canon EDSDK as native x86 DLLs.
          The process must therefore be x86 or Canon cameras are invisible even
          though Windows lists them in Device Manager. -->
