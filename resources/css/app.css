@@ -718,6 +718,50 @@
     background: transparent;
 }
 
+/*
+   Booth screens run on PCs with different browser chrome and monitor heights.
+   The kiosk content is intentionally non-scrolling, so scale the complete
+   booth surface on short desktop viewports instead of clipping its CTA/footer.
+   Chromium/WebView2 supports `zoom`, and the compensating min-height keeps the
+   scaled surface exactly equal to the available viewport height.
+*/
+.pb-kiosk-screen,
+.pb-root {
+    min-height: 100dvh !important;
+}
+
+@media (min-width: 900px) and (max-height: 920px) {
+    .pb-kiosk-screen,
+    .pb-root {
+        zoom: 0.94;
+        min-height: 106.39dvh !important;
+    }
+}
+
+@media (min-width: 900px) and (max-height: 820px) {
+    .pb-kiosk-screen,
+    .pb-root {
+        zoom: 0.88;
+        min-height: 113.64dvh !important;
+    }
+}
+
+@media (min-width: 900px) and (max-height: 720px) {
+    .pb-kiosk-screen,
+    .pb-root {
+        zoom: 0.8;
+        min-height: 125dvh !important;
+    }
+}
+
+@media (min-width: 900px) and (max-height: 620px) {
+    .pb-kiosk-screen,
+    .pb-root {
+        zoom: 0.72;
+        min-height: 138.89dvh !important;
+    }
+}
+
 /* ─────────────────────────────────────────────
    Login page
    ───────────────────────────────────────────── */

@@ -158,6 +158,7 @@ export function KioskScene({
 }: Props) {
     return (
         <div
+            className="pb-kiosk-screen"
             style={{
                 width: '100%',
                 minHeight: '100vh',
