@@ -68,13 +68,13 @@ jobs:
 
       - name: Build agent
         working-directory: dslr-agent
-        run: dotnet publish -c Release -f net8.0-windows -r win-x64 --self-contained true
+        run: dotnet publish -c Release -f net8.0-windows -r win-x86 --self-contained true
 
       - name: Stage native Canon camera runtime
         shell: pwsh
         run: |
           $package = Join-Path $env:USERPROFILE '.nuget\packages\cameracontrol.devices\2.0.73-beta\content'
-          $publish = 'dslr-agent/bin/Release/net8.0-windows/win-x64/publish'
+          $publish = 'dslr-agent/bin/Release/net8.0-windows/win-x86/publish'
           foreach ($file in @('EDSDK.dll', 'EdsImage.dll')) {
             $source = Join-Path $package $file
             if (-not (Test-Path $source)) {
@@ -86,11 +86,18 @@ jobs:
       - name: Verify native Canon camera runtime
         shell: pwsh
         run: |
-          $publish = 'dslr-agent/bin/Release/net8.0-windows/win-x64/publish'
+          $publish = 'dslr-agent/bin/Release/net8.0-windows/win-x86/publish'
           foreach ($file in @('EDSDK.dll', 'EdsImage.dll')) {
             $path = Join-Path $publish $file
             if (-not (Test-Path $path)) {
               throw "Required Canon camera runtime is missing: $path"
+            }
+
+            $bytes = [System.IO.File]::ReadAllBytes($path)
+            $peOffset = [BitConverter]::ToInt32($bytes, 0x3c)
+            $machine = [BitConverter]::ToUInt16($bytes, $peOffset + 4)
+            if ($machine -ne 0x014c) {
+              throw "Canon camera runtime must be x86 (0x014c): $path has machine 0x$($machine.ToString('x4'))"
             }
           }
 
@@ -113,7 +120,7 @@ jobs:
         env:
           Camera__Mode: Mock
         run: |
-          $exe = Resolve-Path 'dslr-agent/bin/Release/net8.0-windows/win-x64/publish/philobooth-booth.exe'
+          $exe = Resolve-Path 'dslr-agent/bin/Release/net8.0-windows/win-x86/publish/philobooth-booth.exe'
           $capture = Join-Path $env:RUNNER_TEMP 'philobooth-agent-smoke.jpg'
           $process = Start-Process -FilePath $exe -ArgumentList '--headless' -PassThru
 
@@ -184,7 +191,7 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          $exe = 'dslr-agent/bin/Release/net8.0-windows/win-x64/publish/philobooth-booth.exe'
+          $exe = 'dslr-agent/bin/Release/net8.0-windows/win-x86/publish/philobooth-booth.exe'
           $hash = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLower()
           $tag = "agent-v$env:VERSION"
           $url = "${{ github.server_url }}/${{ github.repository }}/releases/download/$tag/philobooth-booth.exe"
@@ -226,7 +233,7 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          $payload = 'dslr-agent/bin/Release/net8.0-windows/win-x64/publish/philobooth-booth.exe'
+          $payload = 'dslr-agent/bin/Release/net8.0-windows/win-x86/publish/philobooth-booth.exe'
           $installer = 'dslr-agent/installer/Output/philobooth-booth-setup.exe'
           $payloadHash = (Get-FileHash $payload -Algorithm SHA256).Hash.ToLower()
           $installerHash = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLower()
@@ -264,7 +271,7 @@ jobs:
 
             SHA-256 payload: `${{ steps.payload.outputs.sha256 }}`
           files: |
-            dslr-agent/bin/Release/net8.0-windows/win-x64/publish/philobooth-booth.exe
+            dslr-agent/bin/Release/net8.0-windows/win-x86/publish/philobooth-booth.exe
             dslr-agent/installer/Output/philobooth-booth-setup.exe
             philobooth-booth-checksums.txt
 

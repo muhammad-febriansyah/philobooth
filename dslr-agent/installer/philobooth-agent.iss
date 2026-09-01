@@ -65,7 +65,7 @@
 
 ; Path to the published build. Only the small side files (EDSDK natives, if the
 ; build included them) are compiled into the installer; the exe is downloaded.
-#define PublishDir "..\bin\Release\net8.0-windows\win-x64\publish"
+#define PublishDir "..\bin\Release\net8.0-windows\win-x86\publish"
 
 [Setup]
 AppId={{A7F3C2E1-9B4D-4E6A-8C1F-2D3E4F5A6B7C}
