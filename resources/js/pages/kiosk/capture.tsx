@@ -220,6 +220,14 @@ export default function KioskCapture({ frame }: Props) {
     async function selectCameraSource(source: 'webcam' | 'dslr') {
         setCameraSource(source);
 
+        if (source === 'webcam') {
+            stopCamera();
+            await startCamera();
+        } else {
+            stopCamera();
+            setCameraState('idle');
+        }
+
         if (source === 'dslr' && dslrAgentRef.current) {
             const status = await refreshDslrStatus();
 
@@ -686,6 +694,10 @@ export default function KioskCapture({ frame }: Props) {
                                 playsInline
                                 muted
                                 style={{
+                                    display:
+                                        cameraSource === 'webcam'
+                                            ? 'block'
+                                            : 'none',
                                     width: '100%',
                                     height: '100%',
                                     objectFit: 'cover',
@@ -694,8 +706,33 @@ export default function KioskCapture({ frame }: Props) {
                                 }}
                             />
 
+                            {cameraSource === 'dslr' && (
+                                <CenterOverlay>
+                                    <Icon name="image" size={42} color="#fff" />
+                                    <div
+                                        style={{
+                                            color: '#fff',
+                                            fontWeight: 700,
+                                            marginTop: 10,
+                                        }}
+                                    >
+                                        Preview DSLR
+                                    </div>
+                                    <div
+                                        style={{
+                                            color: 'rgba(255,255,255,0.7)',
+                                            fontSize: 13,
+                                            marginTop: 4,
+                                        }}
+                                    >
+                                        Foto akan diambil langsung dari Canon
+                                    </div>
+                                </CenterOverlay>
+                            )}
+
                             {/* Overlay states */}
-                            {cameraState === 'requesting' && (
+                            {cameraSource === 'webcam' &&
+                                cameraState === 'requesting' && (
                                 <CenterOverlay>
                                     <Icon
                                         name="camera"
@@ -713,7 +750,7 @@ export default function KioskCapture({ frame }: Props) {
                                     </div>
                                 </CenterOverlay>
                             )}
-                            {cameraState === 'denied' && (
+                            {cameraSource === 'webcam' && cameraState === 'denied' && (
                                 <CenterOverlay>
                                     <Icon
                                         name="camera"
@@ -759,7 +796,8 @@ export default function KioskCapture({ frame }: Props) {
                                     </button>
                                 </CenterOverlay>
                             )}
-                            {cameraState === 'unavailable' && (
+                            {cameraSource === 'webcam' &&
+                                cameraState === 'unavailable' && (
                                 <CenterOverlay>
                                     <Icon name="image" size={36} color="#fff" />
                                     <div
@@ -830,7 +868,7 @@ export default function KioskCapture({ frame }: Props) {
                             )}
 
                             {/* Slot badge */}
-                            {cameraState === 'ready' && (
+                            {cameraSource === 'webcam' && cameraState === 'ready' && (
                                 <div
                                     style={{
                                         position: 'absolute',
@@ -1603,16 +1641,39 @@ function FramePreview({
                         }}
                     >
                         {slot ? (
-                            <img
-                                src={slot.url}
-                                alt={`Slot ${s.slot_number}`}
-                                style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    objectFit: 'cover',
-                                    display: 'block',
-                                }}
-                            />
+                            <>
+                                <img
+                                    src={slot.url}
+                                    alt={`Slot ${s.slot_number}`}
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover',
+                                        display: 'block',
+                                    }}
+                                />
+                                <span
+                                    style={{
+                                        position: 'absolute',
+                                        right: 6,
+                                        bottom: 6,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 4,
+                                        padding: '4px 8px',
+                                        borderRadius: 999,
+                                        background: 'rgba(10,10,10,0.65)',
+                                        backdropFilter: 'blur(4px)',
+                                        color: '#fff',
+                                        fontSize: 10,
+                                        fontWeight: 700,
+                                        letterSpacing: 0.3,
+                                    }}
+                                >
+                                    <Icon name="refresh" size={11} />
+                                    Retake
+                                </span>
+                            </>
                         ) : (
                             <div
                                 style={{
