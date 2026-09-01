@@ -4,11 +4,9 @@ name: agent-installer
 # both the .NET Windows target and Inno Setup need Windows. Run it by hand from
 # the Actions tab.
 #
-# The large agent exe is published as a GitHub Release asset rather than served
-# from the app: the app runs behind a tunnel that was cutting the ~180 MB
-# download short, and a release asset comes off GitHub's CDN with byte-range
-# support instead. The installer is compiled with that asset's URL and SHA-256
-# baked in, so it downloads the payload itself and refuses a corrupted one.
+# The agent exe is published as a GitHub Release asset for direct downloads and
+# bundled into the installer so booth installation does not need a second
+# network request.
 #
 # Afterwards, publish the installer so the dashboard button serves it:
 #   php artisan agent:publish --installer \
@@ -208,20 +206,14 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup --no-progress -y
 
-      - name: Compile installer
+      - name: Compile offline installer
         working-directory: dslr-agent
         shell: pwsh
         env:
           APP_VERSION: ${{ inputs.version }}
-          PAYLOAD_URL: ${{ steps.payload.outputs.url }}
-          PAYLOAD_SHA256: ${{ steps.payload.outputs.sha256 }}
-          PAYLOAD_SIZE: ${{ steps.payload.outputs.size }}
         run: |
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           & $iscc installer\philobooth-agent.iss `
-            "/DPayloadUrl=$env:PAYLOAD_URL" `
-            "/DPayloadSha256=$env:PAYLOAD_SHA256" `
-            "/DPayloadSize=$env:PAYLOAD_SIZE" `
             "/DAppVersion=$env:APP_VERSION"
           if ($LASTEXITCODE -ne 0) { throw 'ISCC failed' }
           $setup = 'installer\Output\philobooth-booth-setup.exe'
@@ -253,9 +245,8 @@ jobs:
           Copy-Item $installer dist/philobooth-booth-setup.exe
           Copy-Item philobooth-booth-checksums.txt dist/philobooth-booth-checksums.txt
 
-      # Both files go on the release: the payload because the installer fetches
-      # it from there, the installer so it can be downloaded without digging
-      # through workflow artifacts.
+      # Both files go on the release: the payload for direct/raw use and the
+      # self-contained installer for normal booth installation.
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
@@ -266,8 +257,8 @@ jobs:
             Aplikasi booth lengkap untuk Windows 10/11 64-bit: WebView kiosk,
             kamera DSLR, dan printer lokal.
 
-            Operator cukup mengunduh `philobooth-booth-setup.exe` — installer
-            akan mengunduh sisanya sendiri.
+            Operator cukup mengunduh `philobooth-booth-setup.exe`; installer
+            sudah membawa aplikasi utama dan tidak perlu download tambahan.
 
             SHA-256 payload: `${{ steps.payload.outputs.sha256 }}`
           files: |
