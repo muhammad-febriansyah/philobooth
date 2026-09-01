@@ -14,6 +14,7 @@ namespace DslrAgent.Services;
 /// </summary>
 public sealed class DigiCamCameraService : ICameraService, IDisposable
 {
+    private readonly SemaphoreSlim _cameraGate = new(1, 1);
     private CameraDeviceManager? _manager;
     private readonly ILogger<DigiCamCameraService> _logger;
     private string? _initializationError;
@@ -83,9 +84,23 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
 
     public bool StartLiveView()
     {
+        _cameraGate.Wait();
+
         try
         {
-            StopLiveView();
+            return StartLiveViewUnsafe();
+        }
+        finally
+        {
+            _cameraGate.Release();
+        }
+    }
+
+    private bool StartLiveViewUnsafe()
+    {
+        try
+        {
+            StopLiveViewUnsafe();
             Camera.StartLiveView();
             _liveViewStarted = true;
             _liveViewError = null;
@@ -104,6 +119,20 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
     }
 
     public void StopLiveView()
+    {
+        _cameraGate.Wait();
+
+        try
+        {
+            StopLiveViewUnsafe();
+        }
+        finally
+        {
+            _cameraGate.Release();
+        }
+    }
+
+    private void StopLiveViewUnsafe()
     {
         if (!_liveViewStarted || !IsAvailable)
         {
@@ -127,6 +156,13 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
     public byte[]? GetLiveViewImage()
     {
         if (!_liveViewStarted || !IsAvailable)
+        {
+            return null;
+        }
+
+        // Do not let preview polling compete with a shutter command. Skipping
+        // one frame is preferable to making Canon report DEVICE_BUSY.
+        if (!_cameraGate.Wait(TimeSpan.FromMilliseconds(100)))
         {
             return null;
         }
@@ -159,6 +195,10 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
             _logger.LogDebug(exception, "Failed to read DSLR live-view frame");
 
             return null;
+        }
+        finally
+        {
+            _cameraGate.Release();
         }
     }
 
@@ -193,7 +233,12 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
 
     public async Task<CaptureResult> CaptureAsync(CancellationToken ct = default)
     {
-        var cam = Camera;
+        await _cameraGate.WaitAsync(ct);
+
+        ICameraDevice? cam = null;
+        CameraDeviceManager? manager = null;
+        var restartLiveView = false;
+        var handlerSubscribed = false;
         var tcs = new TaskCompletionSource<CaptureResult>(
             TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -215,14 +260,28 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
             }
         }
 
-        var manager = _manager
-            ?? throw new InvalidOperationException(_initializationError ?? "Camera backend is unavailable");
-
-        manager.PhotoCaptured += Handler;
-
         try
         {
-            cam.CapturePhoto();
+            cam = Camera;
+            manager = _manager
+                ?? throw new InvalidOperationException(
+                    _initializationError ?? "Camera backend is unavailable");
+            restartLiveView = _liveViewStarted;
+            manager.PhotoCaptured += Handler;
+            handlerSubscribed = true;
+
+            if (restartLiveView)
+            {
+                StopLiveViewUnsafe();
+                await Task.Delay(500, ct);
+            }
+
+            // A fixed photobooth should not refuse a shot just because AF did
+            // not lock. The full-resolution JPEG is transferred directly to
+            // memory and returned to the React slot preview.
+            cam.IsBusy = true;
+            cam.CaptureInSdRam = true;
+            cam.CapturePhotoNoAf();
 
             using (ct.Register(() => tcs.TrySetCanceled(ct)))
             {
@@ -231,7 +290,23 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
         }
         finally
         {
-            manager.PhotoCaptured -= Handler;
+            if (handlerSubscribed && manager is not null)
+            {
+                manager.PhotoCaptured -= Handler;
+            }
+
+            if (cam is not null)
+            {
+                cam.IsBusy = false;
+            }
+
+            if (restartLiveView && IsAvailable)
+            {
+                await Task.Delay(500, CancellationToken.None);
+                StartLiveViewUnsafe();
+            }
+
+            _cameraGate.Release();
         }
     }
 
@@ -244,6 +319,7 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
     {
         StopLiveView();
         _manager?.CloseAll();
+        _cameraGate.Dispose();
     }
 }
 #endif
