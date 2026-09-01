@@ -64,6 +64,7 @@ export default function KioskCapture({ frame }: Props) {
         'idle' | 'requesting' | 'ready' | 'denied' | 'unavailable'
     >('idle');
     const [countdown, setCountdown] = useState<number | null>(null);
+    const [capturing, setCapturing] = useState(false);
     const [flash, setFlash] = useState(false);
     const [autoMode, setAutoMode] = useState(true);
 
@@ -373,7 +374,7 @@ export default function KioskCapture({ frame }: Props) {
 
     // --- Capture logic ---
     function startCountdown() {
-        if (!captureReady || countdown !== null) {
+        if (!captureReady || capturing || countdown !== null) {
             return;
         }
 
@@ -491,7 +492,12 @@ export default function KioskCapture({ frame }: Props) {
     }
 
     async function takeShot() {
+        if (capturing) {
+            return;
+        }
+
         const filename = `slot-${activeSlot + 1}.jpg`;
+        setCapturing(true);
 
         try {
             const result =
@@ -506,6 +512,8 @@ export default function KioskCapture({ frame }: Props) {
             if (cameraSource === 'dslr') {
                 await refreshDslrStatus();
             }
+        } finally {
+            setCapturing(false);
         }
     }
 
@@ -825,6 +833,54 @@ export default function KioskCapture({ frame }: Props) {
                                     background: '#0A0A0A',
                                 }}
                             />
+
+                            {capturing && (
+                                <div
+                                    style={{
+                                        position: 'fixed',
+                                        inset: 0,
+                                        zIndex: 1000,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: 14,
+                                        background: 'rgba(10,10,10,0.82)',
+                                        color: '#fff',
+                                        textAlign: 'center',
+                                    }}
+                                    role="status"
+                                    aria-live="polite"
+                                >
+                                    <div
+                                        style={{
+                                            width: 46,
+                                            height: 46,
+                                            border: '4px solid rgba(255,255,255,0.3)',
+                                            borderTopColor: 'var(--pb-primary)',
+                                            borderRadius: '50%',
+                                            animation:
+                                                'pbCaptureSpin 800ms linear infinite',
+                                        }}
+                                    />
+                                    <div
+                                        style={{
+                                            fontSize: 18,
+                                            fontWeight: 800,
+                                        }}
+                                    >
+                                        Mengambil foto…
+                                    </div>
+                                    <div
+                                        style={{
+                                            color: 'rgba(255,255,255,0.72)',
+                                            fontSize: 13,
+                                        }}
+                                    >
+                                        Menunggu hasil dari DSLR, jangan tekan tombol lagi
+                                    </div>
+                                </div>
+                            )}
 
                             {cameraSource === 'dslr' && dslrLiveViewUrl && (
                                 <img
@@ -1263,6 +1319,7 @@ export default function KioskCapture({ frame }: Props) {
                                             }
                                             disabled={
                                                 processing ||
+                                                capturing ||
                                                 (allFilled
                                                     ? false
                                                     : !captureReady ||
@@ -1318,6 +1375,8 @@ export default function KioskCapture({ frame }: Props) {
                                                     : 'Lanjutkan'
                                                 : countdown !== null
                                                   ? `Bersiap… ${countdown}`
+                                                  : capturing
+                                                    ? 'Mengambil foto…'
                                                   : `Ambil foto slot ${activeSlot + 1}/${totalSlots}`}
                                         </button>
                                     </div>
@@ -1495,6 +1554,7 @@ export default function KioskCapture({ frame }: Props) {
                                 onClick={startCountdown}
                                 disabled={
                                     !captureReady ||
+                                    capturing ||
                                     countdown !== null ||
                                     allFilled
                                 }
@@ -1540,6 +1600,8 @@ export default function KioskCapture({ frame }: Props) {
                                     ? 'Semua foto siap'
                                     : countdown !== null
                                       ? `Bersiap… ${countdown}`
+                                      : capturing
+                                        ? 'Mengambil foto…'
                                       : `Ambil foto slot ${activeSlot + 1}`}
                             </button>
 
@@ -1774,6 +1836,9 @@ export default function KioskCapture({ frame }: Props) {
                     @keyframes pbFlashFade {
                         0% { opacity: 0.85; }
                         100% { opacity: 0; }
+                    }
+                    @keyframes pbCaptureSpin {
+                        to { transform: rotate(360deg); }
                     }
                     @keyframes pbRecBlink {
                         0%, 100% { opacity: 1; }
