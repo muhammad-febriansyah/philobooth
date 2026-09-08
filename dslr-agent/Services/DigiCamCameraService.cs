@@ -2,6 +2,7 @@
 using CameraControl.Devices;
 using CameraControl.Devices.Classes;
 using DslrAgent.Models;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 
@@ -208,35 +209,57 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
 
     public Settings GetSettings()
     {
-        var cam = Camera;
+        // Same PTP command channel as live view/capture. Without this gate, a
+        // live-view frame read landing mid-command makes Canon bodies return
+        // garbage or drop the request outright — "settings gagal terbaca".
+        _cameraGate.Wait();
 
-        return new Settings(
-            ToSetting(cam.IsoNumber),
-            ToSetting(cam.ShutterSpeed),
-            ToSetting(cam.FNumber));
+        try
+        {
+            var cam = Camera;
+
+            return new Settings(
+                ToSetting(cam.IsoNumber),
+                ToSetting(cam.ShutterSpeed),
+                ToSetting(cam.FNumber));
+        }
+        finally
+        {
+            _cameraGate.Release();
+        }
     }
 
     public void SetSetting(string key, string value)
     {
-        var cam = Camera;
-        var prop = key switch
-        {
-            "iso" => cam.IsoNumber,
-            "shutter" => cam.ShutterSpeed,
-            "aperture" => cam.FNumber,
-            _ => throw new ArgumentException($"Unknown setting '{key}'", nameof(key)),
-        };
+        _cameraGate.Wait();
 
-        if (!prop.Values.Contains(value))
+        try
         {
-            throw new ArgumentException($"'{value}' not allowed for '{key}'", nameof(value));
+            var cam = Camera;
+            var prop = key switch
+            {
+                "iso" => cam.IsoNumber,
+                "shutter" => cam.ShutterSpeed,
+                "aperture" => cam.FNumber,
+                _ => throw new ArgumentException($"Unknown setting '{key}'", nameof(key)),
+            };
+
+            if (!prop.Values.Contains(value))
+            {
+                throw new ArgumentException($"'{value}' not allowed for '{key}'", nameof(value));
+            }
+
+            prop.SetValue(value);
         }
-
-        prop.SetValue(value);
+        finally
+        {
+            _cameraGate.Release();
+        }
     }
 
     public async Task<CaptureResult> CaptureAsync(CancellationToken ct = default)
     {
+        var startedAt = Stopwatch.GetTimestamp();
         await _cameraGate.WaitAsync(ct);
 
         ICameraDevice? cam = null;
@@ -279,7 +302,7 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
             if (restartLiveView)
             {
                 StopLiveViewUnsafe();
-                await Task.Delay(500, ct);
+                await Task.Delay(150, ct);
             }
 
             // A fixed photobooth should not refuse a shot just because AF did
@@ -324,9 +347,13 @@ public sealed class DigiCamCameraService : ICameraService, IDisposable
 
             if (restartLiveView && IsAvailable)
             {
-                await Task.Delay(500, CancellationToken.None);
+                await Task.Delay(150, CancellationToken.None);
                 StartLiveViewUnsafe();
             }
+
+            _logger.LogDebug(
+                "DSLR capture cycle completed in {ElapsedMs} ms",
+                Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds);
 
             _cameraGate.Release();
         }
