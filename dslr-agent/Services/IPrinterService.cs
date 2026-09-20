@@ -1,9 +1,19 @@
 namespace DslrAgent.Services;
 
+/// <summary>A paper size exposed by a Windows printer driver.</summary>
+/// <param name="Name">Exact paper name expected by the driver.</param>
+/// <param name="WidthMm">Paper width in millimetres.</param>
+/// <param name="HeightMm">Paper height in millimetres.</param>
+public record PrinterPaperInfo(string Name, double WidthMm, double HeightMm);
+
 /// <summary>A printer installed on the kiosk machine.</summary>
 /// <param name="Name">Printer name as the OS reports it.</param>
 /// <param name="IsDefault">True if this is the system default printer.</param>
-public record PrinterInfo(string Name, bool IsDefault);
+/// <param name="PaperSizes">Paper sizes exposed by this printer's driver.</param>
+public record PrinterInfo(
+    string Name,
+    bool IsDefault,
+    IReadOnlyList<PrinterPaperInfo> PaperSizes);
 
 /// <summary>
 /// Abstraction over local printing. Implemented by <c>MockPrinterService</c>

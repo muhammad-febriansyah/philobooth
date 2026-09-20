@@ -12,10 +12,16 @@ namespace DslrAgent.Services;
 public sealed class WindowsPrinterService : IPrinterService
 {
     private readonly ILogger<WindowsPrinterService> _logger;
+    private readonly string? _defaultPrinterName;
+    private readonly string? _defaultPaperSize;
 
-    public WindowsPrinterService(ILogger<WindowsPrinterService> logger)
+    public WindowsPrinterService(
+        ILogger<WindowsPrinterService> logger,
+        IConfiguration configuration)
     {
         _logger = logger;
+        _defaultPrinterName = configuration["Printer:DefaultPrinter"];
+        _defaultPaperSize = configuration["Printer:DefaultPaperSize"];
     }
 
     public string Backend => "windows";
@@ -27,9 +33,13 @@ public sealed class WindowsPrinterService : IPrinterService
 
         foreach (string name in PrinterSettings.InstalledPrinters)
         {
+            var settings = new PrinterSettings { PrinterName = name };
+            var paperSizes = GetPaperSizes(settings);
+
             printers.Add(new PrinterInfo(
                 name,
-                string.Equals(name, defaultName, StringComparison.OrdinalIgnoreCase)));
+                string.Equals(name, defaultName, StringComparison.OrdinalIgnoreCase),
+                paperSizes));
         }
 
         return printers;
@@ -41,29 +51,45 @@ public sealed class WindowsPrinterService : IPrinterService
         using var image = Image.FromStream(stream);
         using var document = new PrintDocument();
 
-        if (!string.IsNullOrWhiteSpace(printerName))
-        {
-            document.PrinterSettings.PrinterName = printerName;
+        var selectedPrinterName = string.IsNullOrWhiteSpace(printerName)
+            ? _defaultPrinterName
+            : printerName;
+        var selectedPaperSize = string.IsNullOrWhiteSpace(paperSize)
+            ? _defaultPaperSize
+            : paperSize;
 
-            if (!document.PrinterSettings.IsValid)
-            {
-                throw new ArgumentException($"Printer '{printerName}' not found");
-            }
+        if (!string.IsNullOrWhiteSpace(selectedPrinterName))
+        {
+            document.PrinterSettings.PrinterName = selectedPrinterName;
+        }
+
+        if (!document.PrinterSettings.IsValid)
+        {
+            throw new ArgumentException(
+                $"Printer '{selectedPrinterName ?? "(system default)"}' not found");
         }
 
         document.PrinterSettings.Copies = (short)Math.Clamp(copies, 1, 99);
 
-        if (!string.IsNullOrWhiteSpace(paperSize))
+        if (!string.IsNullOrWhiteSpace(selectedPaperSize))
         {
-            foreach (PaperSize size in document.PrinterSettings.PaperSizes)
+            var matchingPaper = document.PrinterSettings.PaperSizes
+                .Cast<PaperSize>()
+                .FirstOrDefault(size => string.Equals(
+                    size.PaperName,
+                    selectedPaperSize,
+                    StringComparison.OrdinalIgnoreCase));
+
+            if (matchingPaper is null)
             {
-                if (string.Equals(size.PaperName, paperSize, StringComparison.OrdinalIgnoreCase))
-                {
-                    document.DefaultPageSettings.PaperSize = size;
-                    break;
-                }
+                throw new ArgumentException(
+                    $"Paper size '{selectedPaperSize}' not found on printer '{document.PrinterSettings.PrinterName}'");
             }
+
+            document.DefaultPageSettings.PaperSize = matchingPaper;
         }
+
+        document.DefaultPageSettings.Landscape = image.Width > image.Height;
 
         document.PrintPage += (_, e) =>
         {
@@ -83,10 +109,41 @@ public sealed class WindowsPrinterService : IPrinterService
         document.Print();
 
         _logger.LogInformation(
-            "Printed {Bytes} bytes to '{Printer}' x{Copies}",
+            "Printed {Bytes} bytes to '{Printer}' on '{Paper}' x{Copies}",
             jpeg.Length,
             document.PrinterSettings.PrinterName,
+            document.DefaultPageSettings.PaperSize.PaperName,
             document.PrinterSettings.Copies);
+    }
+
+    private IReadOnlyList<PrinterPaperInfo> GetPaperSizes(PrinterSettings settings)
+    {
+        if (!settings.IsValid)
+        {
+            return [];
+        }
+
+        try
+        {
+            return settings.PaperSizes
+                .Cast<PaperSize>()
+                .Select(size => new PrinterPaperInfo(
+                    size.PaperName,
+                    Math.Round(size.Width * 25.4 / 100, 1),
+                    Math.Round(size.Height * 25.4 / 100, 1)))
+                .OrderBy(size => size.WidthMm)
+                .ThenBy(size => size.HeightMm)
+                .ToArray();
+        }
+        catch (Exception exception)
+        {
+            _logger.LogWarning(
+                exception,
+                "Could not read paper sizes for printer '{Printer}'",
+                settings.PrinterName);
+
+            return [];
+        }
     }
 }
 #endif

@@ -21,8 +21,16 @@ public sealed class MockPrinterService : IPrinterService
     {
         return new[]
         {
-            new PrinterInfo("Mock Printer (dev)", true),
-            new PrinterInfo("Mock Photo Printer 4x6", false),
+            new PrinterInfo("Mock Printer (dev)", true,
+            [
+                new PrinterPaperInfo("4x6", 101.6, 152.4),
+                new PrinterPaperInfo("A4", 210, 297),
+                new PrinterPaperInfo("A3", 297, 420),
+            ]),
+            new PrinterInfo("Mock Photo Printer 4x6", false,
+            [
+                new PrinterPaperInfo("4x6", 101.6, 152.4),
+            ]),
         };
     }
 
